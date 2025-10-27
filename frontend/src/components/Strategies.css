@@ -1,0 +1,234 @@
+.strategies h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.timeframe-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.timeframe-selector button {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #888;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.timeframe-selector button:hover {
+  border-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.timeframe-selector button.active {
+  background: #2a2a2a;
+  border-color: #4a4a4a;
+  color: #fff;
+}
+
+.strategies-table-container {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.strategies-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.strategies-table thead {
+  background: #0a0a0a;
+}
+
+.strategies-table th {
+  color: #888;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.strategies-table td {
+  padding: 1rem;
+  color: #e0e0e0;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.strategies-table tr:hover {
+  background: #0a0a0a;
+}
+
+.strategies-table tr.top-strategy {
+  background: rgba(34, 197, 94, 0.05);
+  border-left: 3px solid #22c55e;
+}
+
+.strategy-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge-top {
+  background: #22c55e;
+  color: #000;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.score-cell {
+  min-width: 120px;
+}
+
+.score-bar {
+  position: relative;
+  background: #0a0a0a;
+  border-radius: 4px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.score-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #eab308);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.score-bar span {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.positive {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.summary {
+  margin-top: 2rem;
+}
+
+.summary h3 {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.summary-label {
+  display: block;
+  color: #888;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.summary-value {
+  display: block;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.summary-score {
+  display: block;
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+}
+
+.error-container {
+  text-align: center;
+  padding: 3rem;
+}
+
+.error-message {
+  color: #ef4444;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.retry-btn {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #3a3a3a;
+  border-color: #4a4a4a;
+}
+
+@media (max-width: 768px) {
+  .strategies-table {
+    font-size: 0.875rem;
+  }
+
+  .strategies-table th,
+  .strategies-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
