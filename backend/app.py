@@ -1,7 +1,7 @@
 """FastAPI application for Black Trade backend."""
 import os
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -10,13 +10,12 @@ import pandas as pd
 
 from data.binance_client import BinanceClient
 from data.sync_service import SyncService
-from strategies.ema_rsi_strategy import EMARSIStrategy
-from strategies.ichimoku_strategy import IchimokuStrategy
-from strategies.breakout_strategy import BreakoutStrategy
-from strategies.mean_reversion_strategy import MeanReversionStrategy
-from strategies.momentum_strategy import MomentumStrategy
 from backtest.engine import BacktestEngine
 from recommendation.aggregator import RecommendationAggregator
+from backend.services.strategy_registry import strategy_registry
+from backend.services.recommendation_service import recommendation_service
+from backtest.data_loader import data_loader
+from backend.api.routes.chart import router as chart_router
 
 load_dotenv()
 
@@ -54,6 +53,11 @@ class RecommendationResponse(BaseModel):
     stop_loss: float
     take_profit: float
     current_price: float
+    primary_strategy: str
+    supporting_strategies: List[str]
+    strategy_details: List[Dict[str, Any]]
+    signal_consensus: float
+    risk_level: str
 
 class StrategyMetrics(BaseModel):
     strategy_name: str
@@ -111,21 +115,35 @@ async def refresh_data() -> RefreshResponse:
             download_results = sync_service.download_historical_data(symbol, timeframes, days_back=365)
             logger.info(f"Downloaded initial data: {download_results}")
         
-        # Run backtests for each timeframe
-        strategies = [
-            EMARSIStrategy(),
-            IchimokuStrategy(),
-            BreakoutStrategy(),
-            MeanReversionStrategy(),
-            MomentumStrategy()
-        ]
+        # Detect and fill gaps in data
+        logger.info("Detecting and filling data gaps...")
+        gap_results = sync_service.detect_and_fill_gaps(symbol, timeframes)
+        logger.info(f"Gap detection results: {gap_results}")
+        
+        # Validate data quality
+        logger.info("Validating data quality...")
+        data_summary = data_loader.get_data_summary(symbol, timeframes)
+        logger.info(f"Data quality summary: {data_summary['overall_status']}")
+        
+        # Get enabled strategies from registry
+        strategies = strategy_registry.get_enabled_strategies()
+        logger.info(f"Running backtests with {len(strategies)} enabled strategies")
         all_results = {}
         
         for timeframe in timeframes:
             try:
-                data = sync_service.load_ohlcv_data(symbol, timeframe)
+                # Load data with validation
+                data, validation_report = data_loader.load_data(
+                    symbol, timeframe, validate_continuity=True
+                )
+                
                 if data.empty:
+                    logger.warning(f"No data available for {timeframe}")
                     continue
+                
+                # Log validation results
+                if not validation_report.get("valid", False):
+                    logger.warning(f"Data validation issues for {timeframe}: {validation_report}")
                 
                 results = backtest_engine.run_multiple_backtests(strategies, data, timeframe)
                 ranked_results = backtest_engine.rank_strategies(results)
@@ -148,30 +166,44 @@ async def refresh_data() -> RefreshResponse:
 
 @app.get("/recommendation")
 async def get_recommendation() -> RecommendationResponse:
-    """Get current trading recommendation."""
+    """Get current trading recommendation based on real-time signals."""
     if not last_results:
         raise HTTPException(status_code=404, detail="No results available. Please call /refresh first.")
     
     try:
-        current_price = binance_client.get_current_price('BTCUSDT') if binance_client else 0
+        # Load current data for all timeframes
+        symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
+        timeframes = os.getenv('TIMEFRAMES', '1h,4h,1d,1w').split(',')
         
-        # Get top strategies
-        top_strategies = []
-        signals = []
+        current_data = {}
+        for timeframe in timeframes:
+            try:
+                data = sync_service.load_ohlcv_data(symbol, timeframe)
+                if not data.empty:
+                    current_data[timeframe] = data
+            except Exception as e:
+                logger.error(f"Error loading data for {timeframe}: {e}")
+                continue
         
-        for timeframe, results in last_results.items():
-            if results:
-                top_strategy = results[0]
-                top_strategies.append(top_strategy)
-                signals.append({
-                    "strategy_name": top_strategy['strategy_name'],
-                    "signal": 1 if top_strategy.get('net_pnl', 0) > 0 else -1,
-                    "current_price": current_price
-                })
+        if not current_data:
+            raise HTTPException(status_code=404, detail="No current data available.")
         
-        recommendation = recommendation_agg.generate_recommendation(top_strategies, signals)
+        # Generate recommendation using real-time signals
+        recommendation = recommendation_service.generate_recommendation(current_data, last_results)
         
-        return RecommendationResponse(**recommendation)
+        return RecommendationResponse(
+            action=recommendation.action,
+            confidence=recommendation.confidence,
+            entry_range=recommendation.entry_range,
+            stop_loss=recommendation.stop_loss,
+            take_profit=recommendation.take_profit,
+            current_price=recommendation.current_price,
+            primary_strategy=recommendation.primary_strategy,
+            supporting_strategies=recommendation.supporting_strategies,
+            strategy_details=recommendation.strategy_details,
+            signal_consensus=recommendation.signal_consensus,
+            risk_level=recommendation.risk_level
+        )
         
     except Exception as e:
         logger.error(f"Error generating recommendation: {e}")
@@ -197,6 +229,52 @@ async def get_strategies() -> Dict[str, Any]:
             }
     
     return response
+
+@app.get("/strategies/info")
+async def get_strategies_info() -> Dict[str, Any]:
+    """Get information about all strategies."""
+    return strategy_registry.get_strategy_info()
+
+@app.get("/strategies/config")
+async def get_strategies_config() -> List[Dict[str, Any]]:
+    """Get configuration for all strategies."""
+    return strategy_registry.list_strategies()
+
+@app.post("/strategies/{strategy_name}/enable")
+async def enable_strategy(strategy_name: str) -> Dict[str, Any]:
+    """Enable a strategy."""
+    success = strategy_registry.enable_strategy(strategy_name)
+    if success:
+        return {"success": True, "message": f"Strategy {strategy_name} enabled"}
+    else:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_name} not found")
+
+@app.post("/strategies/{strategy_name}/disable")
+async def disable_strategy(strategy_name: str) -> Dict[str, Any]:
+    """Disable a strategy."""
+    success = strategy_registry.disable_strategy(strategy_name)
+    if success:
+        return {"success": True, "message": f"Strategy {strategy_name} disabled"}
+    else:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_name} not found")
+
+@app.put("/strategies/{strategy_name}/config")
+async def update_strategy_config(strategy_name: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    """Update strategy configuration."""
+    success = strategy_registry.update_strategy_config(strategy_name, **config)
+    if success:
+        return {"success": True, "message": f"Strategy {strategy_name} configuration updated"}
+    else:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_name} not found")
+
+@app.post("/strategies/reload")
+async def reload_strategies() -> Dict[str, Any]:
+    """Reload strategy configurations from file."""
+    strategy_registry.reload_config()
+    return {"success": True, "message": "Strategy configurations reloaded"}
+
+# Include chart router
+app.include_router(chart_router, prefix="/api", tags=["chart"])
 
 if __name__ == "__main__":
     import uvicorn

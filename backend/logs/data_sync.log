@@ -1,0 +1,22 @@
+2025-10-27 14:45:19,357 - data.binance_client - WARNING - No credentials provided, using public API only
+2025-10-27 14:45:20,333 - data.binance_client - INFO - Binance client initialized
+2025-10-27 14:45:20,334 - data.sync_service - INFO - SyncService initialized with data_dir: data/ohlcv
+2025-10-27 14:45:20,335 - __main__ - INFO - SyncJob initialized for BTCUSDT on ['1h', '4h', '1d', '1w']
+2025-10-27 14:45:20,337 - __main__ - INFO - Starting data validation
+2025-10-27 14:45:20,698 - __main__ - ERROR - Error calculating quality metrics for 1h: name 'pd' is not defined
+2025-10-27 14:45:21,043 - __main__ - ERROR - Error calculating quality metrics for 4h: name 'pd' is not defined
+2025-10-27 14:45:21,397 - data.sync_service - INFO - Fetching current day data for 1d
+2025-10-27 14:45:21,398 - data.sync_service - ERROR - Validation error: 'datetime.date' object has no attribute 'timestamp'
+2025-10-27 14:45:21,403 - __main__ - ERROR - Error calculating quality metrics for 1d: name 'pd' is not defined
+2025-10-27 14:45:21,805 - data.sync_service - INFO - Fetching current day data for 1w
+2025-10-27 14:45:21,805 - data.sync_service - ERROR - Validation error: 'datetime.date' object has no attribute 'timestamp'
+2025-10-27 14:45:21,810 - __main__ - ERROR - Error calculating quality metrics for 1w: name 'pd' is not defined
+2025-10-27 14:45:21,811 - __main__ - INFO - Data validation completed in 1.47 seconds
+2025-10-27 14:45:39,748 - data.binance_client - WARNING - No credentials provided, using public API only
+2025-10-27 14:45:40,634 - data.binance_client - INFO - Binance client initialized
+2025-10-27 14:45:40,635 - data.sync_service - INFO - SyncService initialized with data_dir: data/ohlcv
+2025-10-27 14:45:40,635 - __main__ - INFO - SyncJob initialized for BTCUSDT on ['1h', '4h', '1d', '1w']
+2025-10-27 14:45:40,635 - __main__ - INFO - Starting data validation
+2025-10-27 14:45:43,987 - data.sync_service - INFO - Fetching current day data for 1d
+2025-10-27 14:45:44,690 - data.sync_service - INFO - Fetching current day data for 1w
+2025-10-27 14:45:45,026 - __main__ - INFO - Data validation completed in 4.39 seconds

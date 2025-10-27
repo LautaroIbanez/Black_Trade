@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { getRecommendation, refreshData } from '../services/api'
+import SignalChart from './SignalChart'
 import './Dashboard.css'
 
 function Dashboard() {
   const [recommendation, setRecommendation] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [chartData, setChartData] = useState(null)
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1h')
+  const [chartLoading, setChartLoading] = useState(false)
 
   const handleRefresh = async () => {
     setLoading(true)
@@ -19,6 +23,21 @@ function Dashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleChartDataLoad = (data) => {
+    setChartData(data)
+    setChartLoading(false)
+  }
+
+  const handleChartError = (error) => {
+    console.error('Chart error:', error)
+    setChartLoading(false)
+  }
+
+  const handleTimeframeChange = (timeframe) => {
+    setSelectedTimeframe(timeframe)
+    setChartLoading(true)
   }
 
   useEffect(() => {
@@ -39,14 +58,46 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h2>BTC/USDT Trading Recommendation</h2>
+        <h2>BTC/USDT Trading Dashboard</h2>
         <button onClick={handleRefresh} className="refresh-btn" disabled={loading}>
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
+      {/* Timeframe Selector */}
+      <div className="timeframe-selector">
+        <h3>Select Timeframe</h3>
+        <div className="timeframe-buttons">
+          {['1h', '4h', '1d', '1w'].map(timeframe => (
+            <button
+              key={timeframe}
+              className={`timeframe-btn ${selectedTimeframe === timeframe ? 'active' : ''}`}
+              onClick={() => handleTimeframeChange(timeframe)}
+              disabled={chartLoading}
+            >
+              {timeframe}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chart Section */}
+      <div className="chart-section">
+        <SignalChart
+          symbol="BTCUSDT"
+          timeframe={selectedTimeframe}
+          limit={200}
+          showSignals={true}
+          showRecommendation={true}
+          onDataLoad={handleChartDataLoad}
+          onError={handleChartError}
+          className="dashboard-chart"
+        />
+      </div>
+
+      {/* Recommendation Section */}
       {recommendation && (
-        <>
+        <div className="recommendation-section">
           <div className="price-display">
             <span className="price-label">Current Price</span>
             <span className="price-value">${recommendation.current_price.toFixed(2)}</span>
@@ -54,7 +105,7 @@ function Dashboard() {
 
           <div className="recommendation-card">
             <div className="recommendation-header">
-              <h3>Recommendation</h3>
+              <h3>Current Recommendation</h3>
               <span className={`confidence-badge ${recommendation.confidence > 0.7 ? 'high' : recommendation.confidence > 0.4 ? 'medium' : 'low'}`}>
                 {Math.round(recommendation.confidence * 100)}% Confidence
               </span>
@@ -65,9 +116,9 @@ function Dashboard() {
                 {recommendation.action}
               </div>
               <p className="action-description">
-                {recommendation.action === 'LONG' && 'Suggested entry for buying position'}
-                {recommendation.action === 'SHORT' && 'Suggested entry for selling position'}
-                {recommendation.action === 'FLAT' && 'No clear direction, stay neutral'}
+                {recommendation.action === 'BUY' && 'Suggested entry for buying position'}
+                {recommendation.action === 'SELL' && 'Suggested entry for selling position'}
+                {recommendation.action === 'HOLD' && 'No clear direction, stay neutral'}
               </p>
             </div>
 
@@ -85,12 +136,28 @@ function Dashboard() {
                 <span className="level-value take-profit">${recommendation.take_profit.toFixed(2)}</span>
               </div>
             </div>
+
+            {recommendation.primary_strategy && (
+              <div className="strategy-info">
+                <span className="strategy-label">Primary Strategy:</span>
+                <span className="strategy-name">{recommendation.primary_strategy}</span>
+              </div>
+            )}
+
+            {recommendation.risk_level && (
+              <div className="risk-level">
+                <span className="risk-label">Risk Level:</span>
+                <span className={`risk-badge risk-${recommendation.risk_level.toLowerCase()}`}>
+                  {recommendation.risk_level}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="risk-info">
             <p>⚠️ This is not financial advice. Always do your own research and trade responsibly.</p>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
