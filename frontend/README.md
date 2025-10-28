@@ -41,3 +41,4 @@ Production build will be in the `dist/` folder.
 The frontend communicates with the backend API at `http://localhost:8000` by default. Change this in `src/services/api.js` or set the `VITE_API_URL` environment variable.
 
 
+

@@ -1,0 +1,308 @@
+{
+  "timestamp": "2025-10-28T08:06:30.152743",
+  "symbol": "BTCUSDT",
+  "timeframes": [
+    "1h",
+    "4h",
+    "1d"
+  ],
+  "comparison_results": {
+    "1h": {
+      "original_ema_rsi": {
+        "total_trades": 272,
+        "winning_trades": 71,
+        "losing_trades": 201,
+        "win_rate": 0.2610294117647059,
+        "net_pnl": -76784.53142519998,
+        "gross_profit": 185489.40969040024,
+        "gross_loss": 262273.94111560023,
+        "max_drawdown": 84838.99828880008,
+        "profit_factor": 0.707235377260159,
+        "expectancy": -282.29607141617646,
+        "total_costs": 83465.4486252,
+        "timeframe": "1h",
+        "strategy_name": "EMA_RSI"
+      },
+      "enhanced_ema_rsi": {
+        "total_trades": 154,
+        "winning_trades": 45,
+        "losing_trades": 109,
+        "win_rate": 0.2922077922077922,
+        "net_pnl": -36880.299232800055,
+        "gross_profit": 120235.62529120014,
+        "gross_loss": 157115.9245240002,
+        "max_drawdown": 50729.014401600085,
+        "profit_factor": 0.7652669559464902,
+        "expectancy": -239.48246255064998,
+        "total_costs": 47878.96763279999,
+        "timeframe": "1h",
+        "strategy_name": "EMA_RSI"
+      },
+      "other_strategies": {
+        "Momentum": {
+          "total_trades": 371,
+          "winning_trades": 134,
+          "losing_trades": 237,
+          "win_rate": 0.3611859838274933,
+          "net_pnl": -93978.94226999991,
+          "gross_profit": 233356.29874999996,
+          "gross_loss": 327335.24101999967,
+          "max_drawdown": 119644.22493999991,
+          "profit_factor": 0.7128969616068386,
+          "expectancy": -253.31251285714188,
+          "total_costs": 113520.49227000002,
+          "timeframe": "1h",
+          "strategy_name": "Momentum"
+        },
+        "Breakout": {
+          "total_trades": 333,
+          "winning_trades": 99,
+          "losing_trades": 234,
+          "win_rate": 0.2972972972972973,
+          "net_pnl": -78791.10888030038,
+          "gross_profit": 143713.65937279997,
+          "gross_loss": 222504.7682531002,
+          "max_drawdown": 87644.96480110037,
+          "profit_factor": 0.6458902454140893,
+          "expectancy": -236.60993657747798,
+          "total_costs": 99278.09148030008,
+          "timeframe": "1h",
+          "strategy_name": "Breakout"
+        },
+        "Mean_Reversion": {
+          "total_trades": 213,
+          "winning_trades": 121,
+          "losing_trades": 92,
+          "win_rate": 0.568075117370892,
+          "net_pnl": -27267.784630000006,
+          "gross_profit": 100866.38009999995,
+          "gross_loss": 128134.16472999997,
+          "max_drawdown": 35291.37269999994,
+          "profit_factor": 0.7871934882671004,
+          "expectancy": -128.01776821596263,
+          "total_costs": 65304.32463,
+          "timeframe": "1h",
+          "strategy_name": "Mean_Reversion"
+        },
+        "Ichimoku_ADX": {
+          "total_trades": 4559,
+          "winning_trades": 911,
+          "losing_trades": 3648,
+          "win_rate": 0.19982452292169336,
+          "net_pnl": -1394382.3966099964,
+          "gross_profit": 433497.14320000046,
+          "gross_loss": 1827879.5398099963,
+          "max_drawdown": 1394382.3966099964,
+          "profit_factor": 0.23715848542462567,
+          "expectancy": -305.8526862491765,
+          "total_costs": 1388776.436610001,
+          "timeframe": "1h",
+          "strategy_name": "Ichimoku_ADX"
+        }
+      },
+      "data_points": 8806,
+      "date_range": {
+        "start": "1729947600000",
+        "end": "1761645600000"
+      }
+    },
+    "4h": {
+      "original_ema_rsi": {
+        "total_trades": 70,
+        "winning_trades": 28,
+        "losing_trades": 42,
+        "win_rate": 0.4,
+        "net_pnl": 14721.661146399976,
+        "gross_profit": 102187.95040000006,
+        "gross_loss": 87466.2892536001,
+        "max_drawdown": 24487.555671600076,
+        "profit_factor": 1.1683124009493064,
+        "expectancy": 210.3094449485709,
+        "total_costs": 21595.6324536,
+        "timeframe": "4h",
+        "strategy_name": "EMA_RSI"
+      },
+      "enhanced_ema_rsi": {
+        "total_trades": 43,
+        "winning_trades": 17,
+        "losing_trades": 26,
+        "win_rate": 0.3953488372093023,
+        "net_pnl": 6471.124243799972,
+        "gross_profit": 57413.56842960004,
+        "gross_loss": 50942.44418580007,
+        "max_drawdown": 25406.202522800064,
+        "profit_factor": 1.1270281461211034,
+        "expectancy": 150.4912614837201,
+        "total_costs": 13423.772956200002,
+        "timeframe": "4h",
+        "strategy_name": "EMA_RSI"
+      },
+      "other_strategies": {
+        "Momentum": {
+          "total_trades": 87,
+          "winning_trades": 33,
+          "losing_trades": 54,
+          "win_rate": 0.3793103448275862,
+          "net_pnl": -61528.752790000006,
+          "gross_profit": 106014.99123,
+          "gross_loss": 167543.74402000007,
+          "max_drawdown": 90699.84749000001,
+          "profit_factor": 0.6327600702139302,
+          "expectancy": -707.2270435632195,
+          "total_costs": 27330.782789999976,
+          "timeframe": "4h",
+          "strategy_name": "Momentum"
+        },
+        "Breakout": {
+          "total_trades": 128,
+          "winning_trades": 41,
+          "losing_trades": 87,
+          "win_rate": 0.3203125,
+          "net_pnl": -19894.675368899974,
+          "gross_profit": 73011.0664107,
+          "gross_loss": 92905.7417796,
+          "max_drawdown": 33235.62659219999,
+          "profit_factor": 0.7858617240676462,
+          "expectancy": -155.42715131953128,
+          "total_costs": 38280.19516889998,
+          "timeframe": "4h",
+          "strategy_name": "Breakout"
+        },
+        "Mean_Reversion": {
+          "total_trades": 49,
+          "winning_trades": 26,
+          "losing_trades": 23,
+          "win_rate": 0.5306122448979592,
+          "net_pnl": -1878.2893299999973,
+          "gross_profit": 63456.20933000001,
+          "gross_loss": 65334.49866,
+          "max_drawdown": 16545.80594000001,
+          "profit_factor": 0.9712511863024376,
+          "expectancy": -38.33243530612185,
+          "total_costs": 15028.209330000003,
+          "timeframe": "4h",
+          "strategy_name": "Mean_Reversion"
+        },
+        "Ichimoku_ADX": {
+          "total_trades": 1090,
+          "winning_trades": 349,
+          "losing_trades": 741,
+          "win_rate": 0.3201834862385321,
+          "net_pnl": -373336.4641899999,
+          "gross_profit": 271110.1507900001,
+          "gross_loss": 644446.6149800002,
+          "max_drawdown": 383313.6095599999,
+          "profit_factor": 0.42068674811553436,
+          "expectancy": -342.5105176055047,
+          "total_costs": 335373.8841899997,
+          "timeframe": "4h",
+          "strategy_name": "Ichimoku_ADX"
+        }
+      },
+      "data_points": 2201,
+      "date_range": {
+        "start": "1729958400000",
+        "end": "1761638400000"
+      }
+    },
+    "1d": {
+      "original_ema_rsi": {
+        "total_trades": 13,
+        "winning_trades": 5,
+        "losing_trades": 8,
+        "win_rate": 0.38461538461538464,
+        "net_pnl": -237.24884080002812,
+        "gross_profit": 18924.846280799997,
+        "gross_loss": 19162.095121600025,
+        "max_drawdown": 12638.349174400017,
+        "profit_factor": 0.9876188465147219,
+        "expectancy": -18.24991083077134,
+        "total_costs": 4117.741840800001,
+        "timeframe": "1d",
+        "strategy_name": "EMA_RSI"
+      },
+      "enhanced_ema_rsi": {
+        "total_trades": 5,
+        "winning_trades": 2,
+        "losing_trades": 3,
+        "win_rate": 0.4,
+        "net_pnl": 1019.8594563999859,
+        "gross_profit": 8061.314855199997,
+        "gross_loss": 7041.455398800011,
+        "max_drawdown": 4907.194979400003,
+        "profit_factor": 1.144836457612696,
+        "expectancy": 203.9718912799974,
+        "total_costs": 1610.9429436,
+        "timeframe": "1d",
+        "strategy_name": "EMA_RSI"
+      },
+      "other_strategies": {
+        "Momentum": {
+          "total_trades": 15,
+          "winning_trades": 5,
+          "losing_trades": 10,
+          "win_rate": 0.3333333333333333,
+          "net_pnl": -41955.13247999999,
+          "gross_profit": 28397.425610000013,
+          "gross_loss": 70352.55809,
+          "max_drawdown": 48158.512989999996,
+          "profit_factor": 0.4036445351947544,
+          "expectancy": -2797.008832,
+          "total_costs": 4786.00248,
+          "timeframe": "1d",
+          "strategy_name": "Momentum"
+        },
+        "Breakout": {
+          "total_trades": 25,
+          "winning_trades": 7,
+          "losing_trades": 18,
+          "win_rate": 0.28,
+          "net_pnl": -3773.2966788000494,
+          "gross_profit": 20461.87783159996,
+          "gross_loss": 24235.17451040001,
+          "max_drawdown": 12410.21108600001,
+          "profit_factor": 0.8443049511700103,
+          "expectancy": -150.93186715200181,
+          "total_costs": 7942.207678799998,
+          "timeframe": "1d",
+          "strategy_name": "Breakout"
+        },
+        "Mean_Reversion": {
+          "total_trades": 8,
+          "winning_trades": 6,
+          "losing_trades": 2,
+          "win_rate": 0.75,
+          "net_pnl": 26537.15777000002,
+          "gross_profit": 41295.29930000001,
+          "gross_loss": 14758.14152999999,
+          "max_drawdown": 12463.529249999994,
+          "profit_factor": 2.798136826107538,
+          "expectancy": 3317.144721250003,
+          "total_costs": 2543.69223,
+          "timeframe": "1d",
+          "strategy_name": "Mean_Reversion"
+        },
+        "Ichimoku_ADX": {
+          "total_trades": 144,
+          "winning_trades": 57,
+          "losing_trades": 87,
+          "win_rate": 0.3958333333333333,
+          "net_pnl": -69356.66712999997,
+          "gross_profit": 101505.12787999999,
+          "gross_loss": 170861.79501,
+          "max_drawdown": 80450.54775999997,
+          "profit_factor": 0.59407738209738,
+          "expectancy": -481.64352173611144,
+          "total_costs": 45066.16712999997,
+          "timeframe": "1d",
+          "strategy_name": "Ichimoku_ADX"
+        }
+      },
+      "data_points": 367,
+      "date_range": {
+        "start": "1729987200000",
+        "end": "1761609600000"
+      }
+    }
+  }
+}

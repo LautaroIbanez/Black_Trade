@@ -2,6 +2,84 @@
 
 This document provides comprehensive guidelines for extending the `StrategyBase` class and implementing new trading strategies in the Black Trade system.
 
+## Available Strategies
+
+The Black Trade system includes a comprehensive catalog of trading strategies optimized for different timeframes and market conditions:
+
+### Core Strategies
+
+1. **EMA RSI Strategy** (`EMARSIStrategy`)
+   - **Fast Variant**: 8/21 EMAs, optimized for scalping (1m-5m)
+   - **Standard Variant**: 12/26 EMAs, for intraday trading (1h-4h)
+   - **Swing Variant**: 21/50 EMAs, for daily timeframes
+   - Uses RSI for momentum confirmation and signal persistence
+
+2. **Momentum Strategy** (`MomentumStrategy`)
+   - **Fast Variant**: 8/17/6 MACD, 9-period RSI
+   - **Standard Variant**: 12/26/9 MACD, 14-period RSI
+   - **Swing Variant**: 19/39/15 MACD, 21-period RSI
+   - Combines MACD and RSI for momentum detection
+
+3. **Breakout Strategy** (`BreakoutStrategy`)
+   - **Short-term**: 10-period lookback, 1.5x BB standard deviation
+   - **Standard**: 20-period lookback, 2.0x BB standard deviation
+   - **Long-term**: 50-period lookback, 2.5x BB standard deviation
+   - Volatility-based breakout detection with trailing stops
+
+4. **Mean Reversion Strategy** (`MeanReversionStrategy`)
+   - **Fast Variant**: 10-period BB, 9-period RSI
+   - **Standard Variant**: 20-period BB, 14-period RSI
+   - **Swing Variant**: 50-period BB, 21-period RSI
+   - Bollinger Bands with RSI confirmation
+
+5. **Ichimoku Strategy** (`IchimokuStrategy`)
+   - **Fast Variant**: 5/13/26 periods, 9-period ADX
+   - **Standard Variant**: 9/26/52 periods, 14-period ADX
+   - **Swing Variant**: 18/52/104 periods, 21-period ADX
+   - Cloud analysis with ADX trend strength confirmation
+
+### Advanced Strategies
+
+6. **Bollinger Breakout Strategy** (`BollingerBreakoutStrategy`)
+   - Volume-confirmed breakouts from Bollinger Bands
+   - RSI momentum confirmation
+   - Dynamic volatility-based exit levels
+
+7. **Ichimoku Trend Strategy** (`IchimokuTrendStrategy`)
+   - Pure trend-following using Ichimoku cloud analysis
+   - Trend strength and cloud thickness filters
+   - Cloud color and position analysis
+
+8. **RSI Divergence Strategy** (`RSIDivergenceStrategy`)
+   - Detects price/RSI divergences for reversal signals
+   - Volume confirmation for signal strength
+   - Configurable divergence sensitivity
+
+9. **MACD Crossover Strategy** (`MACDCrossoverStrategy`)
+   - MACD line and signal line crossovers
+   - Histogram momentum confirmation
+   - Zero-line cross detection (optional)
+
+10. **Stochastic Oscillator Strategy** (`StochasticStrategy`)
+    - %K and %D line crossovers
+    - Divergence detection between price and stochastic
+    - Overbought/oversold level analysis
+
+### Strategy Configuration
+
+All strategies are configured through `backend/config/strategies.json` with:
+- **Parameter variants** for different timeframes
+- **Commission and slippage** settings
+- **Enable/disable** functionality
+- **Strategy descriptions** and use cases
+
+### Timeframe Optimization
+
+Strategies are optimized for specific timeframes:
+- **Scalping (1m-5m)**: Fast parameters, tight stops, high frequency
+- **Intraday (1h-4h)**: Standard parameters, balanced risk/reward
+- **Swing (Daily)**: Longer periods, wider stops, trend-following
+
 ## Table of Contents
 
 1. [StrategyBase Overview](#strategybase-overview)

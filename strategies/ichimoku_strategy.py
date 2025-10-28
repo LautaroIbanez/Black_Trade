@@ -158,6 +158,98 @@ class IchimokuStrategy(StrategyBase):
             "max": max_price
         }
     
+    def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
+        """
+        Calculate explicit take profit and stop loss levels for Ichimoku strategy.
+        Uses cloud levels and ADX strength to determine optimal exit points.
+        """
+        if df.empty or signal == 0:
+            return {"stop_loss": entry_price, "take_profit": entry_price}
+        
+        # Calculate Ichimoku components
+        df_temp = df.copy()
+        df_temp['tenkan_sen'] = (df_temp['high'].rolling(window=self.conversion_period).max() + 
+                                df_temp['low'].rolling(window=self.conversion_period).min()) / 2
+        df_temp['kijun_sen'] = (df_temp['high'].rolling(window=self.base_period).max() + 
+                               df_temp['low'].rolling(window=self.base_period).min()) / 2
+        df_temp['senkou_span_a'] = ((df_temp['tenkan_sen'] + df_temp['kijun_sen']) / 2).shift(self.displacement)
+        df_temp['senkou_span_b'] = ((df_temp['high'].rolling(window=self.leading_span_b).max() + 
+                                    df_temp['low'].rolling(window=self.leading_span_b).min()) / 2).shift(self.displacement)
+        
+        tenkan_sen = float(df_temp['tenkan_sen'].iloc[-1])
+        kijun_sen = float(df_temp['kijun_sen'].iloc[-1])
+        senkou_span_a = float(df_temp['senkou_span_a'].iloc[-1])
+        senkou_span_b = float(df_temp['senkou_span_b'].iloc[-1])
+        
+        # Calculate cloud levels
+        cloud_top = max(senkou_span_a, senkou_span_b)
+        cloud_bottom = min(senkou_span_a, senkou_span_b)
+        cloud_thickness = cloud_top - cloud_bottom
+        
+        # Calculate ADX for momentum strength
+        adx = self._calculate_adx(df_temp, self.adx_period)
+        current_adx = float(adx.iloc[-1]) if not adx.empty else 25.0
+        
+        # Calculate ATR for volatility
+        atr = self._calculate_atr(df_temp, 14)
+        atr_value = float(atr.iloc[-1]) if not atr.empty else entry_price * 0.02
+        
+        # Adjust based on ADX strength
+        if current_adx > 50:  # Strong trend
+            adx_multiplier = 1.2
+        elif current_adx > 30:  # Moderate trend
+            adx_multiplier = 1.0
+        else:  # Weak trend
+            adx_multiplier = 0.8
+        
+        # Adjust based on cloud thickness
+        if cloud_thickness > atr_value * 2:  # Thick cloud - wider stops
+            cloud_multiplier = 1.3
+        elif cloud_thickness < atr_value * 0.5:  # Thin cloud - tighter stops
+            cloud_multiplier = 0.7
+        else:  # Normal cloud
+            cloud_multiplier = 1.0
+        
+        # Calculate levels
+        if signal == 1:  # Buy signal - above cloud
+            # Stop loss below cloud or Tenkan-sen
+            cloud_stop = cloud_bottom * 0.98  # 2% below cloud bottom
+            tenkan_stop = tenkan_sen * 0.98  # 2% below Tenkan-sen
+            atr_stop = entry_price - (atr_value * 2.5)  # 2.5 ATR below
+            stop_loss = max(cloud_stop, tenkan_stop, atr_stop)
+            
+            # Take profit above cloud or ATR-based
+            cloud_target = cloud_top * 1.05  # 5% above cloud top
+            atr_target = entry_price + (atr_value * 4)  # 4 ATR above
+            take_profit = min(cloud_target, atr_target)
+            
+        else:  # Sell signal - below cloud
+            # Stop loss above cloud or Tenkan-sen
+            cloud_stop = cloud_top * 1.02  # 2% above cloud top
+            tenkan_stop = tenkan_sen * 1.02  # 2% above Tenkan-sen
+            atr_stop = entry_price + (atr_value * 2.5)  # 2.5 ATR above
+            stop_loss = min(cloud_stop, tenkan_stop, atr_stop)
+            
+            # Take profit below cloud or ATR-based
+            cloud_target = cloud_bottom * 0.95  # 5% below cloud bottom
+            atr_target = entry_price - (atr_value * 4)  # 4 ATR below
+            take_profit = max(cloud_target, atr_target)
+        
+        # Apply multipliers
+        combined_multiplier = (adx_multiplier + cloud_multiplier) / 2
+        
+        if signal == 1:
+            stop_loss = entry_price - ((entry_price - stop_loss) * combined_multiplier)
+            take_profit = entry_price + ((take_profit - entry_price) * combined_multiplier)
+        else:
+            stop_loss = entry_price + ((stop_loss - entry_price) * combined_multiplier)
+            take_profit = entry_price - ((entry_price - take_profit) * combined_multiplier)
+        
+        return {
+            "stop_loss": stop_loss,
+            "take_profit": take_profit
+        }
+    
     def risk_targets(self, df: pd.DataFrame, signal: int, current_price: float) -> Dict[str, float]:
         """
         Calculate adaptive risk targets for Ichimoku strategy.

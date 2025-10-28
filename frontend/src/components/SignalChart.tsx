@@ -288,11 +288,12 @@ const SignalChart: React.FC<SignalChartProps> = ({
       const rec = chartData.recommendation;
       
       // Entry range
-      const entryMinY = priceToY(rec.entry_range.min);
-      const entryMaxY = priceToY(rec.entry_range.max);
-      
+      const yA = priceToY(rec.entry_range.min);
+      const yB = priceToY(rec.entry_range.max);
+      const topY = Math.min(yA, yB);
+      const heightY = Math.max(yA, yB) - topY;
       ctx.fillStyle = 'rgba(33, 150, 243, 0.2)';
-      ctx.fillRect(chartX, entryMinY, chartWidth, entryMaxY - entryMinY);
+      ctx.fillRect(chartX, topY, chartWidth, heightY);
       
       // Stop loss
       const stopLossY = priceToY(rec.stop_loss);

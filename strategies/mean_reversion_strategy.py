@@ -135,6 +135,81 @@ class MeanReversionStrategy(StrategyBase):
             "max": max_price
         }
     
+    def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
+        """
+        Calculate explicit take profit and stop loss levels for Mean Reversion strategy.
+        Uses Bollinger Bands and RSI to determine optimal exit points.
+        """
+        if df.empty or signal == 0:
+            return {"stop_loss": entry_price, "take_profit": entry_price}
+        
+        # Calculate Bollinger Bands
+        df_temp = df.copy()
+        df_temp['sma'] = df_temp['close'].rolling(window=self.period).mean()
+        df_temp['std'] = df_temp['close'].rolling(window=self.period).std()
+        df_temp['upper_band'] = df_temp['sma'] + (self.bb_std * df_temp['std'])
+        df_temp['lower_band'] = df_temp['sma'] - (self.bb_std * df_temp['std'])
+        
+        upper_band = float(df_temp['upper_band'].iloc[-1])
+        lower_band = float(df_temp['lower_band'].iloc[-1])
+        sma = float(df_temp['sma'].iloc[-1])
+        
+        # Calculate RSI for momentum adjustment
+        rsi = self._calculate_rsi(df_temp['close'], self.rsi_period)
+        current_rsi = float(rsi.iloc[-1]) if not rsi.empty else 50.0
+        
+        # Calculate ATR for volatility
+        atr = self._calculate_atr(df_temp, 14)
+        atr_value = float(atr.iloc[-1]) if not atr.empty else entry_price * 0.02
+        
+        # Adjust based on RSI momentum
+        if current_rsi > 80:  # Very overbought - tighter stops
+            rsi_multiplier = 0.7
+        elif current_rsi < 20:  # Very oversold - wider stops
+            rsi_multiplier = 1.3
+        elif current_rsi > 70:  # Overbought
+            rsi_multiplier = 0.8
+        elif current_rsi < 30:  # Oversold
+            rsi_multiplier = 1.2
+        else:  # Normal range
+            rsi_multiplier = 1.0
+        
+        # Calculate levels
+        if signal == 1:  # Buy signal (oversold bounce)
+            # Stop loss below lower band or ATR-based
+            band_stop = lower_band * 0.98  # 2% below lower band
+            atr_stop = entry_price - (atr_value * 2)  # 2 ATR below
+            stop_loss = max(band_stop, atr_stop)
+            
+            # Take profit at SMA or upper band
+            sma_target = sma  # Target the mean
+            band_target = upper_band * 0.98  # 2% below upper band
+            take_profit = min(sma_target, band_target)
+            
+        else:  # Sell signal (overbought drop)
+            # Stop loss above upper band or ATR-based
+            band_stop = upper_band * 1.02  # 2% above upper band
+            atr_stop = entry_price + (atr_value * 2)  # 2 ATR above
+            stop_loss = min(band_stop, atr_stop)
+            
+            # Take profit at SMA or lower band
+            sma_target = sma  # Target the mean
+            band_target = lower_band * 1.02  # 2% above lower band
+            take_profit = max(sma_target, band_target)
+        
+        # Apply RSI multiplier
+        if signal == 1:
+            stop_loss = entry_price - ((entry_price - stop_loss) * rsi_multiplier)
+            take_profit = entry_price + ((take_profit - entry_price) * rsi_multiplier)
+        else:
+            stop_loss = entry_price + ((stop_loss - entry_price) * rsi_multiplier)
+            take_profit = entry_price - ((entry_price - take_profit) * rsi_multiplier)
+        
+        return {
+            "stop_loss": stop_loss,
+            "take_profit": take_profit
+        }
+    
     def risk_targets(self, df: pd.DataFrame, signal: int, current_price: float) -> Dict[str, float]:
         """
         Calculate adaptive risk targets for Mean Reversion strategy.

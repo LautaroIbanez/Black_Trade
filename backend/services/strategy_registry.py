@@ -9,6 +9,11 @@ from strategies.ichimoku_strategy import IchimokuStrategy
 from strategies.breakout_strategy import BreakoutStrategy
 from strategies.mean_reversion_strategy import MeanReversionStrategy
 from strategies.momentum_strategy import MomentumStrategy
+from strategies.bollinger_breakout_strategy import BollingerBreakoutStrategy
+from strategies.ichimoku_trend_strategy import IchimokuTrendStrategy
+from strategies.rsi_divergence_strategy import RSIDivergenceStrategy
+from strategies.macd_crossover_strategy import MACDCrossoverStrategy
+from strategies.stochastic_strategy import StochasticStrategy
 
 
 @dataclass
@@ -35,7 +40,12 @@ class StrategyRegistry:
             'IchimokuStrategy': IchimokuStrategy,
             'BreakoutStrategy': BreakoutStrategy,
             'MeanReversionStrategy': MeanReversionStrategy,
-            'MomentumStrategy': MomentumStrategy
+            'MomentumStrategy': MomentumStrategy,
+            'BollingerBreakoutStrategy': BollingerBreakoutStrategy,
+            'IchimokuTrendStrategy': IchimokuTrendStrategy,
+            'RSIDivergenceStrategy': RSIDivergenceStrategy,
+            'MACDCrossoverStrategy': MACDCrossoverStrategy,
+            'StochasticStrategy': StochasticStrategy
         }
         self._load_config()
     

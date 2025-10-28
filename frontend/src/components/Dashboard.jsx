@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { getRecommendation, refreshData } from '../services/api'
 import SignalChart from './SignalChart'
+import TradeSummary from './TradeSummary'
 import './Dashboard.css'
 
 function Dashboard() {
@@ -25,20 +26,21 @@ function Dashboard() {
     }
   }
 
-  const handleChartDataLoad = (data) => {
+  // Memorized callbacks to prevent unnecessary re-renders
+  const handleChartDataLoad = useCallback((data) => {
     setChartData(data)
     setChartLoading(false)
-  }
+  }, [])
 
-  const handleChartError = (error) => {
+  const handleChartError = useCallback((error) => {
     console.error('Chart error:', error)
     setChartLoading(false)
-  }
+  }, [])
 
-  const handleTimeframeChange = (timeframe) => {
+  const handleTimeframeChange = useCallback((timeframe) => {
     setSelectedTimeframe(timeframe)
     setChartLoading(true)
-  }
+  }, [])
 
   useEffect(() => {
     handleRefresh()
@@ -94,6 +96,14 @@ function Dashboard() {
           className="dashboard-chart"
         />
       </div>
+
+      {/* Trade Summary Section */}
+      {recommendation && (
+        <TradeSummary 
+          recommendation={recommendation}
+          className="dashboard-trade-summary"
+        />
+      )}
 
       {/* Recommendation Section */}
       {recommendation && (

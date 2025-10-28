@@ -24,6 +24,22 @@ class StrategyBase(ABC):
         """Generate trade list from signals."""
         pass
     
+    @abstractmethod
+    def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
+        """
+        Calculate explicit take profit and stop loss levels for a trade.
+        This method must be implemented by each strategy to define clear exit rules.
+        
+        Args:
+            df: DataFrame with OHLCV data and indicators
+            signal: Signal value (-1, 0, 1)
+            entry_price: Price at which the trade was entered
+            
+        Returns:
+            Dict with 'take_profit' and 'stop_loss' levels
+        """
+        pass
+    
     def generate_signal(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Generate current signal from the latest candle data."""
         if df.empty:
@@ -96,9 +112,35 @@ class StrategyBase(ABC):
         Returns:
             Dict with 'min' and 'max' entry prices
         """
-        if df.empty or signal == 0:
-            current_price = float(df['close'].iloc[-1]) if not df.empty else 0.0
-            return {"min": current_price, "max": current_price}
+        if df.empty:
+            return {"min": 0.0, "max": 0.0}
+        if signal == 0:
+            # Neutral signal: derive a non-degenerate range from recent volatility
+            current_price = float(df['close'].iloc[-1])
+            atr = self._calculate_atr(df, 14)
+            atr_value = float(atr.iloc[-1]) if not atr.empty else 0.0
+            # Use close-to-close standard deviation as secondary measure
+            close_returns = df['close'].pct_change().rolling(window=20).std()
+            std_value = float(close_returns.iloc[-1]) if not close_returns.empty and pd.notna(close_returns.iloc[-1]) else 0.0
+            # Convert std of returns to price volatility estimate
+            std_price = current_price * std_value
+            # Combine signals: take a blended buffer ensuring a reasonable floor
+            base_buffer = 0.0
+            if atr_value > 0 and std_price > 0:
+                base_buffer = 0.25 * atr_value + 0.75 * std_price
+            elif atr_value > 0:
+                base_buffer = 0.5 * atr_value
+            elif std_price > 0:
+                base_buffer = std_price
+            else:
+                base_buffer = max(current_price * 0.002, 1e-6)  # 0.2% fallback
+            # Produce asymmetric but bounded range around price
+            lower = max(0.0, current_price - base_buffer * 0.9)
+            upper = current_price + base_buffer * 1.1
+            # Ensure non-degenerate ordering
+            if upper <= lower:
+                upper = lower + max(current_price * 0.001, 1e-6)
+            return {"min": lower, "max": upper}
         
         current_price = float(df['close'].iloc[-1])
         
@@ -136,7 +178,7 @@ class StrategyBase(ABC):
     def risk_targets(self, df: pd.DataFrame, signal: int, current_price: float) -> Dict[str, float]:
         """
         Calculate adaptive stop loss and take profit levels based on volatility and market conditions.
-        Override in subclasses for strategy-specific risk management.
+        This method delegates to calculate_exit_levels for strategy-specific implementation.
         
         Args:
             df: DataFrame with OHLCV data and indicators
@@ -149,6 +191,14 @@ class StrategyBase(ABC):
         if df.empty or signal == 0:
             return {"stop_loss": current_price, "take_profit": current_price}
         
+        # Use strategy-specific exit level calculation
+        return self.calculate_exit_levels(df, signal, current_price)
+    
+    def _default_exit_levels(self, df: pd.DataFrame, signal: int, current_price: float) -> Dict[str, float]:
+        """
+        Default implementation for exit levels using ATR-based volatility.
+        Used as fallback when strategies don't override calculate_exit_levels.
+        """
         # Calculate ATR for volatility-based levels
         atr = self._calculate_atr(df, 14)
         atr_value = float(atr.iloc[-1]) if not atr.empty else current_price * 0.02

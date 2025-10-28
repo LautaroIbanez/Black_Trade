@@ -1,19 +1,194 @@
 {
   "strategies": [
     {
-      "name": "EMA_RSI",
+      "name": "EMA_RSI_Fast",
       "enabled": true,
       "class_name": "EMARSIStrategy",
       "parameters": {
-        "fast_period": 15,
-        "slow_period": 30
+        "fast_period": 8,
+        "slow_period": 21,
+        "rsi_period": 14,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "signal_persistence": 2,
+        "volume_confirmation": true
       },
       "commission": 0.001,
       "slippage": 0.0005,
-      "description": "EMA Crossover with RSI filter"
+      "description": "Fast EMA/RSI for scalping (1m-5m timeframes)"
     },
     {
-      "name": "Ichimoku_ADX",
+      "name": "EMA_RSI_Standard",
+      "enabled": true,
+      "class_name": "EMARSIStrategy",
+      "parameters": {
+        "fast_period": 12,
+        "slow_period": 26,
+        "rsi_period": 14,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "signal_persistence": 3,
+        "volume_confirmation": true
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Standard EMA/RSI for intraday (1h-4h timeframes)"
+    },
+    {
+      "name": "EMA_RSI_Swing",
+      "enabled": true,
+      "class_name": "EMARSIStrategy",
+      "parameters": {
+        "fast_period": 21,
+        "slow_period": 50,
+        "rsi_period": 21,
+        "rsi_oversold": 25,
+        "rsi_overbought": 75,
+        "signal_persistence": 5,
+        "volume_confirmation": false
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Swing trading EMA/RSI for daily timeframes"
+    },
+    {
+      "name": "Momentum_Fast",
+      "enabled": true,
+      "class_name": "MomentumStrategy",
+      "parameters": {
+        "rsi_period": 9,
+        "macd_fast": 8,
+        "macd_slow": 17,
+        "macd_signal": 6
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Fast momentum for scalping strategies"
+    },
+    {
+      "name": "Momentum_Standard",
+      "enabled": true,
+      "class_name": "MomentumStrategy",
+      "parameters": {
+        "rsi_period": 14,
+        "macd_fast": 12,
+        "macd_slow": 26,
+        "macd_signal": 9
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Standard momentum for intraday trading"
+    },
+    {
+      "name": "Momentum_Swing",
+      "enabled": true,
+      "class_name": "MomentumStrategy",
+      "parameters": {
+        "rsi_period": 21,
+        "macd_fast": 19,
+        "macd_slow": 39,
+        "macd_signal": 15
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Swing momentum for daily timeframes"
+    },
+    {
+      "name": "Breakout_Short",
+      "enabled": true,
+      "class_name": "BreakoutStrategy",
+      "parameters": {
+        "lookback": 10,
+        "multiplier": 1.5,
+        "trailing_percent": 0.01
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Short-term breakout strategy"
+    },
+    {
+      "name": "Breakout_Standard",
+      "enabled": true,
+      "class_name": "BreakoutStrategy",
+      "parameters": {
+        "lookback": 20,
+        "multiplier": 2.0,
+        "trailing_percent": 0.01
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Standard breakout strategy"
+    },
+    {
+      "name": "Breakout_Long",
+      "enabled": true,
+      "class_name": "BreakoutStrategy",
+      "parameters": {
+        "lookback": 50,
+        "multiplier": 2.5,
+        "trailing_percent": 0.01
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Long-term breakout strategy"
+    },
+    {
+      "name": "Mean_Reversion_Fast",
+      "enabled": true,
+      "class_name": "MeanReversionStrategy",
+      "parameters": {
+        "period": 10,
+        "bb_std": 1.5,
+        "rsi_period": 9
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Fast mean reversion for scalping"
+    },
+    {
+      "name": "Mean_Reversion_Standard",
+      "enabled": true,
+      "class_name": "MeanReversionStrategy",
+      "parameters": {
+        "period": 20,
+        "bb_std": 2.0,
+        "rsi_period": 14
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Standard mean reversion strategy"
+    },
+    {
+      "name": "Mean_Reversion_Swing",
+      "enabled": true,
+      "class_name": "MeanReversionStrategy",
+      "parameters": {
+        "period": 50,
+        "bb_std": 2.5,
+        "rsi_period": 21
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Swing mean reversion for daily timeframes"
+    },
+    {
+      "name": "Ichimoku_Fast",
+      "enabled": true,
+      "class_name": "IchimokuStrategy",
+      "parameters": {
+        "conversion_period": 5,
+        "base_period": 13,
+        "leading_span_b": 26,
+        "displacement": 13,
+        "adx_period": 9,
+        "adx_threshold": 20
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Fast Ichimoku for short-term trading"
+    },
+    {
+      "name": "Ichimoku_Standard",
       "enabled": true,
       "class_name": "IchimokuStrategy",
       "parameters": {
@@ -26,47 +201,98 @@
       },
       "commission": 0.001,
       "slippage": 0.0005,
-      "description": "Ichimoku Cloud with ADX confirmation"
+      "description": "Standard Ichimoku for intraday trading"
     },
     {
-      "name": "Breakout",
+      "name": "Ichimoku_Swing",
       "enabled": true,
-      "class_name": "BreakoutStrategy",
+      "class_name": "IchimokuStrategy",
       "parameters": {
-        "lookback": 20,
-        "multiplier": 2.0,
-        "trailing_percent": 0.01
+        "conversion_period": 18,
+        "base_period": 52,
+        "leading_span_b": 104,
+        "displacement": 52,
+        "adx_period": 21,
+        "adx_threshold": 30
       },
       "commission": 0.001,
       "slippage": 0.0005,
-      "description": "Volatility breakout with trailing stop"
+      "description": "Swing Ichimoku for daily timeframes"
     },
     {
-      "name": "Mean_Reversion",
+      "name": "Bollinger_Breakout",
       "enabled": true,
-      "class_name": "MeanReversionStrategy",
+      "class_name": "BollingerBreakoutStrategy",
       "parameters": {
         "period": 20,
         "bb_std": 2.0,
+        "volume_threshold": 1.5,
         "rsi_period": 14
       },
       "commission": 0.001,
       "slippage": 0.0005,
-      "description": "Mean reversion with Bollinger Bands and RSI"
+      "description": "Bollinger Bands breakout with volume confirmation"
     },
     {
-      "name": "Momentum",
+      "name": "Ichimoku_Trend",
       "enabled": true,
-      "class_name": "MomentumStrategy",
+      "class_name": "IchimokuTrendStrategy",
       "parameters": {
-        "rsi_period": 14,
-        "macd_fast": 12,
-        "macd_slow": 26,
-        "macd_signal": 9
+        "conversion_period": 9,
+        "base_period": 26,
+        "leading_span_b": 52,
+        "displacement": 26,
+        "trend_strength": 0.6,
+        "cloud_thickness": 0.5
       },
       "commission": 0.001,
       "slippage": 0.0005,
-      "description": "Momentum strategy with MACD and RSI"
+      "description": "Ichimoku trend-following strategy"
+    },
+    {
+      "name": "RSI_Divergence",
+      "enabled": true,
+      "class_name": "RSIDivergenceStrategy",
+      "parameters": {
+        "rsi_period": 14,
+        "divergence_lookback": 5,
+        "min_divergence": 0.1,
+        "volume_confirmation": true
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "RSI divergence strategy for reversals"
+    },
+    {
+      "name": "MACD_Crossover",
+      "enabled": true,
+      "class_name": "MACDCrossoverStrategy",
+      "parameters": {
+        "fast_period": 12,
+        "slow_period": 26,
+        "signal_period": 9,
+        "histogram_threshold": 0.001,
+        "zero_line_cross": true
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "MACD crossover with histogram confirmation"
+    },
+    {
+      "name": "Stochastic_Oscillator",
+      "enabled": true,
+      "class_name": "StochasticStrategy",
+      "parameters": {
+        "k_period": 14,
+        "d_period": 3,
+        "smooth_k": 3,
+        "overbought": 80,
+        "oversold": 20,
+        "divergence_lookback": 5
+      },
+      "commission": 0.001,
+      "slippage": 0.0005,
+      "description": "Stochastic oscillator with divergence detection"
     }
   ]
 }

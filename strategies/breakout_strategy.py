@@ -127,6 +127,79 @@ class BreakoutStrategy(StrategyBase):
             "max": max_price
         }
     
+    def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
+        """
+        Calculate explicit take profit and stop loss levels for Breakout strategy.
+        Uses Bollinger Bands and volatility to determine optimal exit points.
+        """
+        if df.empty or signal == 0:
+            return {"stop_loss": entry_price, "take_profit": entry_price}
+        
+        # Calculate Bollinger Bands
+        df_temp = df.copy()
+        df_temp['sma'] = df_temp['close'].rolling(window=self.period).mean()
+        df_temp['std'] = df_temp['close'].rolling(window=self.period).std()
+        df_temp['upper_band'] = df_temp['sma'] + (self.bb_std * df_temp['std'])
+        df_temp['lower_band'] = df_temp['sma'] - (self.bb_std * df_temp['std'])
+        
+        upper_band = float(df_temp['upper_band'].iloc[-1])
+        lower_band = float(df_temp['lower_band'].iloc[-1])
+        band_width = upper_band - lower_band
+        
+        # Calculate ATR for volatility
+        atr = self._calculate_atr(df_temp, 14)
+        atr_value = float(atr.iloc[-1]) if not atr.empty else entry_price * 0.02
+        
+        # Adjust based on volatility
+        volatility_multiplier = min(atr_value / entry_price, 0.05) / 0.02  # Cap at 5%
+        volatility_multiplier = max(volatility_multiplier, 0.5)  # Minimum 0.5x
+        
+        # Adjust based on breakout strength
+        if band_width > df_temp['std'].iloc[-1] * 2:  # Strong breakout
+            breakout_multiplier = 1.2
+        elif band_width < df_temp['std'].iloc[-1] * 1.5:  # Weak breakout
+            breakout_multiplier = 0.8
+        else:  # Normal breakout
+            breakout_multiplier = 1.0
+        
+        # Calculate levels
+        if signal == 1:  # Buy breakout
+            # Stop loss below the breakout level (upper band) or ATR-based
+            band_stop = upper_band * 0.98  # 2% below upper band
+            atr_stop = entry_price - (atr_value * 2)  # 2 ATR below
+            stop_loss = max(band_stop, atr_stop)
+            
+            # Take profit based on band width or ATR
+            band_target = upper_band + (band_width * 0.5)  # Half band width above
+            atr_target = entry_price + (atr_value * 3)  # 3 ATR above
+            take_profit = min(band_target, atr_target)
+            
+        else:  # Sell breakout
+            # Stop loss above the breakout level (lower band) or ATR-based
+            band_stop = lower_band * 1.02  # 2% above lower band
+            atr_stop = entry_price + (atr_value * 2)  # 2 ATR above
+            stop_loss = min(band_stop, atr_stop)
+            
+            # Take profit based on band width or ATR
+            band_target = lower_band - (band_width * 0.5)  # Half band width below
+            atr_target = entry_price - (atr_value * 3)  # 3 ATR below
+            take_profit = max(band_target, atr_target)
+        
+        # Apply multipliers
+        combined_multiplier = volatility_multiplier * breakout_multiplier
+        
+        if signal == 1:
+            stop_loss = entry_price - ((entry_price - stop_loss) * combined_multiplier)
+            take_profit = entry_price + ((take_profit - entry_price) * combined_multiplier)
+        else:
+            stop_loss = entry_price + ((stop_loss - entry_price) * combined_multiplier)
+            take_profit = entry_price - ((entry_price - take_profit) * combined_multiplier)
+        
+        return {
+            "stop_loss": stop_loss,
+            "take_profit": take_profit
+        }
+    
     def risk_targets(self, df: pd.DataFrame, signal: int, current_price: float) -> Dict[str, float]:
         """
         Calculate adaptive risk targets for Breakout strategy.

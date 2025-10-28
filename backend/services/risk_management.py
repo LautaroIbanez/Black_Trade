@@ -29,6 +29,25 @@ class RiskTarget:
 
 
 @dataclass
+class TradeManagement:
+    """Trade management information for active positions."""
+    entry_price: float
+    stop_loss: float
+    take_profit: float
+    current_price: float
+    unrealized_pnl: float
+    risk_reward_ratio: float
+    max_risk_pct: float
+    potential_reward_pct: float
+    strategy_name: str
+    signal_strength: float
+    confidence: float
+    timeframe: str
+    status: str  # "OPEN", "HIT_SL", "HIT_TP", "MANUAL_CLOSE"
+    entry_time: str
+    last_updated: str
+
+@dataclass
 class AggregatedRiskTargets:
     """Aggregated risk targets from multiple strategies."""
     stop_loss: float
@@ -37,6 +56,7 @@ class AggregatedRiskTargets:
     risk_reward_ratio: float
     strategy_contributions: List[Dict[str, any]]
     support_resistance_analysis: Dict[str, any]
+    trade_management: Optional[TradeManagement] = None
 
 
 class RiskManagementService:
@@ -86,13 +106,22 @@ class RiskManagementService:
         # Prepare strategy contributions
         strategy_contributions = self._prepare_strategy_contributions(risk_targets)
         
+        # Create trade management information if we have active signals
+        trade_management = None
+        if risk_targets and current_price > 0:
+            trade_management = self._create_trade_management(
+                risk_targets, adjusted_stop_loss, adjusted_take_profit, 
+                current_price, confidence
+            )
+        
         return AggregatedRiskTargets(
             stop_loss=adjusted_stop_loss,
             take_profit=adjusted_take_profit,
             confidence=confidence,
             risk_reward_ratio=risk_reward_ratio,
             strategy_contributions=strategy_contributions,
-            support_resistance_analysis=sr_analysis
+            support_resistance_analysis=sr_analysis,
+            trade_management=trade_management
         )
     
     def _calculate_weighted_levels(self, risk_targets: List[RiskTarget]) -> Tuple[float, float, float]:
@@ -293,6 +322,52 @@ class RiskManagementService:
             "max_allowed_risk": max_risk,
             "min_required_reward": min_reward
         }
+    
+    def _create_trade_management(self, risk_targets: List[RiskTarget], 
+                               stop_loss: float, take_profit: float, 
+                               current_price: float, confidence: float) -> TradeManagement:
+        """Create trade management information for active positions."""
+        from datetime import datetime
+        
+        # Use the highest confidence strategy as primary
+        primary_strategy = max(risk_targets, key=lambda x: x.confidence)
+        
+        # Calculate entry price (use current price as entry for new positions)
+        entry_price = current_price
+        
+        # Calculate unrealized PnL (assuming we're in a position)
+        # This would need to be tracked separately in a real system
+        unrealized_pnl = 0.0  # Placeholder - would need actual position tracking
+        
+        # Calculate risk/reward ratios
+        if stop_loss != current_price and take_profit != current_price:
+            risk_amount = abs(current_price - stop_loss)
+            reward_amount = abs(take_profit - current_price)
+            risk_reward_ratio = reward_amount / risk_amount if risk_amount > 0 else 0.0
+        else:
+            risk_reward_ratio = 0.0
+        
+        # Calculate percentage risks
+        max_risk_pct = abs(current_price - stop_loss) / current_price * 100 if current_price > 0 else 0
+        potential_reward_pct = abs(take_profit - current_price) / current_price * 100 if current_price > 0 else 0
+        
+        return TradeManagement(
+            entry_price=entry_price,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
+            current_price=current_price,
+            unrealized_pnl=unrealized_pnl,
+            risk_reward_ratio=risk_reward_ratio,
+            max_risk_pct=max_risk_pct,
+            potential_reward_pct=potential_reward_pct,
+            strategy_name=primary_strategy.strategy_name,
+            signal_strength=primary_strategy.strength,
+            confidence=confidence,
+            timeframe=primary_strategy.timeframe,
+            status="OPEN",
+            entry_time=datetime.now().isoformat(),
+            last_updated=datetime.now().isoformat()
+        )
 
 
 # Global instance

@@ -37,6 +37,7 @@ class RecommendationResult:
     strategy_details: List[Dict[str, Any]]
     signal_consensus: float
     risk_level: str
+    trade_management: Optional[Dict[str, Any]] = None
 
 
 class RecommendationService:
@@ -145,69 +146,121 @@ class RecommendationService:
         )
     
     def _calculate_aggregated_entry_range(self, signals: List[StrategySignal]) -> Dict[str, float]:
-        """Calculate aggregated entry range from multiple strategy signals."""
+        """Calculate aggregated entry range from multiple strategy signals.
+        Prioritize non-degenerate ranges; exclude empty/invalid ranges; apply robust fallbacks."""
         if not signals:
             return {"min": 0.0, "max": 0.0}
-        
+
+        # Filter out invalid or degenerate ranges
+        def is_valid_range(rng: Dict[str, float]) -> bool:
+            return isinstance(rng, dict) and 'min' in rng and 'max' in rng and isinstance(rng['min'], (int, float)) and isinstance(rng['max'], (int, float)) and rng['max'] > rng['min']
+
+        valid_signals = [s for s in signals if is_valid_range(s.entry_range)]
+        if not valid_signals:
+            # Try to coerce degenerate ranges into a minimal band around provided price
+            coerced_ranges = []
+            for s in signals:
+                price = float(s.price)
+                # 0.2% minimal band
+                buffer_ = max(price * 0.002, 1e-6)
+                coerced_ranges.append({"min": max(0.0, price - buffer_), "max": price + buffer_, "weight": s.confidence * s.score})
+            total_weight = sum(cr["weight"] for cr in coerced_ranges)
+            if total_weight > 0:
+                min_agg = sum((cr["min"] * cr["weight"]) for cr in coerced_ranges) / total_weight
+                max_agg = sum((cr["max"] * cr["weight"]) for cr in coerced_ranges) / total_weight
+                return {"min": min_agg, "max": max_agg}
+            # Final fallback
+            return {"min": 0.0, "max": 0.0}
+
         # Weight ranges by strategy confidence and score
         weighted_min = 0.0
         weighted_max = 0.0
         total_weight = 0.0
-        
-        for signal in signals:
-            weight = signal.confidence * signal.score
+
+        for signal in valid_signals:
+            weight = max(signal.confidence * signal.score, 1e-9)
             weighted_min += signal.entry_range['min'] * weight
             weighted_max += signal.entry_range['max'] * weight
             total_weight += weight
-        
-        if total_weight > 0:
-            return {
-                "min": weighted_min / total_weight,
-                "max": weighted_max / total_weight
-            }
-        else:
-            # Fallback to simple average
-            return {
-                "min": sum(s.entry_range['min'] for s in signals) / len(signals),
-                "max": sum(s.entry_range['max'] for s in signals) / len(signals)
-            }
+
+        if total_weight <= 0:
+            return {"min": 0.0, "max": 0.0}
+
+        agg = {"min": weighted_min / total_weight, "max": weighted_max / total_weight}
+        # Ensure ordering and a minimal positive width
+        if agg["max"] <= agg["min"]:
+            delta = max((agg["min"] + agg["max"]) * 0.0005, 1e-6)
+            agg["max"] = agg["min"] + delta
+        return agg
     
     def _analyze_signals(self, signals: List[StrategySignal], data: Dict[str, pd.DataFrame]) -> RecommendationResult:
-        """Analyze signals and generate final recommendation."""
+        """Analyze signals and generate final recommendation with improved neutral signal handling."""
         
         # Group signals by type
         buy_signals = [s for s in signals if s.signal == 1]
         sell_signals = [s for s in signals if s.signal == -1]
         hold_signals = [s for s in signals if s.signal == 0]
         
-        # Calculate consensus
+        # Calculate active vs neutral signal counts
+        active_signals = buy_signals + sell_signals
         total_signals = len(signals)
-        buy_ratio = len(buy_signals) / total_signals if total_signals > 0 else 0
-        sell_ratio = len(sell_signals) / total_signals if total_signals > 0 else 0
-        hold_ratio = len(hold_signals) / total_signals if total_signals > 0 else 0
+        active_count = len(active_signals)
+        hold_count = len(hold_signals)
         
-        # Determine primary action
-        if buy_ratio > sell_ratio and buy_ratio > hold_ratio:
+        # Apply neutral signal weighting - reduce influence when few active signals
+        if active_count > 0:
+            # Weight neutral signals less when there are active signals
+            neutral_weight_factor = min(0.3, active_count / max(total_signals, 1))  # Max 30% weight for neutrals
+            weighted_hold_count = hold_count * neutral_weight_factor
+        else:
+            # Only use neutrals if no active signals at all
+            weighted_hold_count = hold_count
+        
+        # Calculate consensus with weighted neutrals
+        effective_total = active_count + weighted_hold_count
+        buy_ratio = len(buy_signals) / effective_total if effective_total > 0 else 0
+        sell_ratio = len(sell_signals) / effective_total if effective_total > 0 else 0
+        hold_ratio = weighted_hold_count / effective_total if effective_total > 0 else 0
+        
+        # Determine primary action with minimum confidence threshold
+        min_confidence_threshold = 0.15  # Require at least 15% consensus for non-HOLD actions
+        
+        if buy_ratio > sell_ratio and buy_ratio > hold_ratio and buy_ratio >= min_confidence_threshold:
             action = "BUY"
             primary_signals = buy_signals
-        elif sell_ratio > buy_ratio and sell_ratio > hold_ratio:
+        elif sell_ratio > buy_ratio and sell_ratio > hold_ratio and sell_ratio >= min_confidence_threshold:
             action = "SELL"
             primary_signals = sell_signals
         else:
             action = "HOLD"
             primary_signals = hold_signals
         
-        # Calculate weighted confidence
+        # Calculate weighted confidence with enhanced scoring
         if primary_signals:
-            # Weight by strategy score and signal confidence
-            weighted_confidence = sum(s.confidence * s.score for s in primary_signals) / len(primary_signals)
+            # Enhanced confidence calculation considering signal strength and recency
+            confidence_scores = []
+            for s in primary_signals:
+                # Base confidence from strategy
+                base_conf = s.confidence * s.score
+                # Boost for active signals vs neutrals
+                signal_boost = 1.2 if s.signal != 0 else 0.8
+                # Additional boost for high-strength signals
+                strength_boost = 1.0 + (s.strength * 0.3)
+                final_conf = base_conf * signal_boost * strength_boost
+                confidence_scores.append(min(final_conf, 1.0))
+            
+            weighted_confidence = sum(confidence_scores) / len(confidence_scores)
             primary_strategy = max(primary_signals, key=lambda s: s.confidence * s.score).strategy_name
         else:
             weighted_confidence = 0.0
             primary_strategy = "None"
         
-        # Calculate signal consensus
-        signal_consensus = max(buy_ratio, sell_ratio, hold_ratio)
+        # Calculate signal consensus with active signal bias
+        if active_count > 0:
+            # When active signals exist, bias toward them
+            signal_consensus = max(buy_ratio, sell_ratio) * 1.5  # Boost active signal consensus
+        else:
+            signal_consensus = hold_ratio
         
         # Determine supporting strategies
         supporting_strategies = [s.strategy_name for s in primary_signals if s.strategy_name != primary_strategy]
@@ -224,11 +277,13 @@ class RecommendationService:
             )
             stop_loss = aggregated_risk.stop_loss
             take_profit = aggregated_risk.take_profit
+            trade_management = aggregated_risk.trade_management
         else:
             current_price = 0.0
             entry_range = {"min": 0.0, "max": 0.0}
             stop_loss = 0.0
             take_profit = 0.0
+            trade_management = None
         
         # Determine risk level
         risk_level = self._determine_risk_level(weighted_confidence, len(primary_signals))
@@ -263,7 +318,8 @@ class RecommendationService:
             supporting_strategies=supporting_strategies,
             strategy_details=strategy_details,
             signal_consensus=signal_consensus,
-            risk_level=risk_level
+            risk_level=risk_level,
+            trade_management=trade_management.__dict__ if trade_management else None
         )
     
     def _calculate_trade_levels(self, current_price: float, action: str, confidence: float) -> Tuple[Dict[str, float], float, float]:

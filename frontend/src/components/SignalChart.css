@@ -42,6 +42,23 @@
   border: 1px solid #26a69a;
 }
 
+.signal-chart__updating {
+  font-size: 12px;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid #ff9800;
+  margin-left: 10px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
 .signal-chart__metadata {
   display: flex;
   gap: 20px;

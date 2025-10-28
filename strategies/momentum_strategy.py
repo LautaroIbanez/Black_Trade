@@ -138,6 +138,92 @@ class MomentumStrategy(StrategyBase):
             "max": max_price
         }
     
+    def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
+        """
+        Calculate explicit take profit and stop loss levels for Momentum strategy.
+        Uses MACD histogram strength and RSI momentum to determine optimal exit points.
+        """
+        if df.empty or signal == 0:
+            return {"stop_loss": entry_price, "take_profit": entry_price}
+        
+        # Calculate MACD for range calculation
+        df_temp = df.copy()
+        macd_line, signal_line, histogram = self._calculate_macd(df_temp['close'])
+        df_temp['macd'] = macd_line
+        df_temp['macd_signal'] = signal_line
+        df_temp['macd_histogram'] = histogram
+        
+        current_macd = float(df_temp['macd'].iloc[-1])
+        current_signal = float(df_temp['macd_signal'].iloc[-1])
+        current_histogram = float(df_temp['macd_histogram'].iloc[-1])
+        
+        # Calculate RSI for momentum adjustment
+        rsi = self._calculate_rsi(df_temp['close'], self.rsi_period)
+        current_rsi = float(rsi.iloc[-1]) if not rsi.empty else 50.0
+        
+        # Calculate ATR for volatility
+        atr = self._calculate_atr(df_temp, 14)
+        atr_value = float(atr.iloc[-1]) if not atr.empty else entry_price * 0.02
+        
+        # Base range from MACD histogram strength
+        macd_strength = abs(current_histogram)
+        macd_distance = abs(current_macd - current_signal)
+        
+        # Adjust range based on RSI momentum
+        if current_rsi > 80:  # Very overbought - tighter range
+            rsi_multiplier = 0.3
+        elif current_rsi < 20:  # Very oversold - wider range
+            rsi_multiplier = 2.0
+        elif current_rsi > 70:  # Overbought - tighter range
+            rsi_multiplier = 0.6
+        elif current_rsi < 30:  # Oversold - wider range
+            rsi_multiplier = 1.4
+        else:  # Normal range
+            rsi_multiplier = 1.0
+        
+        # Adjust based on MACD distance
+        distance_multiplier = min(macd_distance / entry_price, 0.05) / 0.02  # Cap at 5%
+        distance_multiplier = max(distance_multiplier, 0.5)  # Minimum 0.5x
+        
+        # Combine adjustments
+        volatility_multiplier = (rsi_multiplier + distance_multiplier) / 2
+        
+        # Calculate levels
+        if signal == 1:  # Buy signal
+            # Stop loss based on MACD signal line or ATR
+            macd_stop = entry_price - (macd_distance * 0.5)  # Half MACD distance
+            atr_stop = entry_price - (atr_value * 2.5)  # 2.5 ATR below
+            stop_loss = max(macd_stop, atr_stop)
+            
+            # Take profit based on MACD strength or ATR
+            macd_target = entry_price + (macd_strength * 2)  # 2x MACD strength
+            atr_target = entry_price + (atr_value * 4)  # 4 ATR above
+            take_profit = min(macd_target, atr_target)
+            
+        else:  # Sell signal
+            # Stop loss based on MACD signal line or ATR
+            macd_stop = entry_price + (macd_distance * 0.5)  # Half MACD distance
+            atr_stop = entry_price + (atr_value * 2.5)  # 2.5 ATR above
+            stop_loss = min(macd_stop, atr_stop)
+            
+            # Take profit based on MACD strength or ATR
+            macd_target = entry_price - (macd_strength * 2)  # 2x MACD strength
+            atr_target = entry_price - (atr_value * 4)  # 4 ATR below
+            take_profit = max(macd_target, atr_target)
+        
+        # Apply volatility multiplier
+        if signal == 1:
+            stop_loss = entry_price - ((entry_price - stop_loss) * volatility_multiplier)
+            take_profit = entry_price + ((take_profit - entry_price) * volatility_multiplier)
+        else:
+            stop_loss = entry_price + ((stop_loss - entry_price) * volatility_multiplier)
+            take_profit = entry_price - ((entry_price - take_profit) * volatility_multiplier)
+        
+        return {
+            "stop_loss": stop_loss,
+            "take_profit": take_profit
+        }
+    
     def risk_targets(self, df: pd.DataFrame, signal: int, current_price: float) -> Dict[str, float]:
         """
         Calculate adaptive risk targets for Momentum strategy.
