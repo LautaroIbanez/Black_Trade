@@ -43,6 +43,7 @@ class EMARSIStrategy(StrategyBase):
         
         # Apply signal persistence - maintain signals for N periods unless conditions change
         df['signal'] = 0
+        df['strength'] = 0.0
         current_signal = 0
         signal_count = 0
         
@@ -54,27 +55,53 @@ class EMARSIStrategy(StrategyBase):
             volume_ok = df.iloc[i]['volume_above_avg']
             strong_trend = df.iloc[i]['strong_trend']
             
+            # Calculate signal strength based on multiple factors
+            strength = 0.0
+            if raw_sig != 0:
+                # Base strength from RSI position
+                if raw_sig == 1:  # Buy signal
+                    rsi_strength = max(0, (50 - rsi_val) / 50)  # Stronger when RSI is lower
+                else:  # Sell signal
+                    rsi_strength = max(0, (rsi_val - 50) / 50)  # Stronger when RSI is higher
+                
+                # EMA separation strength
+                ema_sep = abs(ema_fast - ema_slow) / ema_slow
+                ema_strength = min(ema_sep * 100, 1.0)  # Normalize to 0-1
+                
+                # Volume strength
+                volume_strength = 1.0 if volume_ok else 0.5
+                
+                # Trend strength
+                trend_strength = 1.0 if strong_trend else 0.7
+                
+                # Combined strength
+                strength = (rsi_strength * 0.4 + ema_strength * 0.3 + volume_strength * 0.2 + trend_strength * 0.1)
+                strength = min(strength, 1.0)
+            
             # Check for signal continuation conditions
             if current_signal == 1:  # Currently in BUY signal
-                # Continue if: RSI still favorable, EMAs still aligned, volume OK, and strong trend
-                if (rsi_val > self.rsi_oversold and ema_fast > ema_slow and volume_ok and strong_trend and signal_count < self.signal_persistence):
+                # Continue if: RSI still favorable, EMAs still aligned, and signal_count < persistence
+                if (rsi_val > self.rsi_oversold and ema_fast > ema_slow and signal_count < self.signal_persistence):
                     df.iloc[i, df.columns.get_loc('signal')] = 1
+                    df.iloc[i, df.columns.get_loc('strength')] = max(strength, 0.3)  # Minimum strength for continuation
                     signal_count += 1
                 else:
                     current_signal = 0
                     signal_count = 0
             elif current_signal == -1:  # Currently in SELL signal
-                # Continue if: RSI still favorable, EMAs still aligned, volume OK, and strong trend
-                if (rsi_val < self.rsi_overbought and ema_fast < ema_slow and volume_ok and strong_trend and signal_count < self.signal_persistence):
+                # Continue if: RSI still favorable, EMAs still aligned, and signal_count < persistence
+                if (rsi_val < self.rsi_overbought and ema_fast < ema_slow and signal_count < self.signal_persistence):
                     df.iloc[i, df.columns.get_loc('signal')] = -1
+                    df.iloc[i, df.columns.get_loc('strength')] = max(strength, 0.3)  # Minimum strength for continuation
                     signal_count += 1
                 else:
                     current_signal = 0
                     signal_count = 0
             else:  # No current signal
-                if raw_sig != 0:
+                if raw_sig != 0 and strength > 0.2:  # Require minimum strength for new signals
                     current_signal = raw_sig
                     df.iloc[i, df.columns.get_loc('signal')] = raw_sig
+                    df.iloc[i, df.columns.get_loc('strength')] = strength
                     signal_count = 1
         
         return df

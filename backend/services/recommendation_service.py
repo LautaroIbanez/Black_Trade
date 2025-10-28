@@ -59,11 +59,22 @@ class RecommendationService:
         # Get enabled strategies
         strategies = self.strategy_registry.get_enabled_strategies()
         
+        # Define timeframe weights for balanced contribution
+        timeframe_weights = {
+            '1w': 1.0,   # Highest weight for weekly (most reliable)
+            '1d': 0.8,   # High weight for daily
+            '4h': 0.6,   # Medium weight for 4-hour
+            '1h': 0.4    # Lower weight for hourly (more noise)
+        }
+        
         # Generate signals for each timeframe
         all_signals = []
         for timeframe, df in data.items():
             if df.empty:
                 continue
+            
+            # Get timeframe weight
+            timeframe_weight = timeframe_weights.get(timeframe, 0.5)
                 
             for strategy in strategies:
                 try:
@@ -75,11 +86,15 @@ class RecommendationService:
                     # Calculate strategy-specific risk targets
                     risk_targets = strategy.risk_targets(df, signal_data['signal'], signal_data['price'])
                     
+                    # Apply timeframe weight to confidence and strength
+                    weighted_confidence = signal_data['confidence'] * timeframe_weight
+                    weighted_strength = signal_data['strength'] * timeframe_weight
+                    
                     signal = StrategySignal(
                         strategy_name=strategy.name,
                         signal=signal_data['signal'],
-                        strength=signal_data['strength'],
-                        confidence=signal_data['confidence'],
+                        strength=weighted_strength,
+                        confidence=weighted_confidence,
                         reason=signal_data['reason'],
                         price=signal_data['price'],
                         timestamp=signal_data['timestamp'],
@@ -209,8 +224,8 @@ class RecommendationService:
         
         # Apply neutral signal weighting - reduce influence when few active signals
         if active_count > 0:
-            # Weight neutral signals less when there are active signals
-            neutral_weight_factor = min(0.3, active_count / max(total_signals, 1))  # Max 30% weight for neutrals
+            # Weight neutral signals much less when there are active signals
+            neutral_weight_factor = min(0.1, active_count / max(total_signals, 1))  # Max 10% weight for neutrals
             weighted_hold_count = hold_count * neutral_weight_factor
         else:
             # Only use neutrals if no active signals at all
@@ -223,7 +238,7 @@ class RecommendationService:
         hold_ratio = weighted_hold_count / effective_total if effective_total > 0 else 0
         
         # Determine primary action with minimum confidence threshold
-        min_confidence_threshold = 0.15  # Require at least 15% consensus for non-HOLD actions
+        min_confidence_threshold = 0.05  # Further reduced to 5% for more active signals
         
         if buy_ratio > sell_ratio and buy_ratio > hold_ratio and buy_ratio >= min_confidence_threshold:
             action = "BUY"
@@ -234,6 +249,20 @@ class RecommendationService:
         else:
             action = "HOLD"
             primary_signals = hold_signals
+            
+            # If no active signals, try to find the strongest recent signals
+            if active_count == 0 and len(signals) > 0:
+                # Find signals with highest confidence in the last 10 periods
+                recent_signals = sorted(signals, key=lambda s: s.confidence, reverse=True)[:3]
+                if recent_signals and recent_signals[0].confidence > 0.05:
+                    # Use the strongest recent signal as primary
+                    strongest_signal = recent_signals[0]
+                    if strongest_signal.signal == 1:
+                        action = "BUY"
+                        primary_signals = [strongest_signal]
+                    elif strongest_signal.signal == -1:
+                        action = "SELL"
+                        primary_signals = [strongest_signal]
         
         # Calculate weighted confidence with enhanced scoring
         if primary_signals:
@@ -252,15 +281,28 @@ class RecommendationService:
             weighted_confidence = sum(confidence_scores) / len(confidence_scores)
             primary_strategy = max(primary_signals, key=lambda s: s.confidence * s.score).strategy_name
         else:
-            weighted_confidence = 0.0
-            primary_strategy = "None"
+            # Fallback confidence calculation when no primary signals
+            if len(signals) > 0:
+                # Use average confidence of all signals with minimum threshold
+                all_confidences = [s.confidence for s in signals if s.confidence > 0]
+                if all_confidences:
+                    weighted_confidence = max(sum(all_confidences) / len(all_confidences), 0.05)  # Minimum 5%
+                else:
+                    weighted_confidence = 0.05  # Minimum confidence
+                primary_strategy = "Mixed"
+            else:
+                weighted_confidence = 0.05  # Minimum confidence
+                primary_strategy = "None"
         
         # Calculate signal consensus with active signal bias
         if active_count > 0:
-            # When active signals exist, bias toward them
-            signal_consensus = max(buy_ratio, sell_ratio) * 1.5  # Boost active signal consensus
+            # When active signals exist, bias toward them more aggressively
+            signal_consensus = max(buy_ratio, sell_ratio) * 2.0  # Increased boost for active signals
         else:
             signal_consensus = hold_ratio
+        
+        # Add timeframe analysis to strategy details
+        timeframe_analysis = self._analyze_timeframe_contribution(signals)
         
         # Determine supporting strategies
         supporting_strategies = [s.strategy_name for s in primary_signals if s.strategy_name != primary_strategy]
@@ -278,6 +320,12 @@ class RecommendationService:
             stop_loss = aggregated_risk.stop_loss
             take_profit = aggregated_risk.take_profit
             trade_management = aggregated_risk.trade_management
+            
+            # Final validation: ensure SL/TP are outside entry range
+            if entry_range and 'min' in entry_range and 'max' in entry_range:
+                stop_loss, take_profit = self._validate_levels_outside_entry_range(
+                    stop_loss, take_profit, entry_range, current_price
+                )
         else:
             current_price = 0.0
             entry_range = {"min": 0.0, "max": 0.0}
@@ -361,6 +409,51 @@ class RecommendationService:
         
         return entry_range, stop_loss, take_profit
     
+    def _validate_levels_outside_entry_range(self, stop_loss: float, take_profit: float, 
+                                           entry_range: Dict[str, float], current_price: float) -> Tuple[float, float]:
+        """
+        Final validation to ensure SL/TP are outside entry range.
+        This prevents degenerate levels where SL/TP collapse within the entry range.
+        """
+        if not entry_range or 'min' not in entry_range or 'max' not in entry_range:
+            return stop_loss, take_profit
+        
+        entry_min = entry_range['min']
+        entry_max = entry_range['max']
+        
+        # Calculate minimum distance from entry range (1% of current price)
+        min_distance = current_price * 0.01
+        
+        # Ensure stop loss is outside entry range
+        if stop_loss < current_price:  # Long position
+            # Stop loss should be below entry range
+            if stop_loss >= entry_min - min_distance:
+                adjusted_stop_loss = entry_min - min_distance
+            else:
+                adjusted_stop_loss = stop_loss
+        else:  # Short position
+            # Stop loss should be above entry range
+            if stop_loss <= entry_max + min_distance:
+                adjusted_stop_loss = entry_max + min_distance
+            else:
+                adjusted_stop_loss = stop_loss
+        
+        # Ensure take profit is outside entry range
+        if take_profit > current_price:  # Long position
+            # Take profit should be above entry range
+            if take_profit <= entry_max + min_distance:
+                adjusted_take_profit = entry_max + min_distance
+            else:
+                adjusted_take_profit = take_profit
+        else:  # Short position
+            # Take profit should be below entry range
+            if take_profit >= entry_min - min_distance:
+                adjusted_take_profit = entry_min - min_distance
+            else:
+                adjusted_take_profit = take_profit
+        
+        return adjusted_stop_loss, adjusted_take_profit
+    
     def _determine_risk_level(self, confidence: float, supporting_count: int) -> str:
         """Determine risk level based on confidence and supporting strategies."""
         
@@ -413,6 +506,49 @@ class RecommendationService:
             "hold_ratio": hold_count / total,
             "total_strategies": total
         }
+    
+    def _analyze_timeframe_contribution(self, signals: List[StrategySignal]) -> Dict[str, any]:
+        """Analyze contribution of each timeframe to the final recommendation."""
+        timeframe_stats = {}
+        
+        for signal in signals:
+            tf = signal.timeframe
+            if tf not in timeframe_stats:
+                timeframe_stats[tf] = {
+                    'total_signals': 0,
+                    'active_signals': 0,
+                    'buy_signals': 0,
+                    'sell_signals': 0,
+                    'avg_confidence': 0.0,
+                    'avg_strength': 0.0,
+                    'total_confidence': 0.0,
+                    'total_strength': 0.0
+                }
+            
+            stats = timeframe_stats[tf]
+            stats['total_signals'] += 1
+            stats['total_confidence'] += signal.confidence
+            stats['total_strength'] += signal.strength
+            
+            if signal.signal != 0:
+                stats['active_signals'] += 1
+                if signal.signal == 1:
+                    stats['buy_signals'] += 1
+                elif signal.signal == -1:
+                    stats['sell_signals'] += 1
+        
+        # Calculate averages
+        for tf, stats in timeframe_stats.items():
+            if stats['total_signals'] > 0:
+                stats['avg_confidence'] = stats['total_confidence'] / stats['total_signals']
+                stats['avg_strength'] = stats['total_strength'] / stats['total_signals']
+                stats['active_rate'] = stats['active_signals'] / stats['total_signals']
+            else:
+                stats['avg_confidence'] = 0.0
+                stats['avg_strength'] = 0.0
+                stats['active_rate'] = 0.0
+        
+        return timeframe_stats
 
 
 # Global service instance

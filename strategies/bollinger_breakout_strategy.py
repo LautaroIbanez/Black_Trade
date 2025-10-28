@@ -117,6 +117,15 @@ class BollingerBreakoutStrategy(StrategyBase):
         
         return trades
     
+    def _calculate_rsi(self, prices: pd.Series, period: int) -> pd.Series:
+        """Calculate RSI indicator."""
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    
     def _generate_signal(self, df: pd.DataFrame) -> Tuple[int, float, str]:
         """
         Generate trading signal based on Bollinger Bands breakout.

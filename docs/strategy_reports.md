@@ -1,34 +1,34 @@
 # Strategy Enhancement Comparison Report
-Generated: 2025-10-28T08:06:30.152743
+Generated: 2025-10-28T10:41:44.437396
 Symbol: BTCUSDT
 Timeframes: 1h, 4h, 1d
 
 ## Summary
 
 ### 1H Timeframe
-Data Points: 8806
-Date Range: 1729947600000 to 1761645600000
+Data Points: 8809
+Date Range: 1729947600000 to 1761656400000
 
 #### EMA RSI Strategy Comparison
 | Metric | Original | Enhanced | Change |
 |--------|----------|----------|--------|
 | Total Trades | 272 | 154 | -118 |
 | Win Rate | 26.1% | 29.2% | +3.1pp |
-| Net PnL | $-76784.53 | $-36880.30 | $+39904.23 |
+| Net PnL | $-76837.32 | $-36880.30 | $+39957.02 |
 | Profit Factor | 0.71 | 0.77 | +0.06 |
 | Max Drawdown | $84839.00 | $50729.01 | $-34109.98 |
 
 #### Other Strategies Performance
 | Strategy | Trades | Win Rate | Net PnL |
 |----------|--------|----------|---------|
-| Momentum | 371 | 36.1% | $-93978.94 |
-| Breakout | 333 | 29.7% | $-78791.11 |
+| Momentum | 371 | 36.1% | $-93926.47 |
+| Breakout | 333 | 29.7% | $-78843.90 |
 | Mean_Reversion | 213 | 56.8% | $-27267.78 |
-| Ichimoku_ADX | 4559 | 20.0% | $-1394382.40 |
+| Ichimoku_ADX | 4559 | 20.0% | $-1394329.92 |
 
 ### 4H Timeframe
-Data Points: 2201
-Date Range: 1729958400000 to 1761638400000
+Data Points: 2202
+Date Range: 1729958400000 to 1761652800000
 
 #### EMA RSI Strategy Comparison
 | Metric | Original | Enhanced | Change |
@@ -42,10 +42,10 @@ Date Range: 1729958400000 to 1761638400000
 #### Other Strategies Performance
 | Strategy | Trades | Win Rate | Net PnL |
 |----------|--------|----------|---------|
-| Momentum | 87 | 37.9% | $-61528.75 |
+| Momentum | 87 | 37.9% | $-61809.92 |
 | Breakout | 128 | 32.0% | $-19894.68 |
-| Mean_Reversion | 49 | 53.1% | $-1878.29 |
-| Ichimoku_ADX | 1090 | 32.0% | $-373336.46 |
+| Mean_Reversion | 49 | 53.1% | $-1595.43 |
+| Ichimoku_ADX | 1091 | 32.0% | $-373961.37 |
 
 ### 1D Timeframe
 Data Points: 367

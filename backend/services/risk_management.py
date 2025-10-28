@@ -99,6 +99,32 @@ class RiskManagementService:
             weighted_stop_loss, weighted_take_profit, sr_analysis, current_price
         )
         
+        # Ensure levels are outside entry range to prevent degeneration
+        if historical_data:
+            # Get entry range from the highest timeframe available
+            # Priority: 1w > 1d > 4h > 1h (higher timeframes have more reliable ranges)
+            preferred_timeframes = ['1w', '1d', '4h', '1h']
+            selected_timeframe = None
+            
+            for tf in preferred_timeframes:
+                if tf in historical_data and not historical_data[tf].empty:
+                    selected_timeframe = tf
+                    break
+            
+            if not selected_timeframe:
+                # Fallback to any available timeframe
+                selected_timeframe = max(historical_data.keys())
+            
+            df = historical_data[selected_timeframe]
+            if not df.empty:
+                # Calculate entry range using the first strategy as reference
+                if risk_targets:
+                    # Use a simple approach: calculate entry range from current price
+                    entry_range = self._calculate_entry_range_from_price(current_price, df)
+                    adjusted_stop_loss, adjusted_take_profit = self._ensure_levels_outside_entry_range(
+                        adjusted_stop_loss, adjusted_take_profit, entry_range, current_price
+                    )
+        
         # Calculate risk metrics
         risk_reward_ratio = self._calculate_risk_reward_ratio(adjusted_stop_loss, adjusted_take_profit, current_price)
         confidence = self._calculate_aggregated_confidence(risk_targets)
@@ -151,9 +177,21 @@ class RiskManagementService:
         if not historical_data:
             return {"levels": [], "nearest_support": None, "nearest_resistance": None}
         
-        # Use the most recent timeframe for analysis
-        latest_timeframe = max(historical_data.keys())
-        df = historical_data[latest_timeframe]
+        # Use the highest timeframe available for support/resistance analysis
+        # Priority: 1w > 1d > 4h > 1h (higher timeframes have more reliable levels)
+        preferred_timeframes = ['1w', '1d', '4h', '1h']
+        selected_timeframe = None
+        
+        for tf in preferred_timeframes:
+            if tf in historical_data and not historical_data[tf].empty:
+                selected_timeframe = tf
+                break
+        
+        if not selected_timeframe:
+            # Fallback to any available timeframe
+            selected_timeframe = max(historical_data.keys())
+        
+        df = historical_data[selected_timeframe]
         
         if df.empty:
             return {"levels": [], "nearest_support": None, "nearest_resistance": None}
@@ -213,6 +251,101 @@ class RiskManagementService:
                 adjusted_take_profit = nearest_support.price * 1.02  # Just above support
         
         return adjusted_stop_loss, adjusted_take_profit
+    
+    def _ensure_levels_outside_entry_range(self, stop_loss: float, take_profit: float, 
+                                         entry_range: Dict[str, float], current_price: float) -> Tuple[float, float]:
+        """
+        Ensure stop loss and take profit levels are outside the entry range.
+        This prevents degenerate levels where SL/TP collapse within the entry range.
+        """
+        if not entry_range or 'min' not in entry_range or 'max' not in entry_range:
+            return stop_loss, take_profit
+        
+        entry_min = entry_range['min']
+        entry_max = entry_range['max']
+        
+        # Calculate minimum distance from entry range (1% of current price)
+        min_distance = current_price * 0.01
+        
+        # Ensure stop loss is outside entry range
+        if stop_loss < current_price:  # Long position
+            # Stop loss should be below entry range
+            if stop_loss >= entry_min - min_distance:
+                adjusted_stop_loss = entry_min - min_distance
+            else:
+                adjusted_stop_loss = stop_loss
+        else:  # Short position
+            # Stop loss should be above entry range
+            if stop_loss <= entry_max + min_distance:
+                adjusted_stop_loss = entry_max + min_distance
+            else:
+                adjusted_stop_loss = stop_loss
+        
+        # Ensure take profit is outside entry range
+        if take_profit > current_price:  # Long position
+            # Take profit should be above entry range
+            if take_profit <= entry_max + min_distance:
+                adjusted_take_profit = entry_max + min_distance
+            else:
+                adjusted_take_profit = take_profit
+        else:  # Short position
+            # Take profit should be below entry range
+            if take_profit >= entry_min - min_distance:
+                adjusted_take_profit = entry_min - min_distance
+            else:
+                adjusted_take_profit = take_profit
+        
+        return adjusted_stop_loss, adjusted_take_profit
+    
+    def _calculate_entry_range_from_price(self, current_price: float, df: pd.DataFrame) -> Dict[str, float]:
+        """
+        Calculate a basic entry range from current price using volatility.
+        Used as fallback when strategy-specific entry ranges are not available.
+        """
+        # Calculate ATR for volatility-based range
+        atr = self._calculate_atr(df, 14)
+        atr_value = float(atr.iloc[-1]) if not atr.empty else current_price * 0.01
+        
+        # Calculate standard deviation for additional volatility measure
+        if len(df) >= 20:
+            price_std = df['close'].rolling(window=20).std().iloc[-1]
+            if not pd.isna(price_std):
+                std_value = float(price_std)
+            else:
+                std_value = current_price * 0.01
+        else:
+            std_value = current_price * 0.01
+        
+        # Use the larger of ATR or standard deviation for range calculation
+        volatility_measure = max(atr_value, std_value)
+        
+        # Ensure minimum range width (0.5% of current price)
+        min_range_width = current_price * 0.005
+        range_width = max(volatility_measure * 0.5, min_range_width)
+        
+        # Create symmetric range around current price
+        min_price = current_price - range_width
+        max_price = current_price + range_width
+        
+        return {
+            "min": max(0.0, min_price),  # Ensure non-negative
+            "max": max_price
+        }
+    
+    def _calculate_atr(self, df: pd.DataFrame, period: int = 14) -> pd.Series:
+        """Calculate Average True Range."""
+        high = df['high']
+        low = df['low']
+        close = df['close']
+        
+        tr1 = high - low
+        tr2 = abs(high - close.shift(1))
+        tr3 = abs(low - close.shift(1))
+        
+        true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = true_range.rolling(window=period).mean()
+        
+        return atr
     
     def _calculate_risk_reward_ratio(self, stop_loss: float, take_profit: float, current_price: float) -> float:
         """Calculate risk-reward ratio."""

@@ -144,7 +144,20 @@ async def get_chart_data(
                     recommendation = await _get_current_recommendation(current_data)
             except Exception as e:
                 # Recommendation is optional, don't fail the entire request
-                pass
+                recommendation = None
+
+        # Ensure recommendation shape is consistent for frontend rendering
+        if include_recommendation and recommendation is None:
+            recommendation = {
+                "action": "HOLD",
+                "confidence": 0.0,
+                "entry_range": {"min": current_price, "max": current_price},
+                "stop_loss": current_price,
+                "take_profit": current_price,
+                "current_price": current_price,
+                "primary_strategy": "None",
+                "risk_level": "LOW"
+            }
         
         # Prepare metadata
         metadata = {

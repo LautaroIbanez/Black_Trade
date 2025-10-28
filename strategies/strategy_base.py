@@ -7,12 +7,12 @@ import pandas as pd
 class StrategyBase(ABC):
     """Abstract base class for trading strategies."""
     
-    def __init__(self, name: str, params: Dict[str, Any] = None, commission: float = 0.001, slippage: float = 0.0005):
+    def __init__(self, name: str, params: Dict[str, Any] = None, commission: float = 0.0002, slippage: float = 0.0001):
         """Initialize strategy with name, parameters, and trading costs."""
         self.name = name
         self.params = params or {}
-        self.commission = commission  # Commission as percentage (0.001 = 0.1%)
-        self.slippage = slippage  # Slippage as percentage (0.0005 = 0.05%)
+        self.commission = commission  # Commission as percentage (0.0002 = 0.02%)
+        self.slippage = slippage  # Slippage as percentage (0.0001 = 0.01%)
     
     @abstractmethod
     def generate_signals(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -58,17 +58,34 @@ class StrategyBase(ABC):
         latest_row = signals_df.iloc[-1]
         signal_value = latest_row.get('signal', 0)
         
-        # Calculate signal strength (absolute value of signal)
-        strength = abs(signal_value)
+        # Get signal strength from the strategy (if available)
+        strength = latest_row.get('strength', 0.0)
+        if strength == 0.0 and signal_value != 0:
+            # Fallback: use absolute signal value as strength
+            strength = abs(signal_value)
         
-        # Calculate confidence based on signal consistency in recent periods
+        # Calculate confidence based on signal consistency and strength
         recent_signals = signals_df['signal'].tail(5)  # Last 5 periods
         if len(recent_signals) > 1:
-            # Confidence based on consistency of recent signals
+            # Base confidence from signal strength
+            base_confidence = strength
+            
+            # Boost confidence for signal consistency
             signal_consistency = (recent_signals == signal_value).sum() / len(recent_signals)
-            confidence = min(signal_consistency * strength, 1.0)
+            consistency_boost = 1.0 + (signal_consistency * 0.5)  # Up to 50% boost
+            
+            # Boost confidence for active signals vs neutrals
+            active_boost = 1.5 if signal_value != 0 else 0.8
+            
+            confidence = min(base_confidence * consistency_boost * active_boost, 1.0)
         else:
-            confidence = strength
+            # For single signals, use strength with active signal boost
+            active_boost = 1.5 if signal_value != 0 else 0.8
+            confidence = min(strength * active_boost, 1.0)
+        
+        # Ensure minimum confidence for active signals
+        if signal_value != 0 and confidence < 0.1:
+            confidence = 0.1
         
         # Generate reason for the signal
         reason = self._generate_signal_reason(signals_df, latest_row)
@@ -198,12 +215,13 @@ class StrategyBase(ABC):
         """
         Default implementation for exit levels using ATR-based volatility.
         Used as fallback when strategies don't override calculate_exit_levels.
+        Ensures SL/TP are always outside entry range for neutral signals.
         """
         # Calculate ATR for volatility-based levels
         atr = self._calculate_atr(df, 14)
         atr_value = float(atr.iloc[-1]) if not atr.empty else current_price * 0.02
         
-        # Base risk levels
+        # Base risk levels - ensure minimum distance from entry range
         base_stop_loss_pct = 0.02  # 2%
         base_take_profit_pct = 0.04  # 4%
         
@@ -211,13 +229,23 @@ class StrategyBase(ABC):
         volatility_multiplier = min(atr_value / current_price, 0.05) / 0.02  # Cap at 5%
         volatility_multiplier = max(volatility_multiplier, 0.5)  # Minimum 0.5x
         
+        # For neutral signals, use wider ranges to ensure clear separation
+        if signal == 0:
+            # Neutral signals get wider, symmetric ranges
+            base_stop_loss_pct = 0.03  # 3% for neutral
+            base_take_profit_pct = 0.06  # 6% for neutral
+            volatility_multiplier = max(volatility_multiplier, 1.0)  # At least 1x for neutral
+        
         # Calculate levels
         if signal == 1:  # Buy signal
             stop_loss = current_price * (1 - base_stop_loss_pct * volatility_multiplier)
             take_profit = current_price * (1 + base_take_profit_pct * volatility_multiplier)
-        else:  # Sell signal
+        elif signal == -1:  # Sell signal
             stop_loss = current_price * (1 + base_stop_loss_pct * volatility_multiplier)
             take_profit = current_price * (1 - base_take_profit_pct * volatility_multiplier)
+        else:  # Neutral signal - create symmetric levels
+            stop_loss = current_price * (1 - base_stop_loss_pct * volatility_multiplier)
+            take_profit = current_price * (1 + base_take_profit_pct * volatility_multiplier)
         
         return {
             "stop_loss": stop_loss,
@@ -253,10 +281,10 @@ class StrategyBase(ABC):
     
     def calculate_trade_costs(self, entry_price: float, exit_price: float, side: str) -> float:
         """Calculate total trading costs (commission + slippage) for a trade."""
-        trade_value = max(entry_price, exit_price)  # Use higher price for cost calculation
-        commission_cost = trade_value * self.commission * 2  # Commission on both entry and exit
-        slippage_cost = trade_value * self.slippage * 2  # Slippage on both entry and exit
-        return commission_cost + slippage_cost
+        # Calculate costs based on actual trade value
+        entry_cost = entry_price * (self.commission + self.slippage)
+        exit_cost = exit_price * (self.commission + self.slippage)
+        return entry_cost + exit_cost
     
     def apply_costs_to_pnl(self, trade: Dict) -> Dict:
         """Apply trading costs to trade PnL."""
