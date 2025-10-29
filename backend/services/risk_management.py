@@ -73,7 +73,8 @@ class RiskManagementService:
     
     def aggregate_risk_targets(self, risk_targets: List[RiskTarget], 
                              historical_data: Optional[Dict[str, pd.DataFrame]] = None,
-                             current_price: float = 0.0) -> AggregatedRiskTargets:
+                             current_price: float = 0.0,
+                             risk_profile: str = "balanced") -> AggregatedRiskTargets:
         """
         Aggregate risk targets from multiple strategies.
         
@@ -94,9 +95,22 @@ class RiskManagementService:
         # Analyze support/resistance levels
         sr_analysis = self._analyze_support_resistance(historical_data, current_price)
         
+        # ATR-based minimum distances by profile
+        atr_value = self._estimate_atr(historical_data)
+        profile_cfg = self._get_profile_risk_config(risk_profile)
+        min_sl_distance = 0.0
+        min_tp_rr = profile_cfg.get('min_rr', 1.5)
+        if atr_value and current_price:
+            min_sl_distance = atr_value * profile_cfg.get('sl_atr_mult', 1.2)
+        
+        # Enforce ATR-based minimum SL/TP distances
+        adjusted_stop_loss, adjusted_take_profit = self._enforce_atr_minimums(
+            weighted_stop_loss, weighted_take_profit, current_price, min_sl_distance, min_tp_rr
+        )
+        
         # Adjust levels based on support/resistance
         adjusted_stop_loss, adjusted_take_profit = self._adjust_for_support_resistance(
-            weighted_stop_loss, weighted_take_profit, sr_analysis, current_price
+            adjusted_stop_loss, adjusted_take_profit, sr_analysis, current_price
         )
         
         # Ensure levels are outside entry range to prevent degeneration
@@ -149,6 +163,62 @@ class RiskManagementService:
             support_resistance_analysis=sr_analysis,
             trade_management=trade_management
         )
+
+    def _estimate_atr(self, historical_data: Optional[Dict[str, pd.DataFrame]]) -> Optional[float]:
+        """Estimate ATR(14) from the highest-available timeframe data."""
+        if not historical_data:
+            return None
+        # Prefer higher TF for stability
+        for tf in ['1w', '1d', '4h', '2h', '1h', '12h']:
+            df = historical_data.get(tf)
+            if df is not None and not df.empty and all(k in df.columns for k in ['high','low','close']):
+                high_low = df['high'] - df['low']
+                high_close = (df['high'] - df['close'].shift()).abs()
+                low_close = (df['low'] - df['close'].shift()).abs()
+                tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+                atr = tr.rolling(window=14).mean()
+                val = float(atr.iloc[-1]) if not atr.empty else None
+                if val and val > 0:
+                    return val
+        return None
+
+    def _get_profile_risk_config(self, profile: str) -> Dict[str, float]:
+        """Risk profile configuration for ATR multipliers and target RR."""
+        profile = (profile or "balanced").lower()
+        mapping = {
+            "day_trading": {"sl_atr_mult": 1.0, "min_rr": 1.5},
+            "swing": {"sl_atr_mult": 1.5, "min_rr": 2.0},
+            "balanced": {"sl_atr_mult": 1.2, "min_rr": 1.8},
+            "long_term": {"sl_atr_mult": 2.0, "min_rr": 2.5},
+        }
+        return mapping.get(profile, mapping["balanced"])
+
+    def _enforce_atr_minimums(self, sl: float, tp: float, price: float, min_sl_distance: float, min_rr: float) -> Tuple[float, float]:
+        """Ensure SL is at least min distance away, and TP targets at least min RR."""
+        if price <= 0:
+            return sl, tp
+        adjusted_sl = sl
+        adjusted_tp = tp
+        if min_sl_distance and min_sl_distance > 0:
+            # Determine side by comparing sl to price
+            if sl < price:
+                # long
+                target_sl = price - min_sl_distance
+                if adjusted_sl > target_sl:
+                    adjusted_sl = target_sl
+                # TP should meet RR
+                rr_tp = price + min_rr * (price - adjusted_sl)
+                if adjusted_tp < rr_tp:
+                    adjusted_tp = rr_tp
+            elif sl > price:
+                # short
+                target_sl = price + min_sl_distance
+                if adjusted_sl < target_sl:
+                    adjusted_sl = target_sl
+                rr_tp = price - min_rr * (adjusted_sl - price)
+                if adjusted_tp > rr_tp:
+                    adjusted_tp = rr_tp
+        return adjusted_sl, adjusted_tp
     
     def _calculate_weighted_levels(self, risk_targets: List[RiskTarget]) -> Tuple[float, float, float]:
         """Calculate weighted stop loss and take profit levels."""

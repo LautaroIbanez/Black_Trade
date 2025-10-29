@@ -143,26 +143,14 @@ class TestRecommendationService(unittest.TestCase):
         self.assertEqual(recommendation.confidence, 0.0)
     
     def test_calculate_trade_levels_buy(self):
-        """Test trade level calculation for buy signal."""
-        entry_range, stop_loss, take_profit = self.service._calculate_trade_levels(100.0, "BUY", 0.8)
-        
-        self.assertIn("min", entry_range)
-        self.assertIn("max", entry_range)
-        self.assertLess(entry_range["min"], 100.0)
-        self.assertGreater(entry_range["max"], 100.0)
-        self.assertLess(stop_loss, 100.0)
-        self.assertGreater(take_profit, 100.0)
+        """Static trade levels are disabled by default; ensure guard works."""
+        with self.assertRaises(RuntimeError):
+            self.service._calculate_trade_levels(100.0, "BUY", 0.8)
     
     def test_calculate_trade_levels_sell(self):
-        """Test trade level calculation for sell signal."""
-        entry_range, stop_loss, take_profit = self.service._calculate_trade_levels(100.0, "SELL", 0.8)
-        
-        self.assertIn("min", entry_range)
-        self.assertIn("max", entry_range)
-        self.assertLess(entry_range["min"], 100.0)
-        self.assertGreater(entry_range["max"], 100.0)
-        self.assertGreater(stop_loss, 100.0)
-        self.assertLess(take_profit, 100.0)
+        """Static trade levels are disabled by default; ensure guard works."""
+        with self.assertRaises(RuntimeError):
+            self.service._calculate_trade_levels(100.0, "SELL", 0.8)
     
     def test_determine_risk_level(self):
         """Test risk level determination."""

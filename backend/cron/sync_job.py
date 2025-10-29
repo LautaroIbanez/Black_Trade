@@ -45,7 +45,7 @@ class SyncJob:
         self.binance_client = BinanceClient()
         self.sync_service = SyncService(self.binance_client)
         self.symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
-        self.timeframes = os.getenv('TIMEFRAMES', '1h,4h,1d,1w').split(',')
+        self.timeframes = os.getenv('TIMEFRAMES', '15m,1h,2h,4h,12h,1d,1w').split(',')
         
         logger.info(f"SyncJob initialized for {self.symbol} on {self.timeframes}")
     

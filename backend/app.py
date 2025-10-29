@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 import pandas as pd
 
@@ -73,6 +74,14 @@ class RecommendationResponse(BaseModel):
     signal_consensus: float
     risk_level: str
     contribution_breakdown: Optional[List[ContributionBreakdownResponse]] = None
+    # New normalized and transparency fields
+    risk_reward_ratio: float = 0.0
+    suggested_position_size: float = 0.0
+    entry_label: str = ""
+    risk_percentage: float = 0.0
+    normalized_weights_sum: float = 0.0
+    position_size_units: float = 0.0
+    position_notional: float = 0.0
 
 class StrategyMetrics(BaseModel):
     strategy_name: str
@@ -118,7 +127,7 @@ async def refresh_data() -> RefreshResponse:
     
     try:
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
-        timeframes = os.getenv('TIMEFRAMES', '1h,4h,1d,1w').split(',')
+        timeframes = os.getenv('TIMEFRAMES', '15m,1h,2h,4h,12h,1d,1w').split(',')
         
         # Refresh data
         logger.info("Refreshing data...")
@@ -162,6 +171,13 @@ async def refresh_data() -> RefreshResponse:
                 
                 results = backtest_engine.run_multiple_backtests(strategies, data, timeframe)
                 ranked_results = backtest_engine.rank_strategies(results)
+                # Remove heavy/non-serializable fields (e.g., trades) before returning
+                for r in ranked_results:
+                    if isinstance(r, dict) and 'trades' in r:
+                        try:
+                            del r['trades']
+                        except Exception:
+                            pass
                 all_results[timeframe] = ranked_results
             except Exception as e:
                 logger.error(f"Error processing {timeframe}: {e}")
@@ -169,10 +185,12 @@ async def refresh_data() -> RefreshResponse:
         
         last_results = all_results
         
+        # Ensure response is JSON serializable
+        safe_results = jsonable_encoder(all_results)
         return RefreshResponse(
             success=True,
             message="Data refreshed and backtests completed",
-            results=all_results
+            results=safe_results
         )
         
     except Exception as e:
@@ -237,7 +255,14 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
             strategy_details=recommendation.strategy_details,
             signal_consensus=recommendation.signal_consensus,
             risk_level=recommendation.risk_level,
-            contribution_breakdown=contribution_breakdown
+            contribution_breakdown=contribution_breakdown,
+            risk_reward_ratio=recommendation.risk_reward_ratio,
+            suggested_position_size=recommendation.suggested_position_size,
+            entry_label=recommendation.entry_label,
+            risk_percentage=recommendation.risk_percentage,
+            normalized_weights_sum=recommendation.normalized_weights_sum,
+            position_size_units=recommendation.position_size_units,
+            position_notional=recommendation.position_notional
         )
         
     except Exception as e:

@@ -140,6 +140,27 @@ class TestBacktestEngine(unittest.TestCase):
         self.assertEqual(result['total_trades'], 0)
         self.assertEqual(result['net_pnl'], 0.0)
 
+    def test_equity_curve_and_returns(self):
+        """Equity curve and percent returns should be computed."""
+        from strategies.ema_rsi_strategy import EMARSIStrategy
+        engine = BacktestEngine(initial_capital=10000.0, position_size_pct=0.2)
+        strategy = EMARSIStrategy()
+        result = engine.run_backtest(strategy, self.sample_data, '1h')
+        assert 'equity_curve' in result and isinstance(result['equity_curve'], list)
+        assert 'returns_pct' in result and isinstance(result['returns_pct'], list)
+        assert 'total_return_pct' in result
+        assert 'max_drawdown_pct' in result
+
+    def test_split_and_walk_forward(self):
+        """Train/test split and walk-forward return separated metrics."""
+        from strategies.momentum_strategy import MomentumStrategy
+        engine = BacktestEngine()
+        strategy = MomentumStrategy()
+        split_result = engine.run_backtest_with_split(strategy, self.sample_data, '1h', split=0.7)
+        assert 'in_sample' in split_result and 'out_of_sample' in split_result
+        wf = engine.run_walk_forward(strategy, self.sample_data, '1h', train_window=60, test_window=20, step=20)
+        assert 'walk_forward' in wf and 'summary' in wf
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -187,6 +187,72 @@
   color: #22c55e;
 }
 
+/* Transparency Fields */
+.transparency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.transparency-card {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.transparency-label {
+  display: block;
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transparency-value {
+  display: block;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+/* Entry Label Section */
+.entry-label-section {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(33, 150, 243, 0.05);
+  border: 1px solid rgba(33, 150, 243, 0.2);
+  border-radius: 6px;
+}
+
+.entry-label-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.entry-label-icon {
+  font-size: 1.2rem;
+}
+
+.entry-label-title {
+  color: #2196f3;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.entry-label-text {
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
 .risk-info {
   background: rgba(234, 179, 8, 0.1);
   border: 1px solid rgba(234, 179, 8, 0.3);

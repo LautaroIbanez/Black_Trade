@@ -10,7 +10,7 @@ from typing import Dict, Any, List
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from backtest.engine import BacktestEngine
+from backtest.engine import BacktestEngine, CostModel
 from backtest.data_loader import data_loader
 from backend.services.strategy_registry import strategy_registry
 from strategies.ema_rsi_strategy import EMARSIStrategy
@@ -20,11 +20,31 @@ from strategies.mean_reversion_strategy import MeanReversionStrategy
 from strategies.ichimoku_strategy import IchimokuStrategy
 
 
-def run_backtest_comparison() -> Dict[str, Any]:
+def run_backtest_comparison(
+    initial_capital: float = 10000.0,
+    position_size_pct: float = 0.1,
+    commission_pct: float = 0.0002,
+    slippage_pct: float = 0.0001,
+    spread_mode: str = "fixed",
+    spread_atr_multiplier: float = 0.25,
+    walk_forward: bool = False,
+    train_window: int = 0,
+    test_window: int = 0,
+    split: float = 0.0,
+) -> Dict[str, Any]:
     """Run backtests with both old and new strategy configurations."""
     
     # Initialize backtest engine
-    engine = BacktestEngine()
+    engine = BacktestEngine(
+        initial_capital=initial_capital,
+        position_size_pct=position_size_pct,
+        cost_model=CostModel(
+            commission_pct=commission_pct,
+            slippage_pct=slippage_pct,
+            spread_mode=spread_mode,
+            spread_atr_multiplier=spread_atr_multiplier,
+        ),
+    )
     
     # Test parameters
     symbol = 'BTCUSDT'
@@ -62,7 +82,12 @@ def run_backtest_comparison() -> Dict[str, Any]:
                 rsi_oversold=30, rsi_overbought=70,
                 signal_persistence=1, volume_confirmation=False
             )
-            original_results = engine.run_backtest(original_ema, data, timeframe)
+            if walk_forward and train_window > 0 and test_window > 0:
+                original_results = engine.run_walk_forward(original_ema, data, timeframe, train_window, test_window, step=test_window)
+            elif split and split > 0:
+                original_results = engine.run_backtest_with_split(original_ema, data, timeframe, split)
+            else:
+                original_results = engine.run_backtest(original_ema, data, timeframe)
             
             # Test enhanced EMA RSI strategy
             print("  Testing enhanced EMA RSI strategy...")
@@ -71,7 +96,12 @@ def run_backtest_comparison() -> Dict[str, Any]:
                 rsi_oversold=30, rsi_overbought=70,
                 signal_persistence=3, volume_confirmation=True
             )
-            enhanced_results = engine.run_backtest(enhanced_ema, data, timeframe)
+            if walk_forward and train_window > 0 and test_window > 0:
+                enhanced_results = engine.run_walk_forward(enhanced_ema, data, timeframe, train_window, test_window, step=test_window)
+            elif split and split > 0:
+                enhanced_results = engine.run_backtest_with_split(enhanced_ema, data, timeframe, split)
+            else:
+                enhanced_results = engine.run_backtest(enhanced_ema, data, timeframe)
             
             # Test other strategies for baseline
             print("  Testing other strategies...")
@@ -85,7 +115,12 @@ def run_backtest_comparison() -> Dict[str, Any]:
             
             for strategy in other_strategies:
                 try:
-                    strategy_result = engine.run_backtest(strategy, data, timeframe)
+                    if walk_forward and train_window > 0 and test_window > 0:
+                        strategy_result = engine.run_walk_forward(strategy, data, timeframe, train_window, test_window, step=test_window)
+                    elif split and split > 0:
+                        strategy_result = engine.run_backtest_with_split(strategy, data, timeframe, split)
+                    else:
+                        strategy_result = engine.run_backtest(strategy, data, timeframe)
                     other_results[strategy.name] = strategy_result
                 except Exception as e:
                     print(f"    Error testing {strategy.name}: {e}")
@@ -238,11 +273,36 @@ def generate_summary_report(results: Dict[str, Any]) -> str:
 
 def main():
     """Main execution function."""
+    import argparse
     print("Starting comprehensive backtest comparison...")
+    
+    parser = argparse.ArgumentParser(description="Run backtests and generate reports")
+    parser.add_argument("--initial-capital", type=float, default=10000.0)
+    parser.add_argument("--position-size-pct", type=float, default=0.1)
+    parser.add_argument("--commission-pct", type=float, default=0.0002)
+    parser.add_argument("--slippage-pct", type=float, default=0.0001)
+    parser.add_argument("--spread-mode", type=str, default="fixed", choices=["fixed", "atr"])
+    parser.add_argument("--spread-atr-multiplier", type=float, default=0.25)
+    parser.add_argument("--split", type=float, default=0.0, help="Train/Test split ratio (0 disables)")
+    parser.add_argument("--walk-forward", action="store_true")
+    parser.add_argument("--train-window", type=int, default=0)
+    parser.add_argument("--test-window", type=int, default=0)
+    args = parser.parse_args()
     
     try:
         # Run backtests
-        results = run_backtest_comparison()
+        results = run_backtest_comparison(
+            initial_capital=args.initial_capital,
+            position_size_pct=args.position_size_pct,
+            commission_pct=args.commission_pct,
+            slippage_pct=args.slippage_pct,
+            spread_mode=args.spread_mode,
+            spread_atr_multiplier=args.spread_atr_multiplier,
+            walk_forward=args.walk_forward,
+            train_window=args.train_window,
+            test_window=args.test_window,
+            split=args.split,
+        )
         
         # Save detailed results
         json_path = save_results(results)

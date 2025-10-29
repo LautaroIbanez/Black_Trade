@@ -311,7 +311,7 @@ async def get_chart_status() -> Dict[str, Any]:
     """Get chart service status and data availability."""
     try:
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
-        timeframes = os.getenv('TIMEFRAMES', '1h,4h,1d,1w').split(',')
+        timeframes = os.getenv('TIMEFRAMES', '15m,1h,2h,4h,12h,1d,1w').split(',')
         
         status = {
             "service_status": "active",

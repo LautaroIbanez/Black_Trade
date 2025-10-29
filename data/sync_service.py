@@ -97,7 +97,7 @@ class SyncService:
         return all_candles
     
     def refresh_latest_candles(self, symbol: str, timeframes: List[str]) -> Dict[str, bool]:
-        """Refresh latest candles for each timeframe from last recorded timestamp."""
+        """Refresh latest candles for each timeframe from last recorded timestamp with pagination and overlap buffer."""
         results = {}
         
         for timeframe in timeframes:
@@ -105,8 +105,10 @@ class SyncService:
                 filepath = self._get_filepath(symbol, timeframe)
                 
                 if not os.path.exists(filepath):
-                    logger.warning(f"File not found: {filepath}, skipping refresh")
-                    results[timeframe] = False
+                    logger.warning(f"File not found: {filepath}, performing initial download for {timeframe}")
+                    ok = self._full_download_fallback(symbol, timeframe)
+                    results[timeframe] = ok
+                    # Continue to next timeframe after initial fetch
                     continue
                 
                 # Read existing data
@@ -117,34 +119,45 @@ class SyncService:
                     results[timeframe] = self._full_download_fallback(symbol, timeframe)
                     continue
                 
-                # Get last timestamp
+                # Get last timestamp and compute an overlap buffer of one interval
                 last_timestamp = int(df['timestamp'].iloc[-1])
-                
-                # Fetch new candles from Binance
-                new_candles = self.binance_client.get_historical_candles(
-                    symbol=symbol,
-                    interval=timeframe,
-                    start_time=last_timestamp,
-                    limit=1000
-                )
-                
-                if new_candles:
-                    # Filter out duplicates
-                    new_df = pd.DataFrame(new_candles)
-                    new_df = new_df[new_df['timestamp'] > last_timestamp]
-                    
-                    if not new_df.empty:
-                        # Append to existing data
-                        df = pd.concat([df, new_df], ignore_index=True)
-                        self._save_dataframe(df, filepath)
-                        logger.info(f"Updated {timeframe}: added {len(new_df)} new candles")
-                        results[timeframe] = True
+                interval_ms = self._get_interval_minutes(timeframe) * 60 * 1000
+                overlap_ms = interval_ms  # re-fetch last full interval to ensure continuity
+
+                # Paginate until no more data
+                aggregated_new: List[Dict] = []
+                current_start = max(0, last_timestamp + 1 - overlap_ms)
+                max_requests = 50
+                req = 0
+                while req < max_requests:
+                    batch = self.binance_client.get_historical_candles(
+                        symbol=symbol,
+                        interval=timeframe,
+                        start_time=current_start,
+                        limit=1000
+                    )
+                    if not batch:
+                        break
+                    aggregated_new.extend(batch)
+                    current_start = int(batch[-1]['timestamp']) + 1
+                    req += 1
+                    time.sleep(0.1)
+
+                if aggregated_new:
+                    new_df = pd.DataFrame(aggregated_new)
+                    # Drop duplicates and keep only strictly newer than last stored (post-overlap)
+                    merged = pd.concat([df, new_df], ignore_index=True)
+                    merged = merged.drop_duplicates(subset=['timestamp']).sort_values('timestamp')
+                    added = len(merged) - len(df)
+                    if added > 0:
+                        self._save_dataframe(merged, filepath)
+                        logger.info(f"Updated {timeframe}: added {added} new candles")
                     else:
                         logger.info(f"No new candles for {timeframe}")
-                        results[timeframe] = True
+                    results[timeframe] = True
                 else:
-                    logger.warning(f"No data returned from Binance for {timeframe}")
-                    results[timeframe] = False
+                    logger.info(f"No new candles for {timeframe}")
+                    results[timeframe] = True
                     
             except Exception as e:
                 logger.error(f"Error refreshing {timeframe}: {e}")

@@ -50,13 +50,16 @@ df = pd.read_csv('data/ohlcv/BTCUSDT_1h.csv')
 # Crear estrategia
 strategy = EMARSIStrategy()
 
-# Ejecutar backtest
-engine = BacktestEngine()
-results = engine.run_single_backtest(strategy, df, '1h')
+# Ejecutar backtest con capital inicial y tamaño de posición
+from backtest.engine import CostModel
+engine = BacktestEngine(initial_capital=10000.0, position_size_pct=0.2, cost_model=CostModel(spread_mode='atr', spread_atr_multiplier=0.25))
+results = engine.run_backtest(strategy, df, '1h')
 
 print(f"Win Rate: {results['win_rate']:.2%}")
 print(f"Profit Factor: {results['profit_factor']:.2f}")
-print(f"Max Drawdown: {results['max_drawdown']:.2%}")
+print(f"Max Drawdown ($): {results['max_drawdown']:.2f}")
+print(f"Max Drawdown (%): {results['max_drawdown_pct']:.2%}")
+print(f"Total Return (%): {results['total_return_pct']:.2%}")
 ```
 
 ## 🔧 Configuración Avanzada
@@ -102,7 +105,7 @@ def refresh_data():
 
 ```bash
 # Variables de entorno
-export TIMEFRAMES="1h,4h,1d,1w"
+export TIMEFRAMES="15m,1h,2h,4h,12h,1d,1w"
 export TRADING_PAIRS="BTCUSDT"
 ```
 
@@ -113,11 +116,13 @@ export TRADING_PAIRS="BTCUSDT"
 #### 1. **Rendimiento**
 - **Total PnL**: Ganancia/pérdida total
 - **Net PnL**: PnL después de costos
+- **Total Return %**: Retorno porcentual sobre el capital inicial
 - **Win Rate**: Porcentaje de trades ganadores
 - **Profit Factor**: Ratio de ganancias/pérdidas
 
 #### 2. **Riesgo**
 - **Max Drawdown**: Máxima pérdida consecutiva
+- **Max Drawdown %**: Máximo drawdown relativo sobre equity
 - **Sharpe Ratio**: Rendimiento ajustado por riesgo
 - **Volatility**: Volatilidad de los retornos
 - **VaR**: Value at Risk

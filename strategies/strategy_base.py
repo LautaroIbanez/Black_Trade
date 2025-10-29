@@ -314,7 +314,8 @@ class StrategyBase(ABC):
                 "max_drawdown": 0.0,
                 "profit_factor": 0.0,
                 "expectancy": 0.0,
-                "total_costs": 0.0
+                "total_costs": 0.0,
+                "trades": []
             }
         
         # Use net_pnl if available, otherwise fall back to pnl
@@ -359,6 +360,7 @@ class StrategyBase(ABC):
             "max_drawdown": max_drawdown,
             "profit_factor": profit_factor,
             "expectancy": expectancy,
-            "total_costs": total_costs
+            "total_costs": total_costs,
+            "trades": trades
         }
 

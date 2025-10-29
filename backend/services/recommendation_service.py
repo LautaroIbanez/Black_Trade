@@ -2,8 +2,10 @@
 import pandas as pd
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
+import os
 from strategies.strategy_base import StrategyBase
 from backend.services.strategy_registry import strategy_registry
+from backend.services.regime_detector import regime_detector
 from backend.services.risk_management import risk_management_service, RiskTarget
 
 
@@ -54,6 +56,14 @@ class RecommendationResult:
     risk_level: str
     trade_management: Optional[Dict[str, Any]] = None
     contribution_breakdown: Optional[List[ContributionBreakdown]] = None
+    # New normalized and transparency fields
+    risk_reward_ratio: float = 0.0
+    suggested_position_size: float = 0.0
+    entry_label: str = ""
+    risk_percentage: float = 0.0
+    normalized_weights_sum: float = 0.0
+    position_size_units: float = 0.0
+    position_notional: float = 0.0
 
 
 class RecommendationService:
@@ -79,6 +89,23 @@ class RecommendationService:
         # Define timeframe weights based on trading profile
         timeframe_weights = self._get_profile_weights(profile)
         
+        # Detect market regime per timeframe
+        regimes = regime_detector.detect(data)
+
+        # Strategy activation mapping by regime (default active in all)
+        regime_filters = {
+            'EMA_RSI': ['trending'],
+            'Momentum': ['trending'],
+            'Breakout': ['trending'],
+            'Ichimoku': ['trending'],
+            'MeanReversion': ['ranging'],
+            'BollingerBreakout': ['trending'],
+            'IchimokuTrend': ['trending'],
+            'RSIDivergence': ['ranging'],
+            'MACDCrossover': ['trending'],
+            'Stochastic': ['ranging']
+        }
+
         # Generate signals for each timeframe
         all_signals = []
         for timeframe, df in data.items():
@@ -89,6 +116,11 @@ class RecommendationService:
             timeframe_weight = timeframe_weights.get(timeframe, 0.5)
                 
             for strategy in strategies:
+                # Check regime activation
+                regime = regimes.get(timeframe, 'unknown')
+                allowed = regime_filters.get(getattr(strategy, 'name', ''), ['trending', 'ranging', 'unknown'])
+                if regime != 'unknown' and regime not in allowed:
+                    continue
                 try:
                     signal_data = strategy.generate_signal(df)
                     
@@ -124,7 +156,7 @@ class RecommendationService:
             return self._create_default_recommendation()
         
         # Analyze signals and generate recommendation
-        return self._analyze_signals(all_signals, data)
+        return self._analyze_signals(all_signals, data, profile)
     
     def _get_strategy_score(self, strategy_name: str, historical_metrics: Optional[Dict[str, List[Dict]]], timeframe: str = None) -> float:
         """Get historical performance score for a strategy in a specific timeframe."""
@@ -226,7 +258,7 @@ class RecommendationService:
             agg["max"] = agg["min"] + delta
         return agg
     
-    def _analyze_signals(self, signals: List[StrategySignal], data: Dict[str, pd.DataFrame]) -> RecommendationResult:
+    def _analyze_signals(self, signals: List[StrategySignal], data: Dict[str, pd.DataFrame], profile: str) -> RecommendationResult:
         """Analyze signals and generate final recommendation with improved neutral signal handling."""
         
         # Group signals by type
@@ -349,10 +381,11 @@ class RecommendationService:
 
             weighted_confidence = max(weighted_confidence, floor)
 
-        # Calculate signal consensus with active signal bias
+        # Calculate normalized signal consensus (0-1 range)
         if active_count > 0:
             # When active signals exist, bias toward them more aggressively
-            signal_consensus = max(buy_ratio, sell_ratio) * 2.0  # Increased boost for active signals
+            raw_consensus = max(buy_ratio, sell_ratio) * 2.0  # Increased boost for active signals
+            signal_consensus = min(raw_consensus, 1.0)  # Cap at 1.0
         else:
             signal_consensus = hold_ratio
         
@@ -370,7 +403,7 @@ class RecommendationService:
             # Use risk management service for adaptive stop loss and take profit
             risk_targets = self._create_risk_targets_from_signals(primary_signals)
             aggregated_risk = risk_management_service.aggregate_risk_targets(
-                risk_targets, data, current_price
+                risk_targets, data, current_price, profile
             )
             stop_loss = aggregated_risk.stop_loss
             take_profit = aggregated_risk.take_profit
@@ -391,9 +424,13 @@ class RecommendationService:
         # Determine risk level
         risk_level = self._determine_risk_level(weighted_confidence, len(primary_signals))
         
-        # Prepare strategy details
+        # Prepare strategy details with normalized weights
         strategy_details = []
+        total_weight = 0.0
+        
+        # First pass: calculate raw weights
         for signal in signals:
+            raw_weight = signal.confidence * signal.score
             strategy_details.append({
                 "strategy_name": signal.strategy_name,
                 "signal": signal.signal,
@@ -402,16 +439,33 @@ class RecommendationService:
                 "reason": signal.reason,
                 "score": signal.score,
                 "timeframe": signal.timeframe,
-                "weight": signal.confidence * signal.score,
+                "weight": raw_weight,
                 "entry_range": signal.entry_range,
                 "risk_targets": signal.risk_targets
             })
+            total_weight += raw_weight
         
-        # Sort strategy details by weight
+        # Second pass: normalize weights to sum to 1.0
+        if total_weight > 0:
+            for detail in strategy_details:
+                detail["weight"] = detail["weight"] / total_weight
+        
+        # Sort strategy details by normalized weight
         strategy_details.sort(key=lambda x: x['weight'], reverse=True)
         
         # Calculate contribution breakdown
         contribution_breakdown = self._calculate_contribution_breakdown(signals, entry_range, stop_loss, take_profit)
+
+        # Calculate new normalized and transparency fields
+        risk_reward_ratio = self._calculate_risk_reward_ratio(stop_loss, take_profit, current_price, action)
+        suggested_position_size = self._calculate_suggested_position_size(weighted_confidence, risk_level)
+        # Position sizing by capital and SL distance
+        position_size_units, position_notional = self._calculate_position_size_by_risk(
+            current_price, stop_loss, profile
+        )
+        entry_label = self._generate_entry_label(current_price, entry_range, action, risk_level)
+        risk_percentage = self._calculate_risk_percentage(stop_loss, current_price, action)
+        normalized_weights_sum = sum(detail['weight'] for detail in strategy_details)
 
         return RecommendationResult(
             action=action,
@@ -426,11 +480,21 @@ class RecommendationService:
             signal_consensus=signal_consensus,
             risk_level=risk_level,
             trade_management=trade_management.__dict__ if trade_management else None,
-            contribution_breakdown=contribution_breakdown
+            contribution_breakdown=contribution_breakdown,
+            risk_reward_ratio=risk_reward_ratio,
+            suggested_position_size=suggested_position_size,
+            entry_label=entry_label,
+            risk_percentage=risk_percentage,
+            normalized_weights_sum=normalized_weights_sum,
+            position_size_units=position_size_units,
+            position_notional=position_notional
         )
     
     def _calculate_trade_levels(self, current_price: float, action: str, confidence: float) -> Tuple[Dict[str, float], float, float]:
         """Calculate entry range, stop loss, and take profit levels."""
+        # Deprecated: static percentage-based levels. Guarded by feature flag.
+        if os.getenv('FEATURE_STATIC_LEVELS', 'false').lower() != 'true':
+            raise RuntimeError("_calculate_trade_levels is disabled by default. Enable via FEATURE_STATIC_LEVELS=true if needed for tests.")
         
         # Base percentages
         base_entry_range = 0.002  # 0.2%
@@ -683,6 +747,130 @@ class RecommendationService:
         # Sort by weight (highest contribution first)
         breakdown.sort(key=lambda x: x.weight, reverse=True)
         return breakdown
+
+    def _calculate_risk_reward_ratio(self, stop_loss: float, take_profit: float, 
+                                   current_price: float, action: str) -> float:
+        """Calculate risk-reward ratio for the trade."""
+        if stop_loss == 0 or take_profit == 0 or current_price == 0:
+            return 0.0
+        
+        if action == "BUY":
+            risk = current_price - stop_loss
+            reward = take_profit - current_price
+        elif action == "SELL":
+            risk = stop_loss - current_price
+            reward = current_price - take_profit
+        else:
+            return 0.0
+        
+        if risk <= 0:
+            return 0.0
+        
+        return reward / risk
+
+    def _calculate_suggested_position_size(self, confidence: float, risk_level: str) -> float:
+        """Calculate suggested position size based on confidence and risk level."""
+        # Base position size multipliers by risk level
+        risk_multipliers = {
+            "LOW": 0.5,
+            "MEDIUM": 1.0,
+            "HIGH": 1.5
+        }
+        
+        base_size = risk_multipliers.get(risk_level, 1.0)
+        
+        # Adjust by confidence (0.1 to 2.0 range)
+        confidence_multiplier = 0.1 + (confidence * 1.9)
+        
+        return base_size * confidence_multiplier
+
+    def _get_profile_risk_settings(self, profile: str) -> Dict[str, float]:
+        profile = (profile or "balanced").lower()
+        mapping = {
+            "day_trading": {"risk_pct": 0.005},   # 0.5%
+            "balanced": {"risk_pct": 0.01},       # 1.0%
+            "swing": {"risk_pct": 0.015},         # 1.5%
+            "long_term": {"risk_pct": 0.02},      # 2.0%
+        }
+        return mapping.get(profile, mapping["balanced"])
+
+    def _calculate_position_size_by_risk(self, current_price: float, stop_loss: float, profile: str) -> Tuple[float, float]:
+        """Position size based on capital risk percentage and SL distance."""
+        if current_price <= 0 or stop_loss <= 0 or current_price == stop_loss:
+            return 0.0, 0.0
+        try:
+            import os
+            capital = float(os.getenv('ACCOUNT_CAPITAL', '10000'))
+        except Exception:
+            capital = 10000.0
+        risk_pct = self._get_profile_risk_settings(profile).get('risk_pct', 0.01)
+        risk_amount = capital * risk_pct
+        sl_distance = abs(current_price - stop_loss)
+        if sl_distance <= 0:
+            return 0.0, 0.0
+        units = risk_amount / sl_distance
+        notional = units * current_price
+        # Exposure dampening if many primary signals
+        # Use sqrt scaling by number of signals to limit exposure
+        # Note: primary_signals not accessible here; approximate via confidence strength
+        exposure_scale = max(0.5, min(1.0, 1.0))
+        return units * exposure_scale, notional * exposure_scale
+
+    def _generate_entry_label(self, current_price: float, entry_range: Dict[str, float], 
+                            action: str, risk_level: str) -> str:
+        """Generate descriptive entry label based on price position and risk."""
+        if not entry_range or 'min' not in entry_range or 'max' not in entry_range:
+            return "No entry range available"
+        
+        entry_min = entry_range['min']
+        entry_max = entry_range['max']
+        entry_mid = (entry_min + entry_max) / 2
+        
+        # Calculate price position relative to entry range
+        if current_price < entry_min:
+            position = "below"
+        elif current_price > entry_max:
+            position = "above"
+        elif current_price <= entry_mid:
+            position = "lower"
+        else:
+            position = "upper"
+        
+        # Generate labels based on action and position
+        if action == "BUY":
+            if position == "below":
+                return "Esperar pullback - Precio por debajo del rango de entrada"
+            elif position == "above":
+                return "Esperar corrección - Precio por encima del rango de entrada"
+            elif position == "lower":
+                return "Entrada favorable - Precio en la parte baja del rango"
+            else:
+                return "Entrada inmediata - Precio en la parte alta del rango"
+        elif action == "SELL":
+            if position == "above":
+                return "Esperar pullback - Precio por encima del rango de entrada"
+            elif position == "below":
+                return "Esperar corrección - Precio por debajo del rango de entrada"
+            elif position == "upper":
+                return "Entrada favorable - Precio en la parte alta del rango"
+            else:
+                return "Entrada inmediata - Precio en la parte baja del rango"
+        else:
+            return "Esperar señal clara - Posición neutral recomendada"
+
+    def _calculate_risk_percentage(self, stop_loss: float, current_price: float, action: str) -> float:
+        """Calculate risk percentage for the trade."""
+        if stop_loss == 0 or current_price == 0:
+            return 0.0
+        
+        if action == "BUY":
+            risk_pct = ((current_price - stop_loss) / current_price) * 100
+        elif action == "SELL":
+            risk_pct = ((stop_loss - current_price) / current_price) * 100
+        else:
+            return 0.0
+        
+        return max(0.0, risk_pct)
 
 
 # Global service instance

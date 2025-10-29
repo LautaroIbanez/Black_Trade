@@ -14,6 +14,8 @@ from strategies.ichimoku_trend_strategy import IchimokuTrendStrategy
 from strategies.rsi_divergence_strategy import RSIDivergenceStrategy
 from strategies.macd_crossover_strategy import MACDCrossoverStrategy
 from strategies.stochastic_strategy import StochasticStrategy
+from strategies.crypto_rotation_strategy import CryptoRotationStrategy
+from strategies.order_flow_strategy import OrderFlowStrategy
 
 
 @dataclass
@@ -45,7 +47,9 @@ class StrategyRegistry:
             'IchimokuTrendStrategy': IchimokuTrendStrategy,
             'RSIDivergenceStrategy': RSIDivergenceStrategy,
             'MACDCrossoverStrategy': MACDCrossoverStrategy,
-            'StochasticStrategy': StochasticStrategy
+            'StochasticStrategy': StochasticStrategy,
+            'CryptoRotationStrategy': CryptoRotationStrategy,
+            'OrderFlowStrategy': OrderFlowStrategy
         }
         self._load_config()
     
@@ -111,6 +115,24 @@ class StrategyRegistry:
                 commission=0.001,
                 slippage=0.0005,
                 description="Momentum strategy with MACD and RSI"
+            ),
+            StrategyConfig(
+                name="CryptoRotation",
+                enabled=False,
+                class_name="CryptoRotationStrategy",
+                parameters={"lookback": 50},
+                commission=0.001,
+                slippage=0.0005,
+                description="Rotation proxy based on relative strength vs EMA"
+            ),
+            StrategyConfig(
+                name="OrderFlow",
+                enabled=False,
+                class_name="OrderFlowStrategy",
+                parameters={"vol_mult": 1.8, "lookback": 30},
+                commission=0.001,
+                slippage=0.0005,
+                description="Order-flow proxy using abnormal volume and price delta"
             )
         ]
         

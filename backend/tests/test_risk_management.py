@@ -13,6 +13,7 @@ from backend.services.risk_management import (
     SupportResistanceLevel
 )
 from backtest.indicators.support_resistance import calculate_support_resistance_levels
+from backend.services.recommendation_service import RecommendationService, StrategySignal
 
 
 class TestRiskManagementService(unittest.TestCase):
@@ -367,6 +368,17 @@ class TestConvenienceFunction(unittest.TestCase):
         self.assertIsInstance(levels, list)
         for level in levels:
             self.assertIsInstance(level, SupportResistanceLevel)
+
+
+class TestPositionSizing(unittest.TestCase):
+    def test_position_size_by_risk(self):
+        svc = RecommendationService()
+        current_price = 100.0
+        stop_loss = 98.0  # $2 risk per unit
+        units, notional = svc._calculate_position_size_by_risk(current_price, stop_loss, 'balanced')
+        # Default capital 10k, risk 1% => $100 risk. $2 per unit => ~50 units
+        self.assertAlmostEqual(units, 50.0, places=1)
+        self.assertAlmostEqual(notional, 5000.0, places=1)
 
 
 if __name__ == '__main__':

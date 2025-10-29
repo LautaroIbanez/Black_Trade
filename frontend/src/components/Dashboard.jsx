@@ -192,6 +192,37 @@ function Dashboard() {
               </div>
             </div>
 
+            {/* New Transparency Fields */}
+            <div className="transparency-grid">
+              <div className="transparency-card">
+                <span className="transparency-label">Risk/Reward Ratio</span>
+                <span className="transparency-value">{recommendation.risk_reward_ratio.toFixed(2)}</span>
+              </div>
+              <div className="transparency-card">
+                <span className="transparency-label">Position Size</span>
+                <span className="transparency-value">{recommendation.suggested_position_size.toFixed(2)}x</span>
+              </div>
+              <div className="transparency-card">
+                <span className="transparency-label">Risk %</span>
+                <span className="transparency-value">{recommendation.risk_percentage.toFixed(1)}%</span>
+              </div>
+              <div className="transparency-card">
+                <span className="transparency-label">Weights Sum</span>
+                <span className="transparency-value">{recommendation.normalized_weights_sum.toFixed(3)}</span>
+              </div>
+            </div>
+
+            {/* Entry Label */}
+            {recommendation.entry_label && (
+              <div className="entry-label-section">
+                <div className="entry-label-header">
+                  <span className="entry-label-icon">💡</span>
+                  <span className="entry-label-title">Entry Guidance</span>
+                </div>
+                <p className="entry-label-text">{recommendation.entry_label}</p>
+              </div>
+            )}
+
             {recommendation.primary_strategy && (
               <div className="strategy-info">
                 <span className="strategy-label">Primary Strategy:</span>
