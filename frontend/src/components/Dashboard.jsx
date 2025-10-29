@@ -209,28 +209,28 @@ function Dashboard() {
             )}
 
             {/* Multi-timeframe Consensus Summary */}
-            {recommendation.strategy_details && recommendation.strategy_details.length > 0 && (
-              <div className="consensus-summary">
-                <div className="consensus-header">
-                  <h4>Multi-Timeframe Consensus</h4>
-                  <span className="consensus-tooltip" title="This recommendation combines signals from multiple timeframes and strategies, weighted by their historical performance and current strength.">
-                    ℹ️
-                  </span>
-                </div>
-                
-                <div className="timeframe-participants">
-                  {(() => {
-                    // Group strategies by timeframe
-                    const timeframeGroups = {};
-                    recommendation.strategy_details.forEach(strategy => {
-                      const tf = strategy.timeframe;
-                      if (!timeframeGroups[tf]) {
-                        timeframeGroups[tf] = [];
-                      }
-                      timeframeGroups[tf].push(strategy);
-                    });
+            {recommendation.strategy_details && recommendation.strategy_details.length > 0 && (() => {
+              // Group strategies by timeframe
+              const timeframeGroups = {};
+              recommendation.strategy_details.forEach(strategy => {
+                const tf = strategy.timeframe;
+                if (!timeframeGroups[tf]) {
+                  timeframeGroups[tf] = [];
+                }
+                timeframeGroups[tf].push(strategy);
+              });
 
-                    return Object.entries(timeframeGroups).map(([timeframe, strategies]) => (
+              return (
+                <div className="consensus-summary">
+                  <div className="consensus-header">
+                    <h4>Multi-Timeframe Consensus</h4>
+                    <span className="consensus-tooltip" title="This recommendation combines signals from multiple timeframes and strategies, weighted by their historical performance and current strength.">
+                      ℹ️
+                    </span>
+                  </div>
+                  
+                  <div className="timeframe-participants">
+                    {Object.entries(timeframeGroups).map(([timeframe, strategies]) => (
                       <div key={timeframe} className="timeframe-group">
                         <div className="timeframe-label">
                           {timeframe}
@@ -251,17 +251,17 @@ function Dashboard() {
                           )}
                         </div>
                       </div>
-                    ));
-                  })()}
-                </div>
+                    ))}
+                  </div>
 
-                <div className="consensus-explanation">
-                  <small>
-                    💡 Recommendation based on weighted consensus across {Object.keys(timeframeGroups).length} timeframes
-                  </small>
+                  <div className="consensus-explanation">
+                    <small>
+                      💡 Recommendation based on weighted consensus across {Object.keys(timeframeGroups).length} timeframes
+                    </small>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Contribution Breakdown Panel */}
             {recommendation.contribution_breakdown && recommendation.contribution_breakdown.length > 0 && (
