@@ -18,8 +18,8 @@ export async function refreshData() {
   return handleResponse(response)
 }
 
-export async function getRecommendation() {
-  const response = await fetch(`${API_BASE_URL}/recommendation`)
+export async function getRecommendation(profile = 'balanced') {
+  const response = await fetch(`${API_BASE_URL}/recommendation?profile=${profile}`)
   return handleResponse(response)
 }
 

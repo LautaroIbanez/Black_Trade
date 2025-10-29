@@ -1,7 +1,7 @@
 """FastAPI application for Black Trade backend."""
 import os
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -16,6 +16,7 @@ from backend.services.strategy_registry import strategy_registry
 from backend.services.recommendation_service import recommendation_service
 from backtest.data_loader import data_loader
 from backend.api.routes.chart import router as chart_router
+from backend.api.routes.monitoring import router as monitoring_router
 
 load_dotenv()
 
@@ -46,6 +47,19 @@ class RefreshResponse(BaseModel):
     message: str
     results: Dict[str, Any]
 
+class ContributionBreakdownResponse(BaseModel):
+    strategy_name: str
+    timeframe: str
+    signal: int
+    confidence: float
+    strength: float
+    score: float
+    weight: float
+    entry_contribution: Dict[str, float]
+    sl_contribution: float
+    tp_contribution: float
+    reason: str
+
 class RecommendationResponse(BaseModel):
     action: str
     confidence: float
@@ -58,6 +72,7 @@ class RecommendationResponse(BaseModel):
     strategy_details: List[Dict[str, Any]]
     signal_consensus: float
     risk_level: str
+    contribution_breakdown: Optional[List[ContributionBreakdownResponse]] = None
 
 class StrategyMetrics(BaseModel):
     strategy_name: str
@@ -165,7 +180,7 @@ async def refresh_data() -> RefreshResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/recommendation")
-async def get_recommendation() -> RecommendationResponse:
+async def get_recommendation(profile: str = "balanced") -> RecommendationResponse:
     """Get current trading recommendation based on real-time signals."""
     if not last_results:
         raise HTTPException(status_code=404, detail="No results available. Please call /refresh first.")
@@ -188,9 +203,28 @@ async def get_recommendation() -> RecommendationResponse:
         if not current_data:
             raise HTTPException(status_code=404, detail="No current data available.")
         
-        # Generate recommendation using real-time signals
-        recommendation = recommendation_service.generate_recommendation(current_data, last_results)
+        # Generate recommendation using real-time signals with profile-specific weights
+        recommendation = recommendation_service.generate_recommendation(current_data, last_results, profile)
         
+        # Convert contribution breakdown to response format
+        contribution_breakdown = None
+        if recommendation.contribution_breakdown:
+            contribution_breakdown = [
+                ContributionBreakdownResponse(
+                    strategy_name=cb.strategy_name,
+                    timeframe=cb.timeframe,
+                    signal=cb.signal,
+                    confidence=cb.confidence,
+                    strength=cb.strength,
+                    score=cb.score,
+                    weight=cb.weight,
+                    entry_contribution=cb.entry_contribution,
+                    sl_contribution=cb.sl_contribution,
+                    tp_contribution=cb.tp_contribution,
+                    reason=cb.reason
+                ) for cb in recommendation.contribution_breakdown
+            ]
+
         return RecommendationResponse(
             action=recommendation.action,
             confidence=recommendation.confidence,
@@ -202,7 +236,8 @@ async def get_recommendation() -> RecommendationResponse:
             supporting_strategies=recommendation.supporting_strategies,
             strategy_details=recommendation.strategy_details,
             signal_consensus=recommendation.signal_consensus,
-            risk_level=recommendation.risk_level
+            risk_level=recommendation.risk_level,
+            contribution_breakdown=contribution_breakdown
         )
         
     except Exception as e:
@@ -273,8 +308,9 @@ async def reload_strategies() -> Dict[str, Any]:
     strategy_registry.reload_config()
     return {"success": True, "message": "Strategy configurations reloaded"}
 
-# Include chart router
+# Include routers
 app.include_router(chart_router, prefix="/api", tags=["chart"])
+app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
 
 if __name__ == "__main__":
     import uvicorn

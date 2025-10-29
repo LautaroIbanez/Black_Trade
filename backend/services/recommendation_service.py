@@ -24,6 +24,21 @@ class StrategySignal:
 
 
 @dataclass
+class ContributionBreakdown:
+    """Breakdown of how different strategies contributed to the recommendation."""
+    strategy_name: str
+    timeframe: str
+    signal: int
+    confidence: float
+    strength: float
+    score: float
+    weight: float
+    entry_contribution: Dict[str, float]
+    sl_contribution: float
+    tp_contribution: float
+    reason: str
+
+@dataclass
 class RecommendationResult:
     """Final recommendation result."""
     action: str  # "BUY", "SELL", "HOLD"
@@ -38,6 +53,7 @@ class RecommendationResult:
     signal_consensus: float
     risk_level: str
     trade_management: Optional[Dict[str, Any]] = None
+    contribution_breakdown: Optional[List[ContributionBreakdown]] = None
 
 
 class RecommendationService:
@@ -53,19 +69,15 @@ class RecommendationService:
         }
     
     def generate_recommendation(self, data: Dict[str, pd.DataFrame], 
-                              historical_metrics: Optional[Dict[str, List[Dict]]] = None) -> RecommendationResult:
+                              historical_metrics: Optional[Dict[str, List[Dict]]] = None,
+                              profile: str = "balanced") -> RecommendationResult:
         """Generate trading recommendation from current signals and historical data."""
         
         # Get enabled strategies
         strategies = self.strategy_registry.get_enabled_strategies()
         
-        # Define timeframe weights for balanced contribution (privilege recent slightly more)
-        timeframe_weights = {
-            '1w': 1.0,   # Highest weight for weekly (most reliable)
-            '1d': 0.9,   # High weight for daily
-            '4h': 0.7,   # Medium-high weight for 4-hour
-            '1h': 0.5    # Still lower than higher TFs, but not overly penalized
-        }
+        # Define timeframe weights based on trading profile
+        timeframe_weights = self._get_profile_weights(profile)
         
         # Generate signals for each timeframe
         all_signals = []
@@ -98,7 +110,7 @@ class RecommendationService:
                         reason=signal_data['reason'],
                         price=signal_data['price'],
                         timestamp=signal_data['timestamp'],
-                        score=self._get_strategy_score(strategy.name, historical_metrics),
+                        score=self._get_strategy_score(strategy.name, historical_metrics, timeframe),
                         timeframe=timeframe,
                         entry_range=entry_range,
                         risk_targets=risk_targets
@@ -114,13 +126,19 @@ class RecommendationService:
         # Analyze signals and generate recommendation
         return self._analyze_signals(all_signals, data)
     
-    def _get_strategy_score(self, strategy_name: str, historical_metrics: Optional[Dict[str, List[Dict]]]) -> float:
-        """Get historical performance score for a strategy."""
+    def _get_strategy_score(self, strategy_name: str, historical_metrics: Optional[Dict[str, List[Dict]]], timeframe: str = None) -> float:
+        """Get historical performance score for a strategy in a specific timeframe."""
         if not historical_metrics:
             return 0.5  # Default neutral score
         
-        # Find the strategy in historical metrics
-        for timeframe, results in historical_metrics.items():
+        # If timeframe is specified, look for that specific timeframe first
+        if timeframe and timeframe in historical_metrics:
+            for result in historical_metrics[timeframe]:
+                if result.get('strategy_name') == strategy_name:
+                    return result.get('score', 0.5)
+        
+        # Fallback: search all timeframes (original behavior)
+        for tf, results in historical_metrics.items():
             for result in results:
                 if result.get('strategy_name') == strategy_name:
                     return result.get('score', 0.5)
@@ -392,6 +410,9 @@ class RecommendationService:
         # Sort strategy details by weight
         strategy_details.sort(key=lambda x: x['weight'], reverse=True)
         
+        # Calculate contribution breakdown
+        contribution_breakdown = self._calculate_contribution_breakdown(signals, entry_range, stop_loss, take_profit)
+
         return RecommendationResult(
             action=action,
             confidence=min(weighted_confidence, 1.0),
@@ -404,7 +425,8 @@ class RecommendationService:
             strategy_details=strategy_details,
             signal_consensus=signal_consensus,
             risk_level=risk_level,
-            trade_management=trade_management.__dict__ if trade_management else None
+            trade_management=trade_management.__dict__ if trade_management else None,
+            contribution_breakdown=contribution_breakdown
         )
     
     def _calculate_trade_levels(self, current_price: float, action: str, confidence: float) -> Tuple[Dict[str, float], float, float]:
@@ -586,6 +608,81 @@ class RecommendationService:
                 stats['active_rate'] = 0.0
         
         return timeframe_stats
+
+    def _get_profile_weights(self, profile: str) -> Dict[str, float]:
+        """Get timeframe weights based on trading profile."""
+        profile_weights = {
+            'day_trading': {
+                '1h': 1.0,   # Highest weight for hourly (intraday focus)
+                '4h': 0.8,   # High weight for 4-hour
+                '1d': 0.4,   # Lower weight for daily
+                '1w': 0.2    # Minimal weight for weekly
+            },
+            'swing': {
+                '4h': 1.0,   # Highest weight for 4-hour (swing focus)
+                '1d': 0.9,   # High weight for daily
+                '1h': 0.6,   # Medium weight for hourly
+                '1w': 0.3    # Lower weight for weekly
+            },
+            'balanced': {
+                '1w': 1.0,   # Highest weight for weekly (most reliable)
+                '1d': 0.9,   # High weight for daily
+                '4h': 0.7,   # Medium-high weight for 4-hour
+                '1h': 0.5    # Still lower than higher TFs, but not overly penalized
+            },
+            'long_term': {
+                '1w': 1.0,   # Highest weight for weekly (long-term focus)
+                '1d': 0.8,   # High weight for daily
+                '4h': 0.4,   # Lower weight for 4-hour
+                '1h': 0.2    # Minimal weight for hourly
+            }
+        }
+        
+        return profile_weights.get(profile, profile_weights['balanced'])
+
+    def _calculate_contribution_breakdown(self, signals: List[StrategySignal], 
+                                        entry_range: Dict[str, float], 
+                                        stop_loss: float, 
+                                        take_profit: float) -> List[ContributionBreakdown]:
+        """Calculate detailed breakdown of how each strategy contributed to the recommendation."""
+        if not signals:
+            return []
+        
+        # Calculate total weight for normalization
+        total_weight = sum(max(signal.confidence * signal.score, 1e-9) for signal in signals)
+        
+        breakdown = []
+        for signal in signals:
+            weight = max(signal.confidence * signal.score, 1e-9)
+            weight_percentage = (weight / total_weight) * 100 if total_weight > 0 else 0
+            
+            # Calculate entry range contribution
+            entry_contribution = {
+                'min': signal.entry_range.get('min', 0) * weight_percentage / 100,
+                'max': signal.entry_range.get('max', 0) * weight_percentage / 100
+            }
+            
+            # Calculate SL/TP contribution (simplified - based on weight)
+            sl_contribution = signal.risk_targets.get('stop_loss', 0) * weight_percentage / 100
+            tp_contribution = signal.risk_targets.get('take_profit', 0) * weight_percentage / 100
+            
+            breakdown.append(ContributionBreakdown(
+                strategy_name=signal.strategy_name,
+                timeframe=signal.timeframe,
+                signal=signal.signal,
+                confidence=signal.confidence,
+                strength=signal.strength,
+                score=signal.score,
+                weight=weight_percentage,
+                entry_contribution=entry_contribution,
+                sl_contribution=sl_contribution,
+                tp_contribution=tp_contribution,
+                reason=signal.reason
+            ))
+        
+        # Sort by weight (highest contribution first)
+        breakdown.sort(key=lambda x: x.weight, reverse=True)
+        return breakdown
 
 
 # Global service instance

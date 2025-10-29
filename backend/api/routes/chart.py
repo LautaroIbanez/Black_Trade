@@ -256,7 +256,7 @@ async def _get_current_recommendation(current_data: Dict[str, pd.DataFrame]) -> 
         from backend.app import last_results
         
         # Use the same recommendation generation as the main endpoint
-        recommendation = recommendation_service.generate_recommendation(current_data, last_results)
+        recommendation = recommendation_service.generate_recommendation(current_data, last_results, "balanced")
         
         return {
             "action": recommendation.action,
