@@ -340,3 +340,4 @@ const fetchChartDataWithCache = async (symbol, timeframe) => {
 
 *Esta documentación debe ser actualizada cuando se implementen nuevas optimizaciones o se identifiquen problemas de performance.*
 
+

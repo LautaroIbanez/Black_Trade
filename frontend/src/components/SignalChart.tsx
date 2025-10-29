@@ -75,6 +75,59 @@ const CHART_CONFIG = {
   }
 };
 
+// Y-axis tick generation utilities
+interface Tick {
+  value: number;
+  label: string;
+}
+
+function generateCleanTicks(min: number, max: number): { cleanMin: number; cleanMax: number; ticks: Tick[] } {
+  const range = max - min;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(range)));
+  const normalizedRange = range / magnitude;
+  
+  // Determine step size based on normalized range
+  let step: number;
+  if (normalizedRange <= 1) step = 0.1;
+  else if (normalizedRange <= 2) step = 0.2;
+  else if (normalizedRange <= 5) step = 0.5;
+  else step = 1;
+  
+  step *= magnitude;
+  
+  // Calculate clean min and max
+  const cleanMin = Math.floor(min / step) * step;
+  const cleanMax = Math.ceil(max / step) * step;
+  
+  // Generate ticks
+  const ticks: Tick[] = [];
+  for (let value = cleanMin; value <= cleanMax; value += step) {
+    // Avoid floating point precision issues
+    const roundedValue = Math.round(value * 1000000) / 1000000;
+    ticks.push({
+      value: roundedValue,
+      label: formatPrice(roundedValue)
+    });
+  }
+  
+  return { cleanMin, cleanMax, ticks };
+}
+
+function formatPrice(price: number): string {
+  // Determine appropriate decimal places based on price magnitude
+  if (price >= 1000) {
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  } else if (price >= 100) {
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+  } else if (price >= 10) {
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  } else if (price >= 1) {
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
+  } else {
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+  }
+}
+
 const SignalChart: React.FC<SignalChartProps> = ({
   symbol = 'BTCUSDT',
   timeframe = '1h',
@@ -173,10 +226,13 @@ const SignalChart: React.FC<SignalChartProps> = ({
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice;
     const pricePadding = priceRange * 0.1;
+    
+    // Generate clean Y-axis ticks
+    const { cleanMin, cleanMax, ticks } = generateCleanTicks(minPrice - pricePadding, maxPrice + pricePadding);
 
-    // Price to pixel conversion
+    // Price to pixel conversion using clean range
     const priceToY = (price: number) => {
-      return chartY + chartHeight - ((price - (minPrice - pricePadding)) / (priceRange + 2 * pricePadding)) * chartHeight;
+      return chartY + chartHeight - ((price - cleanMin) / (cleanMax - cleanMin)) * chartHeight;
     };
 
     // Time to pixel conversion
@@ -188,14 +244,14 @@ const SignalChart: React.FC<SignalChartProps> = ({
     ctx.strokeStyle = CHART_CONFIG.colors.grid;
     ctx.lineWidth = 1;
     
-    // Horizontal grid lines (price levels)
-    for (let i = 0; i <= 5; i++) {
-      const y = chartY + (i / 5) * chartHeight;
+    // Horizontal grid lines (price levels) using clean ticks
+    ticks.forEach(tick => {
+      const y = priceToY(tick.value);
       ctx.beginPath();
       ctx.moveTo(chartX, y);
       ctx.lineTo(chartX + chartWidth, y);
       ctx.stroke();
-    }
+    });
 
     // Vertical grid lines (time levels)
     for (let i = 0; i <= 5; i++) {
@@ -318,16 +374,15 @@ const SignalChart: React.FC<SignalChartProps> = ({
       ctx.setLineDash([]);
     }
 
-    // Draw price labels
+    // Draw price labels using clean ticks
     ctx.fillStyle = CHART_CONFIG.colors.text;
     ctx.font = '12px Arial';
     ctx.textAlign = 'right';
     
-    for (let i = 0; i <= 5; i++) {
-      const price = minPrice - pricePadding + (i / 5) * (priceRange + 2 * pricePadding);
-      const y = chartY + (i / 5) * chartHeight;
-      ctx.fillText(price.toFixed(2), chartX - 10, y + 4);
-    }
+    ticks.forEach(tick => {
+      const y = priceToY(tick.value);
+      ctx.fillText(formatPrice(tick.value), chartX - 10, y + 4);
+    });
 
     // Draw time labels
     ctx.textAlign = 'center';
@@ -361,7 +416,7 @@ const SignalChart: React.FC<SignalChartProps> = ({
     ctx.fillStyle = '#ffeb3b';
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'left';
-    ctx.fillText(`$${chartData.current_price.toFixed(2)}`, chartX + 10, currentPriceY - 5);
+    ctx.fillText(formatPrice(chartData.current_price), chartX + 10, currentPriceY - 5);
   }, [chartData, dimensions, showSignals, showRecommendation]);
 
   // Redraw chart when data or dimensions change

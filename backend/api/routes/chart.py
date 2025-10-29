@@ -252,9 +252,11 @@ async def _generate_chart_signals(df: pd.DataFrame, symbol: str, timeframe: str)
 async def _get_current_recommendation(current_data: Dict[str, pd.DataFrame]) -> Optional[Dict[str, Any]]:
     """Get current trading recommendation."""
     try:
-        # This is a simplified version - in a real implementation,
-        # you'd get the last_results from proper state management
-        recommendation = recommendation_service.generate_recommendation(current_data, None)
+        # Import the global last_results from the main app
+        from backend.app import last_results
+        
+        # Use the same recommendation generation as the main endpoint
+        recommendation = recommendation_service.generate_recommendation(current_data, last_results)
         
         return {
             "action": recommendation.action,
@@ -264,6 +266,9 @@ async def _get_current_recommendation(current_data: Dict[str, pd.DataFrame]) -> 
             "take_profit": recommendation.take_profit,
             "current_price": recommendation.current_price,
             "primary_strategy": recommendation.primary_strategy,
+            "supporting_strategies": recommendation.supporting_strategies,
+            "strategy_details": recommendation.strategy_details,
+            "signal_consensus": recommendation.signal_consensus,
             "risk_level": recommendation.risk_level
         }
     except Exception:

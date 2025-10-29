@@ -59,12 +59,12 @@ class RecommendationService:
         # Get enabled strategies
         strategies = self.strategy_registry.get_enabled_strategies()
         
-        # Define timeframe weights for balanced contribution
+        # Define timeframe weights for balanced contribution (privilege recent slightly more)
         timeframe_weights = {
             '1w': 1.0,   # Highest weight for weekly (most reliable)
-            '1d': 0.8,   # High weight for daily
-            '4h': 0.6,   # Medium weight for 4-hour
-            '1h': 0.4    # Lower weight for hourly (more noise)
+            '1d': 0.9,   # High weight for daily
+            '4h': 0.7,   # Medium-high weight for 4-hour
+            '1h': 0.5    # Still lower than higher TFs, but not overly penalized
         }
         
         # Generate signals for each timeframe
@@ -222,10 +222,10 @@ class RecommendationService:
         active_count = len(active_signals)
         hold_count = len(hold_signals)
         
-        # Apply neutral signal weighting - reduce influence when few active signals
+        # Apply neutral signal weighting - heavily reduce influence when there are active signals
         if active_count > 0:
-            # Weight neutral signals much less when there are active signals
-            neutral_weight_factor = min(0.1, active_count / max(total_signals, 1))  # Max 10% weight for neutrals
+            # Weight neutral signals far less when active signals exist (max 5%)
+            neutral_weight_factor = min(0.05, active_count / max(total_signals, 1))
             weighted_hold_count = hold_count * neutral_weight_factor
         else:
             # Only use neutrals if no active signals at all
@@ -275,7 +275,9 @@ class RecommendationService:
                 signal_boost = 1.2 if s.signal != 0 else 0.8
                 # Additional boost for high-strength signals
                 strength_boost = 1.0 + (s.strength * 0.3)
-                final_conf = base_conf * signal_boost * strength_boost
+                # Extra slight boost for strong recent (lower TF) signals
+                recency_boost = 1.05 if (s.timeframe in ('1h', '4h') and s.strength >= 0.6 and s.signal != 0) else 1.0
+                final_conf = base_conf * signal_boost * strength_boost * recency_boost
                 confidence_scores.append(min(final_conf, 1.0))
             
             weighted_confidence = sum(confidence_scores) / len(confidence_scores)
@@ -294,6 +296,41 @@ class RecommendationService:
                 weighted_confidence = 0.05  # Minimum confidence
                 primary_strategy = "None"
         
+        # Historical score linkage and confidence floors
+        def _mean(values: List[float]) -> float:
+            return sum(values) / len(values) if values else 0.0
+
+        if primary_signals:
+            avg_primary_score = _mean([s.score for s in primary_signals])
+        else:
+            # fallback to best available active/all signals
+            source = active_signals if active_signals else signals
+            top_scores = sorted([s.score for s in source], reverse=True)[:3]
+            avg_primary_score = _mean(top_scores)
+
+        # Add a capped historical boost (ties historical rank to instant confidence)
+        historical_boost = min(max(avg_primary_score, 0.0) * 0.25, 0.25)
+        weighted_confidence = min(1.0, weighted_confidence + historical_boost)
+
+        # Apply action-specific minimum floors to avoid degradation to ~1%
+        if primary_signals:
+            supporting_count = len(primary_signals)
+            avg_strength = _mean([s.strength for s in primary_signals])
+            high_rank_present = any(s.score >= 0.7 for s in primary_signals)
+
+            floor = 0.15 if (action in ("BUY", "SELL")) else 0.05
+            if action in ("BUY", "SELL"):
+                if supporting_count >= 2:
+                    floor = max(floor, 0.30)
+                if high_rank_present and avg_strength >= 0.4:
+                    floor = max(floor, 0.25)
+            else:  # HOLD
+                # If there are high-ranked active signals in any TF, do not show near-zero
+                if any((s.signal != 0 and s.score >= 0.7) for s in signals):
+                    floor = max(floor, 0.10)
+
+            weighted_confidence = max(weighted_confidence, floor)
+
         # Calculate signal consensus with active signal bias
         if active_count > 0:
             # When active signals exist, bias toward them more aggressively
