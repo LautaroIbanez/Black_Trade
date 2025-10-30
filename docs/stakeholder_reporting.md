@@ -34,3 +34,4 @@ python backend/scripts/backtest_all.py --initial-capital 20000 --position-size-p
 - Consistencia de métricas en dashboard y reportes
 - Feature flags correctos (producción)
 - Cambios documentados con impacto esperado
+

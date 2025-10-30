@@ -19,7 +19,7 @@ Both `/api/chart/{symbol}/{timeframe}` and `/recommendation` endpoints now retur
 | `current_price` | float | Current market price | 112609.98 |
 | `primary_strategy` | string | Name of the primary strategy | "Stochastic" |
 | `risk_level` | string | Risk assessment: "LOW", "MEDIUM", "HIGH" | "LOW" |
-| `signal_consensus` | float | Signal consensus strength | 1.068 |
+| `signal_consensus` | float | Signal consensus strength (0.0 to 1.0) | 0.85 |
 
 ### Entry and Exit Levels
 
@@ -37,6 +37,12 @@ Both `/api/chart/{symbol}/{timeframe}` and `/recommendation` endpoints now retur
 | `strategy_details` | array | Detailed strategy information | See Strategy Details below |
 
 ### Strategy Details Structure
+### Position Sizing (Consolidated)
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `position_size_usd` | float | Notional exposure sized by risk (USD or quote currency) | 1200.0 |
+| `position_size_pct` | float | Fraction of account capital allocated | 0.12 |
 
 Each item in `strategy_details` contains:
 

@@ -153,3 +153,4 @@ python -m pytest backend/tests/test_normalization.py -v
 4. **Entry Labels**: Provide clear guidance for trade execution
 
 This normalization and transparency enhancement provides users with complete visibility into recommendation generation while ensuring consistent, comparable metrics across all trading scenarios.
+

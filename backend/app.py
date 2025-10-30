@@ -12,7 +12,6 @@ import pandas as pd
 from data.binance_client import BinanceClient
 from data.sync_service import SyncService
 from backtest.engine import BacktestEngine
-from recommendation.aggregator import RecommendationAggregator
 from backend.services.strategy_registry import strategy_registry
 from backend.services.recommendation_service import recommendation_service
 from backtest.data_loader import data_loader
@@ -38,7 +37,12 @@ app.add_middleware(
 binance_client = None
 sync_service = None
 backtest_engine = BacktestEngine()
-recommendation_agg = RecommendationAggregator()
+
+# Optional: legacy simple aggregator (disabled by default and NOT used in production)
+USE_SIMPLE_AGGREGATOR = os.getenv('USE_SIMPLE_AGGREGATOR', 'false').lower() == 'true'
+if USE_SIMPLE_AGGREGATOR:
+    from recommendation.aggregator import RecommendationAggregator  # Legacy, for debugging only
+    recommendation_agg = RecommendationAggregator()
 
 # Cache for results
 last_results = {}
@@ -76,12 +80,12 @@ class RecommendationResponse(BaseModel):
     contribution_breakdown: Optional[List[ContributionBreakdownResponse]] = None
     # New normalized and transparency fields
     risk_reward_ratio: float = 0.0
-    suggested_position_size: float = 0.0
     entry_label: str = ""
     risk_percentage: float = 0.0
     normalized_weights_sum: float = 0.0
-    position_size_units: float = 0.0
-    position_notional: float = 0.0
+    # Consolidated position sizing fields
+    position_size_usd: float = 0.0
+    position_size_pct: float = 0.0
 
 class StrategyMetrics(BaseModel):
     strategy_name: str
@@ -206,7 +210,7 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
     try:
         # Load current data for all timeframes
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
-        timeframes = os.getenv('TIMEFRAMES', '1h,4h,1d,1w').split(',')
+        timeframes = os.getenv('TIMEFRAMES', '15m,1h,2h,4h,12h,1d,1w').split(',')
         
         current_data = {}
         for timeframe in timeframes:
@@ -257,12 +261,11 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
             risk_level=recommendation.risk_level,
             contribution_breakdown=contribution_breakdown,
             risk_reward_ratio=recommendation.risk_reward_ratio,
-            suggested_position_size=recommendation.suggested_position_size,
             entry_label=recommendation.entry_label,
             risk_percentage=recommendation.risk_percentage,
             normalized_weights_sum=recommendation.normalized_weights_sum,
-            position_size_units=recommendation.position_size_units,
-            position_notional=recommendation.position_notional
+            position_size_usd=recommendation.position_size_usd,
+            position_size_pct=recommendation.position_size_pct
         )
         
     except Exception as e:

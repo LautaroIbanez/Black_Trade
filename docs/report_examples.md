@@ -54,3 +54,4 @@ Ejecución: Tamaño ≈ 52.4 unidades (1% riesgo capital)
 - Tablas de señales por timeframe (últimas 24–72h)
 - Gráficos: Curva de capital, distribución de retornos, drawdown
 - Lista de cambios (versionado de estrategias y perfiles)
+

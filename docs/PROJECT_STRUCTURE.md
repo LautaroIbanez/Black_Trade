@@ -22,9 +22,9 @@ Black_Trade/
 │   ├── __init__.py
 │   └── engine.py              # Backtest execution and ranking
 │
-├── recommendation/             # Recommendation system
+├── recommendation/             # Legacy simple aggregator (disabled by default)
 │   ├── __init__.py
-│   └── aggregator.py          # Signal aggregation
+│   └── aggregator.py          # Legacy simple aggregator (guarded by flag)
 │
 ├── qa/                         # Quality assurance scripts
 │
@@ -53,13 +53,13 @@ backend/app.py
     ├── data/sync_service
     ├── strategies/ema_rsi_strategy
     ├── backtest/engine
-    └── recommendation/aggregator
+    └── backend/services/recommendation_service
 
 backtest/engine.py
     └── strategies/strategy_base
 
-recommendation/aggregator.py
-    └── (standalone)
+backend/services/recommendation_service.py
+    └── Aggregation, normalization, risk management
 
 data/sync_service.py
     └── data/binance_client

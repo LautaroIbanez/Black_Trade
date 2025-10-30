@@ -548,3 +548,19 @@ This guide provides the foundation for creating robust, well-tested trading stra
 5. Document your strategy's logic and parameters
 
 For questions or contributions, please refer to the project's main documentation or contact the development team.
+
+## CryptoRotation y OrderFlow (Activadas)
+
+- Habilitadas en el registro con parámetros por defecto conservadores.
+- Generan trades reales: entrada en señal activa, salida en señal opuesta (OrderFlow también sale cuando volumen se normaliza), cierre forzado al final.
+- Costos aplicados a cada trade (commission + slippage).
+
+### Escenarios de backtest
+
+```python
+from backtest.scenarios.rotation_orderflow import run_rotation_scenario, run_orderflow_scenario
+print(run_rotation_scenario("BTCUSDT", "1h"))
+print(run_orderflow_scenario("BTCUSDT", "1h"))
+```
+
+Los escenarios leen `data/ohlcv/{SYMBOL}_{TF}.csv` y reportan `total_trades`, `win_rate`, `net_pnl`, `max_drawdown`, `profit_factor`, `expectancy`.

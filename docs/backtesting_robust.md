@@ -81,3 +81,4 @@ python backend/scripts/backtest_all.py \
 - Validar OOS con split o walk-forward
 - Incluir costes realistas (comisión, slippage, spread)
 - Evitar sobreajuste; revisar estabilidad por ventanas
+

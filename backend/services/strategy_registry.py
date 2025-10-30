@@ -118,7 +118,7 @@ class StrategyRegistry:
             ),
             StrategyConfig(
                 name="CryptoRotation",
-                enabled=False,
+                enabled=True,
                 class_name="CryptoRotationStrategy",
                 parameters={"lookback": 50},
                 commission=0.001,
@@ -127,7 +127,7 @@ class StrategyRegistry:
             ),
             StrategyConfig(
                 name="OrderFlow",
-                enabled=False,
+                enabled=True,
                 class_name="OrderFlowStrategy",
                 parameters={"vol_mult": 1.8, "lookback": 30},
                 commission=0.001,

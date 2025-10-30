@@ -162,6 +162,18 @@ GET /strategies/info
 GET /api/chart/status
 ```
 
+## QA y Transparencia
+
+- La especificación de API en `docs/api/recommendation.md` refleja el esquema actual, incluyendo `position_size_usd`, `position_size_pct` y `signal_consensus` acotado a 1.0.
+- Ejecutar QA y publicar estado:
+
+```bash
+python -m pytest -q && python qa/generate_status.py
+```
+
+- Revisa `docs/qa/status.md` para un resumen de resultados y `docs/qa/overview.md` para el alcance de QA.
+- Usa `docs/qa/checklist.md` antes de cada release para auditar normalización, sizing y métricas de riesgo.
+
 ## Estructura del Proyecto
 
 ```

@@ -80,7 +80,13 @@ Content-Type: application/json
     }
   ],
   "signal_consensus": 0.75,
-  "risk_level": "MEDIUM"
+  "risk_level": "MEDIUM",
+  "risk_reward_ratio": 1.25,
+  "entry_label": "Entrada favorable - Precio en la parte baja del rango",
+  "risk_percentage": 2.0,
+  "normalized_weights_sum": 1.0,
+  "position_size_usd": 1200.0,
+  "position_size_pct": 0.12
 }
 ```
 
@@ -106,6 +112,12 @@ Content-Type: application/json
 | `strategy_details` | array | Detailed analysis of all strategies |
 | `signal_consensus` | float | Percentage of strategies agreeing (0.0 to 1.0) |
 | `risk_level` | string | Risk assessment: "LOW", "MEDIUM", or "HIGH" |
+| `risk_reward_ratio` | float | Risk to reward ratio of proposed levels |
+| `entry_label` | string | Human-readable entry guidance |
+| `risk_percentage` | float | Percent of price at risk to stop loss |
+| `normalized_weights_sum` | float | Sum of normalized weights (should be 1.0) |
+| `position_size_usd` | float | Suggested notional exposure in USD (or quote currency) |
+| `position_size_pct` | float | Fraction of capital allocated (0.0 to ~1.0) |
 
 #### Strategy Detail Fields
 

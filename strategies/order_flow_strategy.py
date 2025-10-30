@@ -30,9 +30,55 @@ class OrderFlowStrategy(StrategyBase):
         return data
 
     def generate_trades(self, df: pd.DataFrame) -> List[Dict]:
-        return []
+        trades: List[Dict] = []
+        if df.empty or 'signal' not in df.columns:
+            return trades
+        position = None
+        for idx in range(len(df)):
+            row = df.iloc[idx]
+            ts = row.get('timestamp')
+            price = float(row.get('close', 0))
+            sig = int(row.get('signal', 0))
+            # Entry on abnormal volume direction
+            if position is None:
+                if sig == 1:
+                    position = {"side": "long", "entry_price": price, "entry_time": ts}
+                elif sig == -1:
+                    position = {"side": "short", "entry_price": price, "entry_time": ts}
+                continue
+            # Exit on opposite signal or normalization of volume (signal back to 0)
+            if position and ((position['side'] == 'long' and sig == -1) or (position['side'] == 'short' and sig == 1) or sig == 0):
+                exit_price = price
+                pnl = (exit_price - position['entry_price']) if position['side'] == 'long' else (position['entry_price'] - exit_price)
+                trade = {
+                    "entry_price": position['entry_price'],
+                    "exit_price": exit_price,
+                    "side": position['side'],
+                    "pnl": pnl,
+                    "entry_time": position['entry_time'],
+                    "exit_time": ts
+                }
+                trades.append(trade)
+                position = None
+        # Close any open position at last price
+        if position is not None and not df.empty:
+            last = df.iloc[-1]
+            exit_price = float(last.get('close', 0))
+            pnl = (exit_price - position['entry_price']) if position['side'] == 'long' else (position['entry_price'] - exit_price)
+            trade = {
+                "entry_price": position['entry_price'],
+                "exit_price": exit_price,
+                "side": position['side'],
+                "pnl": pnl,
+                "entry_time": position['entry_time'],
+                "exit_time": last.get('timestamp'),
+                "forced_close": True
+            }
+            trades.append(trade)
+        return trades
 
     def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
         return self._default_exit_levels(df, signal, entry_price)
+
 
 

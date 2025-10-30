@@ -58,12 +58,12 @@ class RecommendationResult:
     contribution_breakdown: Optional[List[ContributionBreakdown]] = None
     # New normalized and transparency fields
     risk_reward_ratio: float = 0.0
-    suggested_position_size: float = 0.0
     entry_label: str = ""
     risk_percentage: float = 0.0
     normalized_weights_sum: float = 0.0
-    position_size_units: float = 0.0
-    position_notional: float = 0.0
+    # Consolidated position sizing fields
+    position_size_usd: float = 0.0
+    position_size_pct: float = 0.0
 
 
 class RecommendationService:
@@ -362,24 +362,28 @@ class RecommendationService:
         historical_boost = min(max(avg_primary_score, 0.0) * 0.25, 0.25)
         weighted_confidence = min(1.0, weighted_confidence + historical_boost)
 
-        # Apply action-specific minimum floors to avoid degradation to ~1%
+        # Apply action-specific minimum floors with integrity constraints:
+        # floors cannot push confidence above the weakest supporting signal's confidence.
         if primary_signals:
             supporting_count = len(primary_signals)
             avg_strength = _mean([s.strength for s in primary_signals])
             high_rank_present = any(s.score >= 0.7 for s in primary_signals)
 
-            floor = 0.15 if (action in ("BUY", "SELL")) else 0.05
+            base_floor = 0.15 if (action in ("BUY", "SELL")) else 0.05
             if action in ("BUY", "SELL"):
                 if supporting_count >= 2:
-                    floor = max(floor, 0.30)
+                    base_floor = max(base_floor, 0.30)
                 if high_rank_present and avg_strength >= 0.4:
-                    floor = max(floor, 0.25)
+                    base_floor = max(base_floor, 0.25)
             else:  # HOLD
                 # If there are high-ranked active signals in any TF, do not show near-zero
                 if any((s.signal != 0 and s.score >= 0.7) for s in signals):
-                    floor = max(floor, 0.10)
+                    base_floor = max(base_floor, 0.10)
 
-            weighted_confidence = max(weighted_confidence, floor)
+            # Integrity guard: do not exceed weakest supporting confidence
+            weakest_support_conf = min(max(s.confidence, 0.0) for s in primary_signals)
+            effective_floor = min(base_floor, weakest_support_conf)
+            weighted_confidence = max(weighted_confidence, effective_floor)
 
         # Calculate normalized signal consensus (0-1 range)
         if active_count > 0:
@@ -458,11 +462,8 @@ class RecommendationService:
 
         # Calculate new normalized and transparency fields
         risk_reward_ratio = self._calculate_risk_reward_ratio(stop_loss, take_profit, current_price, action)
-        suggested_position_size = self._calculate_suggested_position_size(weighted_confidence, risk_level)
-        # Position sizing by capital and SL distance
-        position_size_units, position_notional = self._calculate_position_size_by_risk(
-            current_price, stop_loss, profile
-        )
+        # Unified position sizing by capital and SL distance
+        position_size_usd, position_size_pct = self._calculate_position_size(current_price, stop_loss, profile)
         entry_label = self._generate_entry_label(current_price, entry_range, action, risk_level)
         risk_percentage = self._calculate_risk_percentage(stop_loss, current_price, action)
         normalized_weights_sum = sum(detail['weight'] for detail in strategy_details)
@@ -482,12 +483,11 @@ class RecommendationService:
             trade_management=trade_management.__dict__ if trade_management else None,
             contribution_breakdown=contribution_breakdown,
             risk_reward_ratio=risk_reward_ratio,
-            suggested_position_size=suggested_position_size,
             entry_label=entry_label,
             risk_percentage=risk_percentage,
             normalized_weights_sum=normalized_weights_sum,
-            position_size_units=position_size_units,
-            position_notional=position_notional
+            position_size_usd=position_size_usd,
+            position_size_pct=position_size_pct
         )
     
     def _calculate_trade_levels(self, current_price: float, action: str, confidence: float) -> Tuple[Dict[str, float], float, float]:
@@ -677,28 +677,40 @@ class RecommendationService:
         """Get timeframe weights based on trading profile."""
         profile_weights = {
             'day_trading': {
+                '15m': 0.9,  # High weight for 15-minute (scalping/intraday)
                 '1h': 1.0,   # Highest weight for hourly (intraday focus)
+                '2h': 0.9,   # High weight for 2-hour
                 '4h': 0.8,   # High weight for 4-hour
+                '12h': 0.5,  # Medium-low weight for 12-hour
                 '1d': 0.4,   # Lower weight for daily
                 '1w': 0.2    # Minimal weight for weekly
             },
             'swing': {
-                '4h': 1.0,   # Highest weight for 4-hour (swing focus)
-                '1d': 0.9,   # High weight for daily
+                '15m': 0.2,  # Low influence for 15-minute
                 '1h': 0.6,   # Medium weight for hourly
+                '2h': 0.8,   # High weight for 2-hour
+                '4h': 1.0,   # Highest weight for 4-hour (swing focus)
+                '12h': 0.9,  # High weight for 12-hour
+                '1d': 0.9,   # High weight for daily
                 '1w': 0.3    # Lower weight for weekly
             },
             'balanced': {
-                '1w': 1.0,   # Highest weight for weekly (most reliable)
-                '1d': 0.9,   # High weight for daily
+                '15m': 0.3,  # Some recency
+                '1h': 0.5,   # Still lower than higher TFs, but not overly penalized
+                '2h': 0.6,   # Medium weight
                 '4h': 0.7,   # Medium-high weight for 4-hour
-                '1h': 0.5    # Still lower than higher TFs, but not overly penalized
+                '12h': 0.8,  # High weight for 12-hour
+                '1d': 0.9,   # High weight for daily
+                '1w': 1.0    # Highest weight for weekly (most reliable)
             },
             'long_term': {
-                '1w': 1.0,   # Highest weight for weekly (long-term focus)
-                '1d': 0.8,   # High weight for daily
+                '15m': 0.1,  # Minimal
+                '1h': 0.2,   # Minimal weight for hourly
+                '2h': 0.4,   # Lower weight for 2-hour
                 '4h': 0.4,   # Lower weight for 4-hour
-                '1h': 0.2    # Minimal weight for hourly
+                '12h': 0.7,  # Medium-high for 12-hour
+                '1d': 0.8,   # High weight for daily
+                '1w': 1.0    # Highest weight for weekly (long-term focus)
             }
         }
         
@@ -768,34 +780,8 @@ class RecommendationService:
         
         return reward / risk
 
-    def _calculate_suggested_position_size(self, confidence: float, risk_level: str) -> float:
-        """Calculate suggested position size based on confidence and risk level."""
-        # Base position size multipliers by risk level
-        risk_multipliers = {
-            "LOW": 0.5,
-            "MEDIUM": 1.0,
-            "HIGH": 1.5
-        }
-        
-        base_size = risk_multipliers.get(risk_level, 1.0)
-        
-        # Adjust by confidence (0.1 to 2.0 range)
-        confidence_multiplier = 0.1 + (confidence * 1.9)
-        
-        return base_size * confidence_multiplier
-
-    def _get_profile_risk_settings(self, profile: str) -> Dict[str, float]:
-        profile = (profile or "balanced").lower()
-        mapping = {
-            "day_trading": {"risk_pct": 0.005},   # 0.5%
-            "balanced": {"risk_pct": 0.01},       # 1.0%
-            "swing": {"risk_pct": 0.015},         # 1.5%
-            "long_term": {"risk_pct": 0.02},      # 2.0%
-        }
-        return mapping.get(profile, mapping["balanced"])
-
-    def _calculate_position_size_by_risk(self, current_price: float, stop_loss: float, profile: str) -> Tuple[float, float]:
-        """Position size based on capital risk percentage and SL distance."""
+    def _calculate_position_size(self, current_price: float, stop_loss: float, profile: str) -> Tuple[float, float]:
+        """Unified position sizing: returns (usd_amount, pct_of_capital)."""
         if current_price <= 0 or stop_loss <= 0 or current_price == stop_loss:
             return 0.0, 0.0
         try:
@@ -808,13 +794,23 @@ class RecommendationService:
         sl_distance = abs(current_price - stop_loss)
         if sl_distance <= 0:
             return 0.0, 0.0
+        # Units sized by risking 'risk_amount' to SL
         units = risk_amount / sl_distance
         notional = units * current_price
-        # Exposure dampening if many primary signals
-        # Use sqrt scaling by number of signals to limit exposure
-        # Note: primary_signals not accessible here; approximate via confidence strength
-        exposure_scale = max(0.5, min(1.0, 1.0))
-        return units * exposure_scale, notional * exposure_scale
+        pct_of_capital = notional / capital if capital > 0 else 0.0
+        return max(notional, 0.0), max(pct_of_capital, 0.0)
+
+    def _get_profile_risk_settings(self, profile: str) -> Dict[str, float]:
+        profile = (profile or "balanced").lower()
+        mapping = {
+            "day_trading": {"risk_pct": 0.005},   # 0.5%
+            "balanced": {"risk_pct": 0.01},       # 1.0%
+            "swing": {"risk_pct": 0.015},         # 1.5%
+            "long_term": {"risk_pct": 0.02},      # 2.0%
+        }
+        return mapping.get(profile, mapping["balanced"])
+
+    # Removed legacy _calculate_position_size_by_risk in favor of unified sizing
 
     def _generate_entry_label(self, current_price: float, entry_range: Dict[str, float], 
                             action: str, risk_level: str) -> str:
