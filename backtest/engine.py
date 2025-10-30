@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import pandas as pd
 from typing import List, Dict, Any, Tuple, Optional
 from strategies.strategy_base import StrategyBase
+from backtest.analysis import compute_composite_score
 
 
 @dataclass
@@ -204,19 +205,13 @@ class BacktestEngine:
         }
 
     def rank_strategies(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Rank strategies based on weighted metrics."""
+        """Rank strategies based on composite score (no hard 1.0 caps).
+
+        Combines total return, relative drawdown, and trade count (plus stability metrics)
+        before any scaling. Strategies with zero trades are penalized.
+        """
         for result in results:
-            # Calculate composite score
-            score = 0.0
-            if result.get('win_rate', 0) > 0:
-                score += result['win_rate'] * 0.3
-            if result.get('profit_factor', 0) > 0:
-                score += min(result['profit_factor'] / 2.0, 1.0) * 0.3
-            if result.get('total_return_pct', 0) > 0:
-                score += min(result['total_return_pct'], 1.0) * 0.2
-            if result.get('expectancy', 0) > 0:
-                score += min(result['expectancy'] / 100, 1.0) * 0.2
-            result['score'] = score
+            result['score'] = compute_composite_score(result)
         
         # Sort by score descending
         results.sort(key=lambda x: x.get('score', 0), reverse=True)

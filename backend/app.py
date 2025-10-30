@@ -17,6 +17,7 @@ from backend.services.recommendation_service import recommendation_service
 from backtest.data_loader import data_loader
 from backend.api.routes.chart import router as chart_router
 from backend.api.routes.monitoring import router as monitoring_router
+from recommendation.config import TIMEFRAMES_ACTIVE
 
 load_dotenv()
 
@@ -131,7 +132,8 @@ async def refresh_data() -> RefreshResponse:
     
     try:
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
-        timeframes = os.getenv('TIMEFRAMES', '15m,1h,2h,4h,12h,1d,1w').split(',')
+        env_tfs = os.getenv('TIMEFRAMES')
+        timeframes = env_tfs.split(',') if env_tfs else TIMEFRAMES_ACTIVE
         
         # Refresh data
         logger.info("Refreshing data...")
@@ -210,7 +212,8 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
     try:
         # Load current data for all timeframes
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
-        timeframes = os.getenv('TIMEFRAMES', '15m,1h,2h,4h,12h,1d,1w').split(',')
+        env_tfs = os.getenv('TIMEFRAMES')
+        timeframes = env_tfs.split(',') if env_tfs else TIMEFRAMES_ACTIVE
         
         current_data = {}
         for timeframe in timeframes:

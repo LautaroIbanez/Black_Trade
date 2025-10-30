@@ -120,7 +120,7 @@ class StrategyRegistry:
                 name="CryptoRotation",
                 enabled=True,
                 class_name="CryptoRotationStrategy",
-                parameters={"lookback": 50},
+                parameters={"lookback": 50, "universe": "BTCUSDT,ETHUSDT,BNBUSDT"},
                 commission=0.001,
                 slippage=0.0005,
                 description="Rotation proxy based on relative strength vs EMA"
@@ -129,7 +129,7 @@ class StrategyRegistry:
                 name="OrderFlow",
                 enabled=True,
                 class_name="OrderFlowStrategy",
-                parameters={"vol_mult": 1.8, "lookback": 30},
+                parameters={"vol_mult": 1.5, "lookback": 30},
                 commission=0.001,
                 slippage=0.0005,
                 description="Order-flow proxy using abnormal volume and price delta"

@@ -136,7 +136,8 @@ class RiskManagementService:
                     # Use a simple approach: calculate entry range from current price
                     entry_range = self._calculate_entry_range_from_price(current_price, df)
                     adjusted_stop_loss, adjusted_take_profit = self._ensure_levels_outside_entry_range(
-                        adjusted_stop_loss, adjusted_take_profit, entry_range, current_price
+                        adjusted_stop_loss, adjusted_take_profit, entry_range, current_price,
+                        atr_value=atr_value, profile=risk_profile
                     )
         
         # Calculate risk metrics
@@ -186,10 +187,10 @@ class RiskManagementService:
         """Risk profile configuration for ATR multipliers and target RR."""
         profile = (profile or "balanced").lower()
         mapping = {
-            "day_trading": {"sl_atr_mult": 1.0, "min_rr": 1.5},
-            "swing": {"sl_atr_mult": 1.5, "min_rr": 2.0},
-            "balanced": {"sl_atr_mult": 1.2, "min_rr": 1.8},
-            "long_term": {"sl_atr_mult": 2.0, "min_rr": 2.5},
+            "day_trading": {"sl_atr_mult": 1.0, "min_rr": 1.5, "entry_buffer_atr_mult": 0.6},
+            "swing": {"sl_atr_mult": 1.5, "min_rr": 2.0, "entry_buffer_atr_mult": 0.8},
+            "balanced": {"sl_atr_mult": 1.2, "min_rr": 1.8, "entry_buffer_atr_mult": 0.7},
+            "long_term": {"sl_atr_mult": 2.0, "min_rr": 2.5, "entry_buffer_atr_mult": 1.0},
         }
         return mapping.get(profile, mapping["balanced"])
 
@@ -323,19 +324,27 @@ class RiskManagementService:
         return adjusted_stop_loss, adjusted_take_profit
     
     def _ensure_levels_outside_entry_range(self, stop_loss: float, take_profit: float, 
-                                         entry_range: Dict[str, float], current_price: float) -> Tuple[float, float]:
+                                         entry_range: Dict[str, float], current_price: float,
+                                         atr_value: Optional[float] = None, profile: str = "balanced") -> Tuple[float, float]:
         """
         Ensure stop loss and take profit levels are outside the entry range.
-        This prevents degenerate levels where SL/TP collapse within the entry range.
+        Buffer distance is dynamic: derived from ATR and profile config when available.
+        Falls back to a small percentage only if ATR is unavailable.
         """
         if not entry_range or 'min' not in entry_range or 'max' not in entry_range:
             return stop_loss, take_profit
         
         entry_min = entry_range['min']
         entry_max = entry_range['max']
-        
-        # Calculate minimum distance from entry range (1% of current price)
-        min_distance = current_price * 0.01
+
+        # Dynamic buffer: prefer ATR-based distance, else fallback to small pct
+        cfg = self._get_profile_risk_config(profile)
+        entry_buf_mult = float(cfg.get('entry_buffer_atr_mult', 0.7))
+        if atr_value and atr_value > 0 and current_price > 0:
+            min_distance = max(atr_value * entry_buf_mult, 1e-9)
+        else:
+            # Fallback buffer as 0.5% of price when ATR is unavailable
+            min_distance = current_price * 0.005
         
         # Ensure stop loss is outside entry range
         if stop_loss < current_price:  # Long position

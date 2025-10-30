@@ -11,7 +11,13 @@ class RecommendationAggregator:
         pass
     
     def generate_recommendation(self, strategies: List[Dict], signals: List[Dict]) -> Dict[str, Any]:
-        """Generate combined recommendation from strategies and signals."""
+        """Generate combined recommendation from strategies and signals.
+
+        Notes on normalization and integrity:
+        - No artificial confidence floors or boosts are applied. Confidence derives only from
+          the weighted signal magnitude and is clamped to [0, 1].
+        - Signal consensus is explicitly normalized to [0, 1] and capped to avoid duplication or >1.0.
+        """
         if not strategies or not signals:
             return {"action": "FLAT", "confidence": 0.0, "entry_range": None, "stop_loss": None, "take_profit": None}
         
@@ -30,18 +36,21 @@ class RecommendationAggregator:
                 weighted_signal += signal_value * score
                 total_weight += score
         
+        ratio = (weighted_signal / total_weight) if total_weight > 0 else 0.0
+
         if total_weight == 0:
             action = "FLAT"
             confidence = 0.0
-        elif weighted_signal / total_weight > 0.5:
+        elif ratio > 0.5:
             action = "LONG"
-            confidence = min(abs(weighted_signal / total_weight), 1.0)
-        elif weighted_signal / total_weight < -0.5:
+            confidence = max(0.0, min(abs(ratio), 1.0))
+        elif ratio < -0.5:
             action = "SHORT"
-            confidence = min(abs(weighted_signal / total_weight), 1.0)
+            confidence = max(0.0, min(abs(ratio), 1.0))
         else:
             action = "FLAT"
-            confidence = 0.3
+            # No floor; reflect neutrality with low confidence proportional to magnitude
+            confidence = max(0.0, min(abs(ratio), 1.0))
         
         # Calculate entry range, SL, TP from signals
         current_price = signals[0].get('current_price', 0) if signals else 0
@@ -49,13 +58,22 @@ class RecommendationAggregator:
         stop_loss = self._calculate_stop_loss(action, current_price)
         take_profit = self._calculate_take_profit(action, current_price)
         
+        # Normalize signal consensus (0-1). Use proportion of majority signal type.
+        buys = sum(1 for s in signals if s.get('signal', 0) == 1)
+        sells = sum(1 for s in signals if s.get('signal', 0) == -1)
+        holds = sum(1 for s in signals if s.get('signal', 0) == 0)
+        total = max(1, buys + sells + holds)
+        majority = max(buys, sells, holds)
+        signal_consensus = min(majority / total, 1.0)
+
         return {
             "action": action,
             "confidence": confidence,
             "entry_range": entry_range,
             "stop_loss": stop_loss,
             "take_profit": take_profit,
-            "current_price": current_price
+            "current_price": current_price,
+            "signal_consensus": signal_consensus
         }
     
     def _calculate_entry_range(self, signals: List[Dict], current_price: float) -> Dict[str, float]:
