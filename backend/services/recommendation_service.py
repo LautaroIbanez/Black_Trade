@@ -314,22 +314,13 @@ class RecommendationService:
                         action = "SELL"
                         primary_signals = [strongest_signal]
         
-        # Calculate weighted confidence with enhanced scoring
+        # Calculate weighted confidence without artificial boosts or floors
         if primary_signals:
-            # Enhanced confidence calculation considering signal strength and recency
+            # Confidence derives from strategy confidence × historical score only
             confidence_scores = []
             for s in primary_signals:
-                # Base confidence from strategy
-                base_conf = s.confidence * s.score
-                # Boost for active signals vs neutrals
-                signal_boost = 1.2 if s.signal != 0 else 0.8
-                # Additional boost for high-strength signals
-                strength_boost = 1.0 + (s.strength * 0.3)
-                # Extra slight boost for strong recent (lower TF) signals
-                recency_boost = 1.05 if (s.timeframe in ('1h', '4h') and s.strength >= 0.6 and s.signal != 0) else 1.0
-                final_conf = base_conf * signal_boost * strength_boost * recency_boost
-                confidence_scores.append(min(final_conf, 1.0))
-            
+                base_conf = max(0.0, min(s.confidence * s.score, 1.0))
+                confidence_scores.append(base_conf)
             weighted_confidence = sum(confidence_scores) / len(confidence_scores)
             primary_strategy = max(primary_signals, key=lambda s: s.confidence * s.score).strategy_name
         else:
@@ -358,40 +349,19 @@ class RecommendationService:
             top_scores = sorted([s.score for s in source], reverse=True)[:3]
             avg_primary_score = _mean(top_scores)
 
-        # Add a capped historical boost (ties historical rank to instant confidence)
-        historical_boost = min(max(avg_primary_score, 0.0) * 0.25, 0.25)
-        weighted_confidence = min(1.0, weighted_confidence + historical_boost)
+        # Do not add extra historical boosts that inflate minimums; keep within [0,1]
+        weighted_confidence = max(0.0, min(weighted_confidence, 1.0))
 
-        # Apply action-specific minimum floors with integrity constraints:
-        # floors cannot push confidence above the weakest supporting signal's confidence.
+        # Do not apply confidence floors; represent true computed value in [0,1]
         if primary_signals:
-            supporting_count = len(primary_signals)
-            avg_strength = _mean([s.strength for s in primary_signals])
-            high_rank_present = any(s.score >= 0.7 for s in primary_signals)
+            weighted_confidence = max(0.0, min(weighted_confidence, 1.0))
 
-            base_floor = 0.15 if (action in ("BUY", "SELL")) else 0.05
-            if action in ("BUY", "SELL"):
-                if supporting_count >= 2:
-                    base_floor = max(base_floor, 0.30)
-                if high_rank_present and avg_strength >= 0.4:
-                    base_floor = max(base_floor, 0.25)
-            else:  # HOLD
-                # If there are high-ranked active signals in any TF, do not show near-zero
-                if any((s.signal != 0 and s.score >= 0.7) for s in signals):
-                    base_floor = max(base_floor, 0.10)
-
-            # Integrity guard: do not exceed weakest supporting confidence
-            weakest_support_conf = min(max(s.confidence, 0.0) for s in primary_signals)
-            effective_floor = min(base_floor, weakest_support_conf)
-            weighted_confidence = max(weighted_confidence, effective_floor)
-
-        # Calculate normalized signal consensus (0-1 range)
+        # Calculate normalized signal consensus (0-1 range) without pre-boosts
         if active_count > 0:
-            # When active signals exist, bias toward them more aggressively
-            raw_consensus = max(buy_ratio, sell_ratio) * 2.0  # Increased boost for active signals
-            signal_consensus = min(raw_consensus, 1.0)  # Cap at 1.0
+            signal_consensus = max(buy_ratio, sell_ratio)
         else:
             signal_consensus = hold_ratio
+        signal_consensus = max(0.0, min(signal_consensus, 1.0))
         
         # Add timeframe analysis to strategy details
         timeframe_analysis = self._analyze_timeframe_contribution(signals)
@@ -413,10 +383,11 @@ class RecommendationService:
             take_profit = aggregated_risk.take_profit
             trade_management = aggregated_risk.trade_management
             
-            # Final validation: ensure SL/TP are outside entry range
+            # Final validation: ensure SL/TP are outside entry range using dynamic ATR/profile buffer
             if entry_range and 'min' in entry_range and 'max' in entry_range:
-                stop_loss, take_profit = self._validate_levels_outside_entry_range(
-                    stop_loss, take_profit, entry_range, current_price
+                atr_value = risk_management_service._estimate_atr(data)
+                stop_loss, take_profit = risk_management_service._ensure_levels_outside_entry_range(
+                    stop_loss, take_profit, entry_range, current_price, atr_value=atr_value, profile=profile
                 )
         else:
             current_price = 0.0
@@ -454,6 +425,15 @@ class RecommendationService:
             for detail in strategy_details:
                 detail["weight"] = detail["weight"] / total_weight
         
+        # Telemetry: log live aggregation snapshot
+        try:
+            import logging
+            logging.getLogger(__name__).info(
+                "Live aggregation | action=%s conf=%.3f consensus=%.3f primary=%s supporting=%d",
+                action, float(weighted_confidence), float(signal_consensus), primary_strategy, len(supporting_strategies)
+            )
+        except Exception:
+            pass
         # Sort strategy details by normalized weight
         strategy_details.sort(key=lambda x: x['weight'], reverse=True)
         
@@ -533,49 +513,16 @@ class RecommendationService:
         return entry_range, stop_loss, take_profit
     
     def _validate_levels_outside_entry_range(self, stop_loss: float, take_profit: float, 
-                                           entry_range: Dict[str, float], current_price: float) -> Tuple[float, float]:
-        """
-        Final validation to ensure SL/TP are outside entry range.
-        This prevents degenerate levels where SL/TP collapse within the entry range.
-        """
+                                           entry_range: Dict[str, float], current_price: float,
+                                           data: Optional[Dict[str, pd.DataFrame]] = None,
+                                           profile: str = "balanced") -> Tuple[float, float]:
+        """Delegate validation to risk management dynamic buffer (ATR/profile)."""
         if not entry_range or 'min' not in entry_range or 'max' not in entry_range:
             return stop_loss, take_profit
-        
-        entry_min = entry_range['min']
-        entry_max = entry_range['max']
-        
-        # Calculate minimum distance from entry range (1% of current price)
-        min_distance = current_price * 0.01
-        
-        # Ensure stop loss is outside entry range
-        if stop_loss < current_price:  # Long position
-            # Stop loss should be below entry range
-            if stop_loss >= entry_min - min_distance:
-                adjusted_stop_loss = entry_min - min_distance
-            else:
-                adjusted_stop_loss = stop_loss
-        else:  # Short position
-            # Stop loss should be above entry range
-            if stop_loss <= entry_max + min_distance:
-                adjusted_stop_loss = entry_max + min_distance
-            else:
-                adjusted_stop_loss = stop_loss
-        
-        # Ensure take profit is outside entry range
-        if take_profit > current_price:  # Long position
-            # Take profit should be above entry range
-            if take_profit <= entry_max + min_distance:
-                adjusted_take_profit = entry_max + min_distance
-            else:
-                adjusted_take_profit = take_profit
-        else:  # Short position
-            # Take profit should be below entry range
-            if take_profit >= entry_min - min_distance:
-                adjusted_take_profit = entry_min - min_distance
-            else:
-                adjusted_take_profit = take_profit
-        
-        return adjusted_stop_loss, adjusted_take_profit
+        atr_value = risk_management_service._estimate_atr(data) if data else None
+        return risk_management_service._ensure_levels_outside_entry_range(
+            stop_loss, take_profit, entry_range, current_price, atr_value=atr_value, profile=profile
+        )
     
     def _determine_risk_level(self, confidence: float, supporting_count: int) -> str:
         """Determine risk level based on confidence and supporting strategies."""

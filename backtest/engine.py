@@ -1,5 +1,6 @@
 """Backtest engine for running strategy backtests."""
 import math
+import logging
 from dataclasses import dataclass
 import pandas as pd
 from typing import List, Dict, Any, Tuple, Optional
@@ -35,6 +36,17 @@ class BacktestEngine:
         self.initial_capital = initial_capital
         self.position_size_pct = max(0.0, min(1.0, position_size_pct))
         self.cost_model = cost_model or CostModel()
+        # Telemetry / alerts configuration
+        self.logger = logging.getLogger(__name__)
+        try:
+            import os
+            self.min_trades_alert = int(os.getenv('MIN_TRADES_ALERT', '1'))
+            self.min_winrate_alert = float(os.getenv('MIN_WINRATE_ALERT', '0.1'))
+            self.max_winrate_alert = float(os.getenv('MAX_WINRATE_ALERT', '0.95'))
+        except Exception:
+            self.min_trades_alert = 1
+            self.min_winrate_alert = 0.1
+            self.max_winrate_alert = 0.95
     
     def _apply_cost_overrides(self, strategy: StrategyBase):
         """Override strategy costs from engine cost model, if provided."""
@@ -129,6 +141,30 @@ class BacktestEngine:
         metrics['max_drawdown_pct'] = dd_pct
         if equity_curve:
             metrics['total_return_pct'] = (equity_curve[-1] / equity_curve[0]) - 1.0
+        # Telemetry: log key metrics
+        total_trades = int(metrics.get('total_trades', 0))
+        win_rate = float(metrics.get('win_rate', 0.0))
+        dd_pct = float(metrics.get('max_drawdown_pct', 0.0))
+        self.logger.info(
+            "Backtest metrics | strategy=%s timeframe=%s trades=%d win_rate=%.3f max_dd=%.3f total_return=%.3f",
+            strategy.name, timeframe, total_trades, win_rate, dd_pct, float(metrics.get('total_return_pct', 0.0))
+        )
+        # Alerts
+        if total_trades <= 0 or total_trades < self.min_trades_alert:
+            self.logger.warning(
+                "ALERT: Low trade activity | strategy=%s timeframe=%s trades=%d (min=%d)",
+                strategy.name, timeframe, total_trades, self.min_trades_alert
+            )
+        if win_rate > 0 and win_rate < self.min_winrate_alert:
+            self.logger.warning(
+                "ALERT: Low win-rate | strategy=%s timeframe=%s win_rate=%.3f (min=%.3f)",
+                strategy.name, timeframe, win_rate, self.min_winrate_alert
+            )
+        if win_rate > self.max_winrate_alert:
+            self.logger.warning(
+                "ALERT: Unusually high win-rate | strategy=%s timeframe=%s win_rate=%.3f (max=%.3f)",
+                strategy.name, timeframe, win_rate, self.max_winrate_alert
+            )
         return metrics
     
     def run_multiple_backtests(self, strategies: List[StrategyBase], data: pd.DataFrame, timeframe: str) -> List[Dict[str, Any]]:

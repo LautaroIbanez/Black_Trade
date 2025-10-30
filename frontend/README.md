@@ -44,6 +44,19 @@ Production build will be in the `dist/` folder.
 
 The frontend communicates with the backend API at `http://localhost:8000` by default. Change this in `src/services/api.js` or set the `VITE_API_URL` environment variable.
 
+### Contract and Optional Fields
+The `GET /recommendation` response includes (subset):
+- `action` (string), `confidence` (number 0–1), `entry_range` ({min,max}), `stop_loss` (number), `take_profit` (number), `current_price` (number)
+- `risk_reward_ratio` (number), `risk_percentage` (number), `normalized_weights_sum` (number)
+- `position_size_usd` (number), `position_size_pct` (number)
+- `primary_strategy` (string), `supporting_strategies` (array), `strategy_details` (array)
+
+Optional/nullable fields that the UI guards with placeholders:
+- `entry_range`, `stop_loss`, `take_profit`, `current_price`, `risk_reward_ratio`, `risk_percentage`, `normalized_weights_sum`, `position_size_usd`, `position_size_pct`
+
+UI behavior:
+- When optional fields are missing or null, the UI displays `N/A` instead of failing.
+
 ## Docs
 See the docs folder for details:
 - `docs/signals_and_methodology.md`

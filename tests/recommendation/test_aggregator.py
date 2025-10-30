@@ -51,6 +51,27 @@ def test_signal_consensus_is_capped_to_one():
     assert result.action != "HOLD"
 
 
+def test_single_weak_signal_confidence_low_and_no_floor_push():
+    svc = RecommendationService()
+    weakest_conf = 0.08
+    signals = [
+        _mk_signal("S1", 1, weakest_conf, 0.2, 0.5, "1h"),
+        _mk_signal("N1", 0, 0.0, 0.0, 0.5, "4h"),
+    ]
+    result = svc._analyze_signals(signals, data={}, profile="balanced")
+    assert 0.0 <= result.confidence <= weakest_conf + 1e-9
+
+
+def test_conflicting_signals_consensus_within_bounds():
+    svc = RecommendationService()
+    signals = [
+        _mk_signal("B1", 1, 0.3, 0.3, 0.5, "1h"),
+        _mk_signal("S1", -1, 0.3, 0.3, 0.5, "1h"),
+        _mk_signal("H1", 0, 0.2, 0.2, 0.5, "4h"),
+    ]
+    result = svc._analyze_signals(signals, data={}, profile="balanced")
+    assert 0.0 <= result.signal_consensus <= 1.0
+
 def test_position_sizing_consolidated_fields_present_and_consistent():
     svc = RecommendationService()
     price = 100.0

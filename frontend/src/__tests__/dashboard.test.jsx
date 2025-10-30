@@ -36,6 +36,35 @@ describe('Dashboard refresh flow', () => {
     const position = await screen.findByText(/Position Size/i)
     expect(position).toBeInTheDocument()
   })
+
+  it('renders placeholders when optional fields are missing', async () => {
+    const api = await import('../services/api')
+    api.getRecommendation.mockResolvedValueOnce({
+      action: 'HOLD',
+      confidence: null,
+      entry_range: null,
+      stop_loss: null,
+      take_profit: null,
+      current_price: null,
+      primary_strategy: '',
+      supporting_strategies: [],
+      strategy_details: [],
+      signal_consensus: 0.0,
+      risk_level: 'LOW',
+      risk_reward_ratio: null,
+      entry_label: '',
+      risk_percentage: null,
+      normalized_weights_sum: null,
+      position_size_usd: null,
+      position_size_pct: null
+    })
+    render(<Dashboard />)
+    const priceLabel = await screen.findByText(/Current Price/i)
+    expect(priceLabel).toBeInTheDocument()
+    // N/A placeholders should be present at least in some transparency fields
+    const na = await screen.findAllByText('N/A')
+    expect(na.length).toBeGreaterThan(0)
+  })
 })
 
 

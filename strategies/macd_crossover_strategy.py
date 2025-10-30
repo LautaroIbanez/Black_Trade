@@ -47,8 +47,9 @@ class MACDCrossoverStrategy(StrategyBase):
         
         # Zero line cross confirmation
         if self.zero_line_cross:
-            df.loc[df['macd'] <= 0, 'signal'] = 0
-            df.loc[df['macd'] >= 0, 'signal'] = 0
+            # Require MACD above zero for longs and below zero for shorts
+            df.loc[(df['signal'] == 1) & (df['macd'] <= 0), 'signal'] = 0
+            df.loc[(df['signal'] == -1) & (df['macd'] >= 0), 'signal'] = 0
         
         # Histogram confirmation
         df.loc[abs(df['macd_histogram']) < self.histogram_threshold, 'signal'] = 0
@@ -112,9 +113,7 @@ class MACDCrossoverStrategy(StrategyBase):
         
         return trades
     
-    def close_all_positions(self, df: pd.DataFrame, current_position: Optional[Dict], current_price: float, current_idx: int) -> Optional[Dict]:
-        """Close any remaining positions at the end of backtest."""
-        return None
+    # Use base class close_all_positions to ensure final position is closed
     
     def _generate_signal(self, df: pd.DataFrame) -> Tuple[int, float, str]:
         """Generate trading signal based on MACD crossovers."""
@@ -122,7 +121,7 @@ class MACDCrossoverStrategy(StrategyBase):
     
     def calculate_exit_levels(self, df: pd.DataFrame, signal: int, entry_price: float) -> Dict[str, float]:
         """Calculate explicit take profit and stop loss levels."""
-        return {"stop_loss": entry_price, "take_profit": entry_price}
+        return self._default_exit_levels(df, signal, entry_price)
     
     def get_parameters(self) -> Dict[str, Any]:
         """Get strategy parameters."""

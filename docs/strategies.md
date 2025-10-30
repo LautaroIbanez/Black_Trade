@@ -58,7 +58,8 @@ The Black Trade system includes a comprehensive catalog of trading strategies op
 9. **MACD Crossover Strategy** (`MACDCrossoverStrategy`)
    - MACD line and signal line crossovers
    - Histogram momentum confirmation
-   - Zero-line cross detection (optional)
+   - Zero-line filter (optional): requiere MACD > 0 para largos y < 0 para cortos
+   - Parámetros por defecto revisados: 12/26/9; variantes para intradía (8/17/6)
 
 10. **Stochastic Oscillator Strategy** (`StochasticStrategy`)
     - %K and %D line crossovers

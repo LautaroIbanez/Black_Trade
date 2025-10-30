@@ -37,5 +37,11 @@ def test_recommendation_includes_new_timeframes(monkeypatch):
     tfs = {d.get('timeframe') for d in data.get('strategy_details', [])}
     # We expect at least that new timeframes can appear in details set
     assert {'15m', '2h', '12h'}.intersection(tfs) == {'15m', '2h', '12h'} or len(tfs) > 0
+    # Validate normalized weights exist and sum to ~1.0
+    details = data.get('strategy_details', [])
+    weights = [d.get('weight', 0) for d in details]
+    if weights:
+        s = sum(weights)
+        assert 0.95 <= s <= 1.05
 
 

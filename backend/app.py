@@ -39,12 +39,6 @@ binance_client = None
 sync_service = None
 backtest_engine = BacktestEngine()
 
-# Optional: legacy simple aggregator (disabled by default and NOT used in production)
-USE_SIMPLE_AGGREGATOR = os.getenv('USE_SIMPLE_AGGREGATOR', 'false').lower() == 'true'
-if USE_SIMPLE_AGGREGATOR:
-    from recommendation.aggregator import RecommendationAggregator  # Legacy, for debugging only
-    recommendation_agg = RecommendationAggregator()
-
 # Cache for results
 last_results = {}
 

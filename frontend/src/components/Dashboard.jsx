@@ -155,14 +155,14 @@ function Dashboard() {
         <div className="recommendation-section">
           <div className="price-display">
             <span className="price-label">Current Price</span>
-            <span className="price-value">${(recommendation.current_price || 0).toFixed(2)}</span>
+            <span className="price-value">{typeof recommendation.current_price === 'number' ? `$${recommendation.current_price.toFixed(2)}` : 'N/A'}</span>
           </div>
 
           <div className="recommendation-card">
             <div className="recommendation-header">
               <h3>Current Recommendation</h3>
-              <span className={`confidence-badge ${(recommendation.confidence || 0) > 0.7 ? 'high' : (recommendation.confidence || 0) > 0.4 ? 'medium' : 'low'}`}>
-                {Math.round((recommendation.confidence || 0) * 100)}% Confidence
+                <span className={`confidence-badge ${(recommendation?.confidence ?? 0) > 0.7 ? 'high' : (recommendation?.confidence ?? 0) > 0.4 ? 'medium' : 'low'}`}>
+                {typeof recommendation?.confidence === 'number' ? `${Math.round(recommendation.confidence * 100)}% Confidence` : 'Confidence: N/A'}
               </span>
             </div>
             
@@ -180,15 +180,15 @@ function Dashboard() {
             <div className="levels-grid">
               <div className="level-card">
                 <span className="level-label">Entry Range</span>
-                <span className="level-value">${(recommendation.entry_range?.min || 0).toFixed(2)} - ${((recommendation.entry_range?.max) || 0).toFixed(2)}</span>
+                <span className="level-value">{typeof recommendation?.entry_range?.min === 'number' && typeof recommendation?.entry_range?.max === 'number' ? `$${recommendation.entry_range.min.toFixed(2)} - $${recommendation.entry_range.max.toFixed(2)}` : 'N/A'}</span>
               </div>
               <div className="level-card">
                 <span className="level-label">Stop Loss</span>
-                <span className="level-value stop-loss">${(recommendation.stop_loss || 0).toFixed(2)}</span>
+                <span className="level-value stop-loss">{typeof recommendation?.stop_loss === 'number' ? `$${recommendation.stop_loss.toFixed(2)}` : 'N/A'}</span>
               </div>
               <div className="level-card">
                 <span className="level-label">Take Profit</span>
-                <span className="level-value take-profit">${(recommendation.take_profit || 0).toFixed(2)}</span>
+                <span className="level-value take-profit">{typeof recommendation?.take_profit === 'number' ? `$${recommendation.take_profit.toFixed(2)}` : 'N/A'}</span>
               </div>
             </div>
 
@@ -196,19 +196,19 @@ function Dashboard() {
             <div className="transparency-grid">
               <div className="transparency-card">
                 <span className="transparency-label">Risk/Reward Ratio</span>
-                <span className="transparency-value">{(recommendation.risk_reward_ratio || 0).toFixed(2)}</span>
+                <span className="transparency-value">{typeof recommendation?.risk_reward_ratio === 'number' ? recommendation.risk_reward_ratio.toFixed(2) : 'N/A'}</span>
               </div>
               <div className="transparency-card">
                 <span className="transparency-label">Position Size</span>
-                <span className="transparency-value">${(recommendation.position_size_usd || 0).toFixed(2)} ({(((recommendation.position_size_pct || 0) * 100)).toFixed(1)}%)</span>
+                <span className="transparency-value">{typeof recommendation?.position_size_usd === 'number' && typeof recommendation?.position_size_pct === 'number' ? `$${recommendation.position_size_usd.toFixed(2)} (${(recommendation.position_size_pct * 100).toFixed(1)}%)` : 'N/A'}</span>
               </div>
               <div className="transparency-card">
                 <span className="transparency-label">Risk %</span>
-                <span className="transparency-value">{(recommendation.risk_percentage || 0).toFixed(1)}%</span>
+                <span className="transparency-value">{typeof recommendation?.risk_percentage === 'number' ? `${recommendation.risk_percentage.toFixed(1)}%` : 'N/A'}</span>
               </div>
               <div className="transparency-card">
                 <span className="transparency-label">Weights Sum</span>
-                <span className="transparency-value">{(recommendation.normalized_weights_sum || 0).toFixed(3)}</span>
+                <span className="transparency-value">{typeof recommendation?.normalized_weights_sum === 'number' ? recommendation.normalized_weights_sum.toFixed(3) : 'N/A'}</span>
               </div>
             </div>
 
