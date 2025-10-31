@@ -272,14 +272,22 @@ class RecommendationService:
         active_count = len(active_signals)
         hold_count = len(hold_signals)
         
-        # Apply neutral signal weighting - heavily reduce influence when there are active signals
-        if active_count > 0:
-            # Weight neutral signals far less when active signals exist (max 5%)
-            neutral_weight_factor = min(0.05, active_count / max(total_signals, 1))
+        # Apply dynamic neutral signal weighting proportional to total strategies
+        # Reserve minimum percentage for neutrals based on their share, but scale down when active signals dominate
+        if active_count > 0 and hold_count > 0:
+            # Base weight: proportion of neutrals in total
+            neutral_base_ratio = hold_count / total_signals
+            # Scale factor: reduce neutral influence when active signals are present
+            # But ensure minimum floor: neutrals get at least (hold_count / total_signals) * 0.3 weight
+            # This prevents consensus inflation when active signals are sparse
+            neutral_weight_factor = max(neutral_base_ratio * 0.3, min(neutral_base_ratio, 0.15))
             weighted_hold_count = hold_count * neutral_weight_factor
-        else:
-            # Only use neutrals if no active signals at all
+        elif active_count == 0:
+            # Only neutrals: use full count
             weighted_hold_count = hold_count
+        else:
+            # No neutrals
+            weighted_hold_count = 0
         
         # Calculate consensus with weighted neutrals
         effective_total = active_count + weighted_hold_count

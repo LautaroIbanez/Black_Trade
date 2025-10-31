@@ -15,17 +15,65 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Overlays de señales y niveles de trading
 - Tooltips informativos en gráficos
 - Sistema de recomendaciones visuales integrado
+- **Script de actualización automática de QA** (`qa/generate_status.py`)
+- **Tests end-to-end del pipeline de agregación** (`tests/recommendation/test_e2e_aggregator.py`)
+- **Documentación completa de QA** (`qa/README.md`)
 
 ### Changed
 - Dashboard completamente rediseñado con layout responsive
 - Integración de gráficos en tiempo real
 - Mejora en la presentación de recomendaciones
 - Optimización de la experiencia de usuario
+- **Normalización de confianza y consenso**: Implementada con límites dinámicos (capped por mínimo y media de señales activas)
+- **Ponderación dinámica de señales neutrales**: Evita sobreconfianza cuando hay pocas señales activas
+- **Documentación técnica actualizada**: Comandos multiplataforma, estado real de QA, limitaciones conocidas
 
 ### Fixed
 - Corrección de errores de serialización Pydantic
 - Mejora en el manejo de errores del frontend
 - Optimización de rendimiento en visualizaciones
+- **Firmas de StrategySignal en tests**: Todos los tests actualizados para incluir `entry_range` y `risk_targets`
+- **Imports obsoletos**: Corregidos (`backtest.engine.analysis` → `backtest.analysis`)
+- **Métodos obsoletos**: Reemplazados (`_calculate_position_size_by_risk` → `_calculate_position_size`)
+
+### Documentation
+- **Actualización de documentación técnica**: Alineada con el estado actual del sistema
+- **`docs/qa/status.md`**: Actualizado con instrucciones reproducibles multiplataforma y estado real de QA
+- **`docs/recommendation/timeframes.md`**: Eliminadas afirmaciones de "tests verdes", añadidas notas sobre estado de QA
+- **`docs/api/recommendation.md`**: Añadidas secciones sobre última ejecución de QA y cobertura actual
+- **`README.md`**: Sección de QA y transparencia actualizada con métodos de ejecución y estado actual
+- **`qa/README.md`**: Documentación completa de instalación, configuración, ejecución y solución de problemas
+
+### Known Limitations
+
+> ⚠️ **QA Pipeline en Reactivación**: La suite de QA está siendo reactivada. Algunos tests pueden fallar hasta completar las correcciones.
+
+#### Tests Pendientes de Corrección
+
+1. **Backtesting**:
+   - `test_split_and_walk_forward`: KeyError en cierre forzado de posiciones (requiere ajuste en manejo de índices)
+   - `test_cost_calculation`: Desajuste en expectativas del modelo de costos
+
+2. **Sincronización de Datos**:
+   - `test_continuity_across_timeframes`: Campo `records_count` falta en diccionario de validación
+
+3. **Endpoints**:
+   - `test_recommendation_includes_new_timeframes`: Timeframes nuevos pueden no aparecer en `strategy_details` cuando hay datos disponibles
+
+#### Limitaciones Funcionales
+
+1. **Inclusión de Timeframes**: El endpoint de recomendaciones puede no incluir todos los timeframes disponibles en `strategy_details` cuando hay datos para múltiples timeframes (corrección pendiente).
+
+2. **Validación de Datos**: El campo `records_count` no está incluido en el diccionario de validación retornado por `data_loader.load_data` (requiere actualización en `data/sync_service.py`).
+
+3. **Walk-Forward Testing**: El manejo de índices en cierre forzado de posiciones durante splits necesita ajuste para evitar KeyError.
+
+#### Próximas Correcciones
+
+- Implementar campo `records_count` en validación de datos
+- Ajustar manejo de índices en walk-forward testing
+- Asegurar inclusión de todos los timeframes en `strategy_details`
+- Validar completamente la normalización de confianza y consenso
 
 ## [1.6.0] - 2024-01-15
 

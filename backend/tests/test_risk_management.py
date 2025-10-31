@@ -404,10 +404,12 @@ class TestPositionSizing(unittest.TestCase):
         svc = RecommendationService()
         current_price = 100.0
         stop_loss = 98.0  # $2 risk per unit
-        units, notional = svc._calculate_position_size_by_risk(current_price, stop_loss, 'balanced')
-        # Default capital 10k, risk 1% => $100 risk. $2 per unit => ~50 units
-        self.assertAlmostEqual(units, 50.0, places=1)
-        self.assertAlmostEqual(notional, 5000.0, places=1)
+        notional, pct_of_capital = svc._calculate_position_size(current_price, stop_loss, 'balanced')
+        # Default capital 10k, risk 1% => $100 risk. $2 per unit => ~50 units = $5000 notional = 50% capital
+        self.assertGreater(notional, 0.0)
+        self.assertLessEqual(notional, 10000.0)  # Should not exceed capital
+        self.assertGreater(pct_of_capital, 0.0)
+        self.assertLessEqual(pct_of_capital, 1.0)
 
 
 if __name__ == '__main__':

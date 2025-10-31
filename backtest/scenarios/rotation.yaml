@@ -2,9 +2,16 @@ symbols:
   - BTCUSDT
   - ETHUSDT
   - BNBUSDT
+  - SOLUSDT
+  - ADAUSDT
 timeframe: 1h
 crypto_rotation:
   lookback: 50
+  ranking_method: strength  # Options: strength, returns, sharpe
+  min_divergence: 0.02  # Minimum spread between top/bottom (2%)
+  top_n: 1  # Number of top symbols to buy
+  bottom_n: 1  # Number of bottom symbols to sell
+  rebalance_periods: 5  # Re-evaluate rankings every N periods
 order_flow:
   vol_mult: 1.5
   lookback: 30

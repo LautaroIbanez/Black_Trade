@@ -88,7 +88,9 @@ class TestRecommendationService(unittest.TestCase):
             price=100.0,
             timestamp="2023-01-01",
             score=0.9,
-            timeframe="1h"
+            timeframe="1h",
+            entry_range={"min": 99.0, "max": 101.0},
+            risk_targets={"stop_loss": 98.0, "take_profit": 102.0}
         )
         
         self.assertEqual(signal.strategy_name, "TestStrategy")
@@ -103,12 +105,12 @@ class TestRecommendationService(unittest.TestCase):
     def test_analyze_signals_buy_consensus(self):
         """Test signal analysis with buy consensus."""
         signals = [
-            StrategySignal("Strategy1", 1, 0.8, 0.7, "Buy reason 1", 100.0, "2023-01-01", 0.9, "1h"),
-            StrategySignal("Strategy2", 1, 0.6, 0.6, "Buy reason 2", 100.0, "2023-01-01", 0.8, "1h"),
-            StrategySignal("Strategy3", 0, 0.0, 0.0, "Hold reason", 100.0, "2023-01-01", 0.5, "1h")
+            StrategySignal("Strategy1", 1, 0.8, 0.7, "Buy reason 1", 100.0, "2023-01-01", 0.9, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 98.0, "take_profit": 102.0}),
+            StrategySignal("Strategy2", 1, 0.6, 0.6, "Buy reason 2", 100.0, "2023-01-01", 0.8, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 98.0, "take_profit": 102.0}),
+            StrategySignal("Strategy3", 0, 0.0, 0.0, "Hold reason", 100.0, "2023-01-01", 0.5, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 98.0, "take_profit": 102.0})
         ]
         
-        recommendation = self.service._analyze_signals(signals)
+        recommendation = self.service._analyze_signals(signals, data={}, profile="balanced")
         
         self.assertEqual(recommendation.action, "BUY")
         self.assertGreater(recommendation.confidence, 0.0)
@@ -118,12 +120,12 @@ class TestRecommendationService(unittest.TestCase):
     def test_analyze_signals_sell_consensus(self):
         """Test signal analysis with sell consensus."""
         signals = [
-            StrategySignal("Strategy1", -1, 0.8, 0.7, "Sell reason 1", 100.0, "2023-01-01", 0.9, "1h"),
-            StrategySignal("Strategy2", -1, 0.6, 0.6, "Sell reason 2", 100.0, "2023-01-01", 0.8, "1h"),
-            StrategySignal("Strategy3", 0, 0.0, 0.0, "Hold reason", 100.0, "2023-01-01", 0.5, "1h")
+            StrategySignal("Strategy1", -1, 0.8, 0.7, "Sell reason 1", 100.0, "2023-01-01", 0.9, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 102.0, "take_profit": 98.0}),
+            StrategySignal("Strategy2", -1, 0.6, 0.6, "Sell reason 2", 100.0, "2023-01-01", 0.8, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 102.0, "take_profit": 98.0}),
+            StrategySignal("Strategy3", 0, 0.0, 0.0, "Hold reason", 100.0, "2023-01-01", 0.5, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 100.0, "take_profit": 100.0})
         ]
         
-        recommendation = self.service._analyze_signals(signals)
+        recommendation = self.service._analyze_signals(signals, data={}, profile="balanced")
         
         self.assertEqual(recommendation.action, "SELL")
         self.assertGreater(recommendation.confidence, 0.0)
@@ -132,12 +134,12 @@ class TestRecommendationService(unittest.TestCase):
     def test_analyze_signals_hold_consensus(self):
         """Test signal analysis with hold consensus."""
         signals = [
-            StrategySignal("Strategy1", 0, 0.0, 0.0, "Hold reason 1", 100.0, "2023-01-01", 0.9, "1h"),
-            StrategySignal("Strategy2", 0, 0.0, 0.0, "Hold reason 2", 100.0, "2023-01-01", 0.8, "1h"),
-            StrategySignal("Strategy3", 0, 0.0, 0.0, "Hold reason 3", 100.0, "2023-01-01", 0.5, "1h")
+            StrategySignal("Strategy1", 0, 0.0, 0.0, "Hold reason 1", 100.0, "2023-01-01", 0.9, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 100.0, "take_profit": 100.0}),
+            StrategySignal("Strategy2", 0, 0.0, 0.0, "Hold reason 2", 100.0, "2023-01-01", 0.8, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 100.0, "take_profit": 100.0}),
+            StrategySignal("Strategy3", 0, 0.0, 0.0, "Hold reason 3", 100.0, "2023-01-01", 0.5, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 100.0, "take_profit": 100.0})
         ]
         
-        recommendation = self.service._analyze_signals(signals)
+        recommendation = self.service._analyze_signals(signals, data={}, profile="balanced")
         
         self.assertEqual(recommendation.action, "HOLD")
         self.assertEqual(recommendation.confidence, 0.0)
@@ -180,9 +182,9 @@ class TestRecommendationService(unittest.TestCase):
     def test_get_strategy_consensus(self):
         """Test strategy consensus calculation."""
         signals = [
-            StrategySignal("Strategy1", 1, 0.8, 0.7, "Buy 1", 100.0, "2023-01-01", 0.9, "1h"),
-            StrategySignal("Strategy2", 1, 0.6, 0.6, "Buy 2", 100.0, "2023-01-01", 0.8, "1h"),
-            StrategySignal("Strategy3", -1, 0.4, 0.4, "Sell 1", 100.0, "2023-01-01", 0.6, "1h")
+            StrategySignal("Strategy1", 1, 0.8, 0.7, "Buy 1", 100.0, "2023-01-01", 0.9, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 98.0, "take_profit": 102.0}),
+            StrategySignal("Strategy2", 1, 0.6, 0.6, "Buy 2", 100.0, "2023-01-01", 0.8, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 98.0, "take_profit": 102.0}),
+            StrategySignal("Strategy3", -1, 0.4, 0.4, "Sell 1", 100.0, "2023-01-01", 0.6, "1h", {"min": 99.0, "max": 101.0}, {"stop_loss": 102.0, "take_profit": 98.0})
         ]
         
         consensus = self.service.get_strategy_consensus(signals)

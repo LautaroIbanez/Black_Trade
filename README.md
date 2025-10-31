@@ -164,15 +164,46 @@ GET /api/chart/status
 
 ## QA y Transparencia
 
-- La especificación de API en `docs/api/recommendation.md` refleja el esquema actual, incluyendo `position_size_usd`, `position_size_pct` y `signal_consensus` acotado a 1.0. Ver estado real en `docs/qa/status.md` (QA en progreso hasta cerrar normalización de confianza, MACD y multi-símbolo). 
-- Ejecutar QA y publicar estado:
+### Estado Actual de QA
 
+La especificación de API en `docs/api/recommendation.md` refleja el esquema actual, incluyendo `position_size_usd`, `position_size_pct` y `signal_consensus` acotado a 1.0. 
+
+**Última ejecución de QA**: Ver `docs/qa/status.md` para el estado más reciente con:
+- Timestamp de última ejecución
+- Estado (PASSED/FAILED)
+- Conteo de tests (passed/failed/errors/skipped)
+- Resumen y salida completa
+
+**Cobertura actual**: Los tests cubren:
+- ✅ Agregación de señales y normalización de confianza/consenso
+- ✅ Servicio de recomendaciones con diferentes perfiles
+- ✅ Gestión de riesgo y cálculo de niveles SL/TP
+- ✅ Tests end-to-end del pipeline completo
+- ⚠️  Algunos tests de backtesting y sincronización requieren ajustes menores
+
+### Ejecutar QA
+
+**Método recomendado** (ejecuta tests y actualiza estado automáticamente):
 ```bash
+python qa/generate_status.py
+```
+
+**Método manual**:
+```bash
+# Solo ejecutar tests
+python -m pytest -q
+
+# Ejecutar y actualizar estado
 python -m pytest -q && python qa/generate_status.py
 ```
 
-- Revisa `docs/qa/status.md` para un resumen de resultados y `docs/qa/overview.md` para el alcance de QA.
-- Usa `docs/qa/checklist.md` antes de cada release para auditar normalización, sizing y métricas de riesgo.
+Para más detalles sobre ejecución, configuración y solución de problemas, ver `qa/README.md`.
+
+### Notas
+
+- QA en progreso: Algunas correcciones pendientes en tests de backtesting y sincronización de datos
+- Calibración de estrategias: MACD, CryptoRotation y OrderFlow están en fase de ajuste fino
+- Normalización de confianza: Implementada con límites dinámicos; validación en curso
 
 ## Estado de Confianza por Épica
 

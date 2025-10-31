@@ -88,7 +88,7 @@ class TestNormalization(unittest.TestCase):
                 normalized_weights_sum=1.0
             )
             
-            result = self.service._analyze_signals(self.mock_signals, {})
+            result = self.service._analyze_signals(self.mock_signals, {}, profile="balanced")
             
             # Signal consensus should be capped at 1.0
             self.assertLessEqual(result.signal_consensus, 1.0)
@@ -150,22 +150,21 @@ class TestNormalization(unittest.TestCase):
         )
         self.assertEqual(rrr_hold, 0.0)
     
-    def test_suggested_position_size_calculation(self):
-        """Test suggested position size calculation."""
-        # Test different risk levels
-        low_risk_size = self.service._calculate_suggested_position_size(0.8, "LOW")
-        medium_risk_size = self.service._calculate_suggested_position_size(0.8, "MEDIUM")
-        high_risk_size = self.service._calculate_suggested_position_size(0.8, "HIGH")
+    def test_position_size_calculation(self):
+        """Test position size calculation."""
+        # Test different profiles
+        usd_balanced, pct_balanced = self.service._calculate_position_size(50000.0, 48000.0, "balanced")
+        usd_conservative, pct_conservative = self.service._calculate_position_size(50000.0, 48000.0, "conservative")
+        usd_aggressive, pct_aggressive = self.service._calculate_position_size(50000.0, 48000.0, "aggressive")
         
-        # Low risk should be smaller than medium, medium smaller than high
-        self.assertLess(low_risk_size, medium_risk_size)
-        self.assertLess(medium_risk_size, high_risk_size)
+        # Conservative should be smaller than balanced, balanced smaller than aggressive
+        self.assertLess(pct_conservative, pct_balanced)
+        self.assertLess(pct_balanced, pct_aggressive)
         
-        # Test confidence scaling
-        low_conf_size = self.service._calculate_suggested_position_size(0.3, "MEDIUM")
-        high_conf_size = self.service._calculate_suggested_position_size(0.9, "MEDIUM")
-        
-        self.assertLess(low_conf_size, high_conf_size)
+        # Test zero cases
+        usd_zero, pct_zero = self.service._calculate_position_size(0.0, 0.0, "balanced")
+        self.assertEqual(usd_zero, 0.0)
+        self.assertEqual(pct_zero, 0.0)
     
     def test_entry_label_generation(self):
         """Test entry label generation based on price position."""
@@ -234,7 +233,7 @@ class TestNormalization(unittest.TestCase):
                 normalized_weights_sum=0.0
             )
             
-            result = self.service._analyze_signals(empty_signals, {})
+            result = self.service._analyze_signals(empty_signals, {}, profile="balanced")
             
             # All values should be within expected ranges
             self.assertGreaterEqual(result.confidence, 0.0)

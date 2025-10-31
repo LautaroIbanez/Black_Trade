@@ -15,7 +15,32 @@ This document describes the real-time recommendation API endpoints and their res
 
 The recommendation API provides real-time trading recommendations based on multiple strategy signals. It analyzes current market data across different timeframes and generates actionable trading advice with detailed strategy analysis.
 
-> Warning: La suite de QA de extremo a extremo está en progreso y algunas estrategias se encuentran en fase de calibración fina. Ver resultados reales en `docs/qa/status.md` (actualizado automáticamente tras correr `.venv\\Scripts\\pytest -q`). Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración.
+> ⚠️ **Warning**: La suite de QA de extremo a extremo está en progreso y algunas estrategias se encuentran en fase de calibración fina. Ver resultados reales en `docs/qa/status.md` (actualizado automáticamente tras ejecutar `python qa/generate_status.py`). Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración.
+
+### Última Ejecución de QA
+
+Ver `docs/qa/status.md` para:
+- **Última ejecución**: Timestamp de la última corrida
+- **Estado**: PASSED/FAILED con código de salida
+- **Cobertura actual**: Conteo de tests (passed/failed/errors/skipped)
+- **Salida completa**: Logs detallados de la ejecución
+
+### Cobertura Actual
+
+Los tests automatizados cubren:
+- ✅ Agregación de señales y cálculo de consenso
+- ✅ Normalización de confianza (limitada por mínimo y media de señales activas)
+- ✅ Servicio de recomendaciones con diferentes perfiles (balanced, conservative, aggressive)
+- ✅ Gestión de riesgo y cálculo de niveles SL/TP
+- ✅ Tests end-to-end del pipeline completo de agregación
+- ⚠️  Tests de backtesting y sincronización requieren ajustes menores
+
+Para ejecutar la suite de QA y actualizar el estado:
+```bash
+python qa/generate_status.py
+```
+
+Ver `qa/README.md` para documentación completa sobre instalación, ejecución y solución de problemas.
 
 ### Key Features
 

@@ -255,7 +255,7 @@ function Dashboard() {
                 <div className="consensus-summary">
                   <div className="consensus-header">
                     <h4>Multi-Timeframe Consensus</h4>
-                    <span className="consensus-tooltip" title="This recommendation combines signals from multiple timeframes and strategies, weighted by their historical performance and current strength.">
+                    <span className="consensus-tooltip" title="Consensus combines signals from multiple timeframes/strategies, weighted by historical performance and strength. Neutral (HOLD) signals receive dynamic weighting proportional to their share (min 30% of base ratio, capped at 15%) to prevent overconfidence when active signals are sparse.">
                       ℹ️
                     </span>
                   </div>

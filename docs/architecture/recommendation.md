@@ -12,3 +12,13 @@
 ## Recomendación
 - Use siempre `backend/services/recommendation_service.py` para cualquier integración, pruebas y documentación.
 - Agregadores alternativos no forman parte del camino crítico y no se soportan en producción.
+
+## Cálculo de Consenso
+
+El consenso (`signal_consensus`) refleja el grado de acuerdo entre estrategias, con ponderación dinámica para señales neutrales:
+- Señales neutrales (HOLD) reciben un peso proporcional a su número pero reducido cuando hay señales activas
+- Fórmula: `neutral_weight_factor = max(neutral_base_ratio * 0.3, min(neutral_base_ratio, 0.15))`
+- Esto previene sobreconfianza cuando pocas señales activas enfrentan muchas neutrales
+- Consenso se calcula como: `max(buy_ratio, sell_ratio)` donde los ratios usan el `effective_total = active_count + weighted_hold_count`
+
+Ver `docs/recommendation/timeframes.md` para ejemplos numéricos y advertencias de interpretación.

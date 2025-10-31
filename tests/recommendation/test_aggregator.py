@@ -47,9 +47,30 @@ def test_consensus_within_bounds_and_no_inflation():
     ]
     res = svc._analyze_signals(signals, data={}, profile="balanced")
     assert 0.0 <= res.signal_consensus <= 1.0
-import math
 
-from backend.services.recommendation_service import RecommendationService, StrategySignal
+
+def test_consensus_mixed_signals_2buy_1sell_3hold():
+    """Consensus with 2 BUY / 1 SELL / 3 HOLD should not inflate due to neutrals being marginalized."""
+    svc = RecommendationService()
+    signals = [
+        _make_signal("B1", 1, 0.4, 0.8, "1h"),
+        _make_signal("B2", 1, 0.5, 0.7, "4h"),
+        _make_signal("S1", -1, 0.6, 0.9, "1d"),
+        _make_signal("H1", 0, 0.3, 0.5, "12h"),
+        _make_signal("H2", 0, 0.2, 0.4, "15m"),
+        _make_signal("H3", 0, 0.25, 0.5, "2h"),
+    ]
+    res = svc._analyze_signals(signals, data={}, profile="balanced")
+    # With dynamic neutral weighting, consensus should be more conservative
+    # Neutrals (3/6 = 50%) get at least 0.3 * 0.5 = 15% weight floor
+    # Effective total: 3 active + (3 * max(0.15, min(0.5, 0.15))) = 3 + 0.45 = 3.45
+    # Buy ratio: 2 / 3.45 ≈ 0.58, not inflated to ~0.65
+    assert 0.0 <= res.signal_consensus <= 1.0
+    # Consensus should not exceed what we'd get with simple majority among actives
+    # Simple majority: 2/3 ≈ 0.67, but with weighted neutrals it should be lower
+    assert res.signal_consensus <= 0.70  # Allow some tolerance
+    # Should still favor BUY but not overconfidently
+    assert res.action == "BUY"
 
 
 def _mk_signal(name: str, sig: int, conf: float, strg: float, score: float, tf: str, price: float = 100.0):

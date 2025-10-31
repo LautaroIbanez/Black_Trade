@@ -120,10 +120,18 @@ class StrategyRegistry:
                 name="CryptoRotation",
                 enabled=True,
                 class_name="CryptoRotationStrategy",
-                parameters={"lookback": 50, "universe": "BTCUSDT,ETHUSDT,BNBUSDT"},
+                parameters={
+                    "lookback": 50,
+                    "universe": ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "ADAUSDT"],
+                    "ranking_method": "strength",
+                    "min_divergence": 0.02,
+                    "top_n": 1,
+                    "bottom_n": 1,
+                    "rebalance_periods": 5
+                },
                 commission=0.001,
                 slippage=0.0005,
-                description="Rotation proxy based on relative strength vs EMA"
+                description="Multi-asset rotation strategy selecting winners/losers based on relative strength"
             ),
             StrategyConfig(
                 name="OrderFlow",
