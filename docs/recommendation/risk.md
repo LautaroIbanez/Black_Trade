@@ -21,7 +21,18 @@ Se reemplaza el buffer fijo (1% del precio) por un buffer dinámico basado en AT
 - `buffer = 5.0 * 0.8 = 4.0`
 - `SL_long >= 95 - 4.0 = 91.0`, `TP_long >= 105 + 4.0 = 109.0`
 
+### Fallback sin ATR
+- `price=200`, `entry=[198, 202]`, sin ATR disponible
+- `buffer = 0.5% * 200 = 1.0`
+- `SL_long >= 198 - 1.0 = 197.0`, `TP_long >= 202 + 1.0 = 203.0`
+
 ## Implementación
 - Código: `backend/services/risk_management.py::_ensure_levels_outside_entry_range`
 - Config: `entry_buffer_atr_mult` por perfil en `_get_profile_risk_config`
 - Pruebas: `tests/recommendation/test_risk_management.py`
+
+## Resultados de Pruebas Automatizadas
+
+- Baja/alta volatilidad: los niveles ajustados se mueven en la dirección esperada (tests `test_low_volatility_scenario`/`test_high_volatility_scenario`).
+- Buffer de entrada con ATR: `buffer = ATR * entry_buffer_atr_mult` verificado en `test_entry_buffer_uses_atr_when_available`.
+- Fallback sin ATR: `buffer = 0.5% * price` verificado en `test_entry_buffer_fallback_without_atr`.

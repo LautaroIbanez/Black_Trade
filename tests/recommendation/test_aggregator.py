@@ -1,3 +1,52 @@
+from backend.services.recommendation_service import RecommendationService, StrategySignal
+
+
+def _make_signal(name: str, sig: int, conf: float, score: float, tf: str) -> StrategySignal:
+    return StrategySignal(
+        strategy_name=name,
+        signal=sig,
+        strength=conf,
+        confidence=conf,
+        reason="",
+        price=100.0,
+        timestamp=0,
+        score=score,
+        timeframe=tf,
+        entry_range={"min": 99.0, "max": 101.0},
+        risk_targets={"stop_loss": 98.0, "take_profit": 102.0},
+    )
+
+
+def test_confidence_capped_by_min_active_and_mean():
+    svc = RecommendationService()
+    # Highly unbalanced: one weak active (0.12), others strong (0.8)
+    signals = [
+        _make_signal("Strong1", 1, 0.8, 1.0, "1h"),
+        _make_signal("Strong2", 1, 0.8, 1.0, "4h"),
+        _make_signal("Weak", 1, 0.12, 1.0, "1d"),
+        _make_signal("Neutral", 0, 0.3, 1.0, "12h"),
+    ]
+    res = svc._analyze_signals(signals, data={}, profile="balanced")
+    active = [s for s in signals if s.signal != 0]
+    active_conf = [min(max(s.confidence * s.score, 0.0), 1.0) for s in active]
+    mean_active = sum(active_conf) / len(active_conf)
+    min_active = min(active_conf)
+    assert 0.0 <= res.confidence <= 1.0
+    assert res.confidence <= mean_active
+    assert res.confidence <= min_active
+
+
+def test_consensus_within_bounds_and_no_inflation():
+    svc = RecommendationService()
+    # Two buys, one sell, one hold -> majority 2/4
+    signals = [
+        _make_signal("S1", 1, 0.3, 0.8, "1h"),
+        _make_signal("S2", 1, 0.2, 0.7, "4h"),
+        _make_signal("S3", -1, 0.6, 0.9, "1d"),
+        _make_signal("S4", 0, 0.5, 0.5, "12h"),
+    ]
+    res = svc._analyze_signals(signals, data={}, profile="balanced")
+    assert 0.0 <= res.signal_consensus <= 1.0
 import math
 
 from backend.services.recommendation_service import RecommendationService, StrategySignal

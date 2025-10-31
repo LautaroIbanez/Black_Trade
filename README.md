@@ -164,7 +164,7 @@ GET /api/chart/status
 
 ## QA y Transparencia
 
-- La especificación de API en `docs/api/recommendation.md` refleja el esquema actual, incluyendo `position_size_usd`, `position_size_pct` y `signal_consensus` acotado a 1.0.
+- La especificación de API en `docs/api/recommendation.md` refleja el esquema actual, incluyendo `position_size_usd`, `position_size_pct` y `signal_consensus` acotado a 1.0. Ver estado real en `docs/qa/status.md` (QA en progreso hasta cerrar normalización de confianza, MACD y multi-símbolo). 
 - Ejecutar QA y publicar estado:
 
 ```bash
@@ -229,11 +229,12 @@ Black_Trade/
 │   └── ichimoku_strategy.py  # Ichimoku
 ├── backtest/                  # Motor de backtesting
 │   ├── engine.py             # Motor principal
+│   ├── analysis.py           # Métricas/score compuesto
 │   ├── data_loader.py        # Cargador de datos
 │   ├── indicators/           # Indicadores técnicos
 │   └── tests/                # Tests de backtesting
-├── recommendation/            # Sistema de recomendaciones
-│   └── aggregator.py         # Agregador de señales
+├── backend/services/          # Servicios backend
+│   └── recommendation_service.py # Agregación de señales y recomendación
 ├── qa/                       # Scripts de QA
 ├── docs/                     # Documentación
 │   ├── api/                  # Documentación de API

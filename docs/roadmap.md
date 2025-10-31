@@ -9,6 +9,12 @@ Este documento establece los hitos próximos y un calendario de auditoría depen
 - OrderFlow: ajuste de `vol_mult` por régimen de volatilidad
 - QA: ampliación de pruebas de integración/regresión y publicación en `docs/qa/status.md`
 
+## Hitos Pendientes Clave
+
+- Normalización de confianza y consenso: asegurar que la confianza agregada no supere la media ni la señal más débil
+- Rehabilitación de MACD: confirmar actividad con dataset controlado y Win-Rate > 0%
+- Activación multi-símbolo: rotación efectiva de capital con métricas por símbolo y universo configurable
+
 ## Calendario de Auditoría (Tentativo)
 
 Semana 1–2:

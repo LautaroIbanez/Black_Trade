@@ -1,4 +1,4 @@
-from backtest.engine.analysis import compute_composite_score
+from backtest.analysis import compute_composite_score
 
 
 def test_zero_trades_heavily_penalized():

@@ -17,6 +17,12 @@ Este documento resume el estado actual del sistema, sus limitaciones y el plan d
   - Advertencia: Varias estrategias se encuentran en calibración activa (umbrales y parámetros pueden cambiar entre versiones menores).
   - Pesos por timeframe documentados y verificados; nuevas temporalidades integradas.
 
+### Limitaciones actuales
+
+- La confianza agregada puede superar la señal más débil en escenarios desbalanceados; la normalización está en curso para capear por media y mínimo activo.
+- MACD, CryptoRotation y OrderFlow en calibración fina; parámetros sujetos a ajuste hasta cerrar la epic.
+- QA end-to-end en progreso; ver ejecución real en `docs/qa/status.md`.
+
 ## Roadmap (próximos 4–6 semanas)
 
 - Multi-símbolo y datos:

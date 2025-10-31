@@ -326,15 +326,11 @@ class RecommendationService:
         else:
             # Fallback confidence calculation when no primary signals
             if len(signals) > 0:
-                # Use average confidence of all signals with minimum threshold
-                all_confidences = [s.confidence for s in signals if s.confidence > 0]
-                if all_confidences:
-                    weighted_confidence = max(sum(all_confidences) / len(all_confidences), 0.05)  # Minimum 5%
-                else:
-                    weighted_confidence = 0.05  # Minimum confidence
+                all_confidences = [max(0.0, min(s.confidence * s.score, 1.0)) for s in signals if s.confidence > 0]
+                weighted_confidence = (sum(all_confidences) / len(all_confidences)) if all_confidences else 0.0
                 primary_strategy = "Mixed"
             else:
-                weighted_confidence = 0.05  # Minimum confidence
+                weighted_confidence = 0.0
                 primary_strategy = "None"
         
         # Historical score linkage and confidence floors
@@ -349,12 +345,13 @@ class RecommendationService:
             top_scores = sorted([s.score for s in source], reverse=True)[:3]
             avg_primary_score = _mean(top_scores)
 
-        # Do not add extra historical boosts that inflate minimums; keep within [0,1]
+        # Normalize and anti-inflation: cap by mean(active) and min(active)
         weighted_confidence = max(0.0, min(weighted_confidence, 1.0))
-
-        # Do not apply confidence floors; represent true computed value in [0,1]
-        if primary_signals:
-            weighted_confidence = max(0.0, min(weighted_confidence, 1.0))
+        active_confidences = [max(0.0, min(s.confidence * s.score, 1.0)) for s in (buy_signals + sell_signals)]
+        if active_confidences:
+            active_mean = sum(active_confidences) / len(active_confidences)
+            active_min = min(active_confidences)
+            weighted_confidence = min(weighted_confidence, active_mean, active_min)
 
         # Calculate normalized signal consensus (0-1 range) without pre-boosts
         if active_count > 0:

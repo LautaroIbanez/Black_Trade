@@ -15,7 +15,7 @@ This document describes the real-time recommendation API endpoints and their res
 
 The recommendation API provides real-time trading recommendations based on multiple strategy signals. It analyzes current market data across different timeframes and generates actionable trading advice with detailed strategy analysis.
 
-> Warning: La suite de QA de extremo a extremo está en progreso y algunas estrategias se encuentran en fase de calibración fina. Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración. Consulte `docs/qa/status.md` para el estado actual y `docs/release_notes.md` para cambios.
+> Warning: La suite de QA de extremo a extremo está en progreso y algunas estrategias se encuentran en fase de calibración fina. Ver resultados reales en `docs/qa/status.md` (actualizado automáticamente tras correr `.venv\\Scripts\\pytest -q`). Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración.
 
 ### Key Features
 
@@ -404,3 +404,8 @@ getRecommendation().then(recommendation => {
 ## Conclusion
 
 The recommendation API provides comprehensive real-time trading analysis with detailed strategy breakdowns. Use the confidence levels, risk assessments, and strategy weights to make informed trading decisions while managing risk appropriately.
+
+### Current Limitations
+
+- Aggregate confidence may exceed the weakest active signal in highly unbalanced cases; normalization updates are in progress to cap by active mean and minimum.
+- Some strategies are under calibration; thresholds may change between minor versions until QA is complete (see `docs/qa/status.md`).

@@ -198,6 +198,35 @@ class TestRiskManagementService(unittest.TestCase):
         self.assertLess(result.stop_loss, 50000.0)
         self.assertGreater(result.take_profit, 50000.0)
 
+    def test_entry_buffer_uses_atr_when_available(self):
+        """Entry buffer should derive from ATR * profile multiplier when ATR is available."""
+        svc = self.risk_service
+        current_price = 100.0
+        # Construct entry range around price
+        entry_range = {"min": 99.0, "max": 101.0}
+        # Provide ATR and profile 'balanced' (entry_buffer_atr_mult=0.7)
+        atr_value = 0.2
+        profile = 'balanced'
+        # Start with SL/TP inside the range to force adjustment
+        sl = 99.0  # for long case (< current_price)
+        tp = 101.0
+        adj_sl, adj_tp = svc._ensure_levels_outside_entry_range(sl, tp, entry_range, current_price, atr_value=atr_value, profile=profile)
+        expected_dist = atr_value * svc._get_profile_risk_config(profile)['entry_buffer_atr_mult']
+        self.assertAlmostEqual(adj_sl, entry_range['min'] - expected_dist, places=6)
+        self.assertAlmostEqual(adj_tp, entry_range['max'] + expected_dist, places=6)
+
+    def test_entry_buffer_fallback_without_atr(self):
+        """When ATR is not available, buffer should fallback to 0.5% of price."""
+        svc = self.risk_service
+        current_price = 200.0
+        entry_range = {"min": 198.0, "max": 202.0}
+        sl = 198.0
+        tp = 202.0
+        adj_sl, adj_tp = svc._ensure_levels_outside_entry_range(sl, tp, entry_range, current_price, atr_value=None, profile='balanced')
+        expected_dist = current_price * 0.005  # 0.5%
+        self.assertAlmostEqual(adj_sl, entry_range['min'] - expected_dist, places=6)
+        self.assertAlmostEqual(adj_tp, entry_range['max'] + expected_dist, places=6)
+
 
 class TestSupportResistanceDetector(unittest.TestCase):
     """Test support/resistance level detection."""
