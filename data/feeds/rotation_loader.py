@@ -31,11 +31,11 @@ def load_rotation_universe(symbols: List[str], timeframe: str, data_dir: str = "
 
 
 def compute_relative_strength(df: pd.DataFrame, ema_span: int = 50) -> pd.Series:
-    if df.empty or 'close' not in df:
+    if df is None or df.empty or 'close' not in df.columns:
         return pd.Series(dtype=float)
     ema = df['close'].ewm(span=ema_span, adjust=False).mean()
     rel = (df['close'] / ema) - 1.0
-    return rel
+    return rel.fillna(0.0)
 
 
 def rank_universe_by_strength(universe: Dict[str, pd.DataFrame], ema_span: int = 50) -> List[Tuple[str, float]]:

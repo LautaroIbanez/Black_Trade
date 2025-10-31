@@ -25,3 +25,4 @@ $env:FEATURE_STATIC_LEVELS='true'
 ## Next Steps
 - If any external clients depend on static levels, migrate them to read `stop_loss`/`take_profit` from the recommendation output or use strategy-level `risk_targets`.
 
+

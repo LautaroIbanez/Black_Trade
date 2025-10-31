@@ -55,3 +55,4 @@ Ejecución: Tamaño ≈ 52.4 unidades (1% riesgo capital)
 - Gráficos: Curva de capital, distribución de retornos, drawdown
 - Lista de cambios (versionado de estrategias y perfiles)
 
+

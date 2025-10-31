@@ -174,6 +174,24 @@ python -m pytest -q && python qa/generate_status.py
 - Revisa `docs/qa/status.md` para un resumen de resultados y `docs/qa/overview.md` para el alcance de QA.
 - Usa `docs/qa/checklist.md` antes de cada release para auditar normalización, sizing y métricas de riesgo.
 
+## Estado de Confianza por Épica
+
+| Épica | Estado | Confianza | Notas |
+|-------|--------|-----------|-------|
+| Normalización de Datos | Completa | Alta | Validaciones de continuidad/frescura operativas |
+| Recomendación Multi-timeframe | Completa | Media-Alta | Ponderación estable; mejoras de UX en curso |
+| MACD Rehabilitado | En progreso | Media | Cierres por histograma en cero listos; calibración por timeframe pendiente |
+| CryptoRotation | En progreso | Media | Multi-activo habilitado; ajuste de triggers y universo |
+| OrderFlow | En progreso | Media | Señales con volumen anómalo; calibración de vol_mult |
+| QA Integral | En progreso | Media | Suite ampliándose; cobertura de regresión parcial |
+
+### Próximos Hitos (4–6 semanas)
+
+- Backtests comparativos MACD/OrderFlow/CryptoRotation por timeframe (OOS)
+- Auditoría QA interna con reporte público en `docs/qa/status.md`
+- Panel de desempeño y alertas en `docs/reports/strategy_performance.md`
+- Cierre de gaps de datos y automatización de refresco por símbolo
+
 ## Estructura del Proyecto
 
 ```

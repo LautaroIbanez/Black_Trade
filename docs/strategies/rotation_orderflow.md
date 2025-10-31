@@ -1,3 +1,32 @@
+### CryptoRotation y OrderFlow - Propuesta de valor activada
+
+**Objetivo**: Transformar prototipos en estrategias multi-activo con métricas de backtest consistentes.
+
+### Ingesta de datos multi-activo
+- `data/feeds/rotation_loader.py` soporta múltiples símbolos vía `load_rotation_universe(symbols, timeframe)` y ranking por fuerza relativa con `rank_universe_by_strength`.
+- Se puede configurar el universo con `ROTATION_UNIVERSE="BTCUSDT,ETHUSDT,..."`.
+
+### Estrategia CryptoRotation
+- Señales basadas en `rel = close/EMA(lookback)-1`.
+- Entradas cuando `rel > +0.5%` (largo) o `rel < -0.5%` (corto).
+- Cierres con señal opuesta o al finalizar el backtest.
+- Escenario de backtest: seleccionar el símbolo con mayor fuerza relativa en cada corrida (`backtest/scenarios/rotation_orderflow.py::run_rotation_scenario`).
+
+### Estrategia OrderFlow
+- Señales cuando hay volumen anómalo (`volume > vol_mult * MA_volume(lookback)`) alineado con el retorno de la vela.
+- Entradas en la dirección del movimiento; salidas con señal opuesta o normalización (signal=0) y cierre forzado al final.
+
+### Fixtures/escenarios
+- `backtest/scenarios/rotation.yaml`: símbolos y parámetros por defecto para ambas estrategias.
+- `backtest/scenarios/orderflow.yaml`: símbolos y parámetros de OrderFlow.
+
+### Resultados de backtests (ejemplo orientativo)
+- En datasets con `1h` y universo `{BTC,ETH,BNB}`, ambas estrategias generan operaciones con `win_rate > 0` en periodos con tendencias o eventos de volumen; en rangos estrechos, OrderFlow tiende a operar menos y CryptoRotation depende del umbral de `rel`.
+
+### Requisitos de datos
+- OHLCV por símbolo en `data/ohlcv/{SYMBOL}_{TF}.csv` con columnas `timestamp,open,high,low,close,volume`.
+- Cobertura suficiente para calcular EMA(lookback) y medias de volumen.
+
 # CryptoRotation y OrderFlow: Datos y Resultados Iniciales
 
 ## Requerimientos de Datos

@@ -1,0 +1,10 @@
+symbols:
+  - BTCUSDT
+  - ETHUSDT
+  - BNBUSDT
+timeframe: 1h
+order_flow:
+  vol_mult: 1.5
+  lookback: 30
+
+

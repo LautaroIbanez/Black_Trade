@@ -82,3 +82,4 @@ python backend/scripts/backtest_all.py \
 - Incluir costes realistas (comisión, slippage, spread)
 - Evitar sobreajuste; revisar estabilidad por ventanas
 
+

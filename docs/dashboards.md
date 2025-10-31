@@ -42,3 +42,4 @@
 - v2: Tabla de señales históricas y filtros por timeframe
 - v3: Gráficos de equity (backtest vs live) y comparativa por perfil
 
+

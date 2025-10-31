@@ -66,51 +66,75 @@ class MACDCrossoverStrategy(StrategyBase):
         return df
     
     def generate_trades(self, df: pd.DataFrame) -> List[Dict]:
-        """Generate trade list from signals."""
-        trades = []
-        position = None
-        entry_price = 0
-        entry_idx = 0
-        
+        """Generate trade list from signals. Allows exits when MACD histogram crosses back to zero."""
+        trades: List[Dict] = []
+        position: Optional[Dict] = None
+        entry_price: float = 0.0
+        prev_hist: Optional[float] = None
+
         for idx, row in df.iterrows():
-            if position is None and row['signal'] != 0:
+            current_signal = int(row.get('signal', 0))
+            current_price = float(row['close'])
+            current_time = row.get('timestamp', idx)
+            hist_value = float(row.get('macd_histogram', 0.0))
+
+            # Track histogram for zero-cross detection
+            if prev_hist is None:
+                prev_hist = hist_value
+
+            # Entry logic: only enter on active signals (1 or -1)
+            if position is None and current_signal != 0:
                 position = {
-                    'side': 'long' if row['signal'] == 1 else 'short',
-                    'entry_price': row['close'],
+                    'side': 'long' if current_signal == 1 else 'short',
+                    'entry_price': current_price,
                     'entry_idx': idx,
-                    'entry_time': row['timestamp']
+                    'entry_time': current_time
                 }
-                entry_price = row['close']
-                entry_idx = idx
-            elif position and row['signal'] != 0 and row['signal'] != (1 if position['side'] == 'long' else -1):
-                # Signal change - close position and open new one
-                exit_price = row['close']
-                pnl = (exit_price - entry_price) if position['side'] == 'long' else (entry_price - exit_price)
-                trades.append({
-                    "entry_price": entry_price,
-                    "exit_price": exit_price,
-                    "side": position['side'],
-                    "pnl": pnl,
-                    "entry_time": position['entry_time'],
-                    "exit_time": row['timestamp']
-                })
-                
-                # Open new position
-                position = {
-                    'side': 'long' if row['signal'] == 1 else 'short',
-                    'entry_price': row['close'],
-                    'entry_idx': idx,
-                    'entry_time': row['timestamp']
-                }
-                entry_price = row['close']
-                entry_idx = idx
-        
-        # Close final position if exists
-        if position:
-            final_trade = self.close_all_positions(df, position, df.iloc[-1]['close'], len(df) - 1)
+                entry_price = current_price
+
+            # Exit logic: if in a position, exit on opposite signal OR histogram zero-cross against position
+            elif position is not None:
+                side_multiplier = 1 if position['side'] == 'long' else -1
+
+                # Opposite signal triggers exit and optional flip
+                opposite_signal = (current_signal == -side_multiplier and current_signal != 0)
+
+                # Histogram zero-cross against the position triggers exit
+                hist_cross_against = (prev_hist is not None) and (prev_hist * side_multiplier > 0) and (hist_value * side_multiplier <= 0)
+
+                if opposite_signal or hist_cross_against:
+                    exit_price = current_price
+                    pnl = (exit_price - entry_price) if position['side'] == 'long' else (entry_price - exit_price)
+                    trades.append({
+                        "entry_price": entry_price,
+                        "exit_price": exit_price,
+                        "side": position['side'],
+                        "pnl": pnl,
+                        "entry_time": position['entry_time'],
+                        "exit_time": current_time,
+                        "exit_reason": "opposite_signal" if opposite_signal else "hist_zero_cross"
+                    })
+
+                    # Flip if opposite signal is present; otherwise flat
+                    if opposite_signal:
+                        position = {
+                            'side': 'long' if current_signal == 1 else 'short',
+                            'entry_price': current_price,
+                            'entry_idx': idx,
+                            'entry_time': current_time
+                        }
+                        entry_price = current_price
+                    else:
+                        position = None
+
+            prev_hist = hist_value
+
+        # Close any open position at the last candle
+        if position is not None:
+            final_trade = self.close_all_positions(df, position, float(df.iloc[-1]['close']), len(df) - 1)
             if final_trade:
                 trades.append(final_trade)
-        
+
         return trades
     
     # Use base class close_all_positions to ensure final position is closed

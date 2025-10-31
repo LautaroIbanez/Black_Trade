@@ -15,6 +15,8 @@ This document describes the real-time recommendation API endpoints and their res
 
 The recommendation API provides real-time trading recommendations based on multiple strategy signals. It analyzes current market data across different timeframes and generates actionable trading advice with detailed strategy analysis.
 
+> Warning: La suite de QA de extremo a extremo está en progreso y algunas estrategias se encuentran en fase de calibración fina. Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración. Consulte `docs/qa/status.md` para el estado actual y `docs/release_notes.md` para cambios.
+
 ### Key Features
 
 - **Real-time Signal Analysis**: Uses current market data to generate signals

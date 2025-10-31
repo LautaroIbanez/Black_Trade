@@ -13,7 +13,8 @@ Este documento resume el estado actual del sistema, sus limitaciones y el plan d
 - Gestión de riesgo:
   - SL/TP validado con buffer dinámico (ATR × perfil). Fallback porcentual solo si no hay ATR.
 - QA y transparencia:
-  - Suite `pytest` operativa; estado publicable en `docs/qa/status.md` con timestamp y salida real.
+  - Advertencia: La suite de QA está en expansión; algunas pruebas integrales y de regresión están en progreso. Consulte `docs/qa/status.md` para el estado más reciente.
+  - Advertencia: Varias estrategias se encuentran en calibración activa (umbrales y parámetros pueden cambiar entre versiones menores).
   - Pesos por timeframe documentados y verificados; nuevas temporalidades integradas.
 
 ## Roadmap (próximos 4–6 semanas)
