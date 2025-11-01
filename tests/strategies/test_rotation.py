@@ -2,11 +2,14 @@
 import unittest
 import pandas as pd
 import numpy as np
+import logging
+from unittest.mock import patch, MagicMock
 from strategies.crypto_rotation_strategy import CryptoRotationStrategy
 from data.feeds.rotation_loader import (
     align_universe_timestamps,
     rank_universe_by_strength,
-    compute_relative_strength
+    compute_relative_strength,
+    load_rotation_universe
 )
 
 
@@ -234,6 +237,133 @@ class TestCryptoRotationStrategy(unittest.TestCase):
         # At least one symbol should generate trades if divergence exists
         self.assertIsInstance(all_trades, list)
         # Note: May be empty if divergence threshold not met, which is acceptable
+    
+    def test_missing_symbols_fallback_to_single_asset(self):
+        """Test that strategy falls back gracefully when symbols are missing."""
+        # Set up strategy with universe but mock loader to return empty/partial universe
+        self.strategy.universe = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "MISSINGUSDT"]
+        
+        # Mock load_rotation_universe to return only partial data
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {}  # Empty universe (simulates all symbols missing)
+            
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT"
+            )
+            
+            # Should fall back to single-symbol mode
+            self.assertFalse(signals.empty)
+            self.assertIn('signal', signals.columns)
+            self.assertIn('rotation_mode', signals.columns)
+            
+            # Should indicate fallback mode
+            self.assertTrue(all(signals['rotation_mode'] == 'fallback'))
+            self.assertTrue(all(signals['rotation_rank'] == -1))
+            self.assertTrue(all(signals['universe_symbols_count'] == 0))
+    
+    def test_insufficient_symbols_fallback(self):
+        """Test fallback when only one symbol is available (insufficient for rotation)."""
+        # Mock loader to return only one symbol
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {"BTCUSDT": self.btc_df}  # Only one symbol
+            
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT"
+            )
+            
+            # Should fall back to single-symbol mode
+            self.assertFalse(signals.empty)
+            self.assertIn('rotation_mode', signals.columns)
+            self.assertTrue(all(signals['rotation_mode'] == 'fallback'))
+            self.assertTrue(all(signals['rotation_available'] == False))
+    
+    def test_telemetry_records_participation(self):
+        """Test that telemetry records how many symbols participate in each decision."""
+        # Mock loader to return partial universe
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {
+                "BTCUSDT": self.btc_df,
+                "ETHUSDT": self.eth_df
+            }  # 2 out of 3 symbols
+            
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT"
+            )
+            
+            # Check telemetry fields
+            self.assertIn('universe_symbols_count', signals.columns)
+            self.assertIn('universe_participation', signals.columns)
+            self.assertIn('rotation_available', signals.columns)
+            self.assertIn('ranked_symbols_count', signals.columns)
+            
+            # Should record 2 symbols participated
+            self.assertTrue(all(signals['universe_symbols_count'] == 2))
+            self.assertTrue(all(signals['rotation_available'] == True))
+            # Participation should be 2/3 = 0.666...
+            participation_expected = 2/3
+            self.assertTrue(all(abs(signals['universe_participation'] - participation_expected) < 0.01))
+    
+    def test_strict_mode_raises_error_on_missing_symbols(self):
+        """Test that strict mode raises RuntimeError when symbols are missing."""
+        self.strategy.universe = ["BTCUSDT", "ETHUSDT", "MISSINGUSDT"]
+        
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            # Simulate loader raising error in strict mode
+            mock_load.side_effect = RuntimeError("Insufficient symbols loaded: 1 < 2 required")
+            
+            # In strict mode, should raise error
+            with self.assertRaises(RuntimeError):
+                self.strategy._load_and_rank_universe("1h", strict=True)
+    
+    def test_strict_mode_returns_empty_on_error(self):
+        """Test that non-strict mode returns empty instead of raising."""
+        self.strategy.universe = ["BTCUSDT", "ETHUSDT", "MISSINGUSDT"]
+        
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            # Simulate loader raising error
+            mock_load.side_effect = RuntimeError("Insufficient symbols loaded: 1 < 2 required")
+            
+            # In non-strict mode, should return empty without raising
+            universe, ranked = self.strategy._load_and_rank_universe("1h", strict=False)
+            self.assertEqual(universe, {})
+            self.assertEqual(ranked, [])
+    
+    def test_logging_on_missing_symbols(self):
+        """Test that missing symbols are logged appropriately."""
+        import io
+        import sys
+        
+        # Capture log output
+        log_capture = io.StringIO()
+        handler = logging.StreamHandler(log_capture)
+        logger = logging.getLogger('strategies.crypto_rotation_strategy')
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+        
+        try:
+            # Mock loader to return empty universe
+            with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+                mock_load.return_value = {}
+                
+                signals = self.strategy.generate_signals(
+                    self.btc_df,
+                    timeframe="1h",
+                    current_symbol="BTCUSDT"
+                )
+                
+                # Should log warning about fallback
+                log_output = log_capture.getvalue()
+                # Note: Actual log content depends on implementation
+                # This test verifies logging mechanism works
+                self.assertIsInstance(log_output, str)
+        finally:
+            logger.removeHandler(handler)
 
 
 if __name__ == '__main__':

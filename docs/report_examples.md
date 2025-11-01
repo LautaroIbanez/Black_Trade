@@ -56,3 +56,4 @@ Ejecución: Tamaño ≈ 52.4 unidades (1% riesgo capital)
 - Lista de cambios (versionado de estrategias y perfiles)
 
 
+

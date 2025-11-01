@@ -64,34 +64,100 @@ class CryptoRotationStrategy(StrategyBase):
         self.bottom_n = bottom_n
         self.rebalance_periods = rebalance_periods
 
-    def _load_and_rank_universe(self, timeframe: str) -> Tuple[Dict[str, pd.DataFrame], List[Tuple[str, float]]]:
+    def _load_and_rank_universe(self, timeframe: str, strict: bool = False) -> Tuple[Dict[str, pd.DataFrame], List[Tuple[str, float]]]:
         """Load universe data and compute rankings.
         
         Args:
             timeframe: Timeframe string (e.g., '1h', '4h')
+            strict: If True, raise errors when symbols are missing. If False, warn and continue.
             
         Returns:
             Tuple of (universe dict, ranked symbols list)
+            
+        Raises:
+            RuntimeError: If strict=True and rotation cannot be performed (insufficient symbols)
         """
-        # Try to infer timeframe from universe if needed
-        universe = load_rotation_universe(self.universe, timeframe)
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Load universe with validation
+        min_required = 2  # Minimum for rotation (at least 2 symbols needed)
+        try:
+            universe = load_rotation_universe(
+                self.universe, 
+                timeframe, 
+                min_required=min_required,
+                strict=strict
+            )
+        except (ValueError, RuntimeError) as e:
+            if strict:
+                raise RuntimeError(f"Cannot perform rotation: {str(e)}")
+            logger.error(f"Rotation loader error: {str(e)}")
+            return {}, []
+        
         if not universe:
+            error_msg = f"No data loaded for universe {self.universe}"
+            if strict:
+                raise RuntimeError(error_msg)
+            logger.error(error_msg)
+            return {}, []
+        
+        # Log participation metrics
+        loaded_symbols = list(universe.keys())
+        participation_pct = (len(loaded_symbols) / len(self.universe)) * 100
+        logger.info(f"Rotation universe loaded: {len(loaded_symbols)}/{len(self.universe)} symbols ({participation_pct:.1f}%) - {loaded_symbols}")
+        
+        # Validate sufficient symbols for rotation
+        if len(universe) < 2:
+            error_msg = f"Insufficient symbols for rotation: {len(universe)} < 2. Cannot perform multi-asset rotation."
+            if strict:
+                raise RuntimeError(error_msg)
+            logger.warning(error_msg)
             return {}, []
         
         # Align timestamps
         universe = align_universe_timestamps(universe)
         
-        # Rank by selected method
-        if self.ranking_method == "strength":
-            ranked = rank_universe_by_strength(universe, ema_span=self.lookback)
-        elif self.ranking_method == "returns":
-            ranked = rank_universe_by_returns(universe, periods=self.lookback)
-        elif self.ranking_method == "sharpe":
-            ranked = rank_universe_by_sharpe(universe, window=self.lookback)
-        else:
-            ranked = rank_universe_by_strength(universe, ema_span=self.lookback)
+        # Validate alignment result
+        if not universe:
+            error_msg = "Timestamp alignment failed - no common timestamps found"
+            if strict:
+                raise RuntimeError(error_msg)
+            logger.error(error_msg)
+            return {}, []
         
-        return universe, ranked
+        # Count valid aligned symbols (non-empty after alignment)
+        valid_symbols = [sym for sym, df in universe.items() if df is not None and not df.empty]
+        if len(valid_symbols) < 2:
+            error_msg = f"After alignment, insufficient valid symbols: {len(valid_symbols)} < 2"
+            if strict:
+                raise RuntimeError(error_msg)
+            logger.warning(error_msg)
+        
+        # Rank by selected method
+        try:
+            if self.ranking_method == "strength":
+                ranked = rank_universe_by_strength(universe, ema_span=self.lookback)
+            elif self.ranking_method == "returns":
+                ranked = rank_universe_by_returns(universe, periods=self.lookback)
+            elif self.ranking_method == "sharpe":
+                ranked = rank_universe_by_sharpe(universe, window=self.lookback)
+            else:
+                ranked = rank_universe_by_strength(universe, ema_span=self.lookback)
+            
+            # Log ranking result
+            if ranked:
+                top_symbols = [sym for sym, _ in ranked[:3]]  # Top 3
+                logger.debug(f"Ranking (top 3): {top_symbols}")
+            
+            return universe, ranked
+            
+        except Exception as e:
+            error_msg = f"Error during ranking: {str(e)}"
+            if strict:
+                raise RuntimeError(error_msg)
+            logger.error(error_msg)
+            return {}, []
     
     def generate_signals(self, df: pd.DataFrame, timeframe: str = "1h", current_symbol: Optional[str] = None) -> pd.DataFrame:
         """Generate rotation signals based on multi-symbol ranking.
@@ -119,16 +185,32 @@ class CryptoRotationStrategy(StrategyBase):
             current_symbol = getattr(self, '_current_symbol', None) or self.universe[0]
         
         # Load universe and rank
-        universe, ranked = self._load_and_rank_universe(timeframe)
+        universe, ranked = self._load_and_rank_universe(timeframe, strict=False)
+        
+        # Telemetry: record universe state
+        data['universe_symbols_count'] = len(universe)
+        data['universe_participation'] = len(universe) / len(self.universe) if self.universe else 0.0
+        data['rotation_available'] = len(universe) >= 2
+        
         if not universe or not ranked:
-            # Fallback to single-symbol logic
+            # Fallback to single-symbol logic when rotation cannot be performed
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"CryptoRotation fallback to single-symbol mode: "
+                f"universe={len(universe)}, ranked={len(ranked) if ranked else 0}, "
+                f"current_symbol={current_symbol}"
+            )
+            
+            # Degrade to single-symbol EMA-based logic
             data['ema'] = data['close'].ewm(span=self.lookback, adjust=False).mean()
             data['rel'] = (data['close'] / data['ema']) - 1.0
             data['strength'] = data['rel'].rolling(5).mean().fillna(0.0).clip(-1, 1)
             data['signal'] = 0
             data.loc[data['rel'] > 0.005, 'signal'] = 1
             data.loc[data['rel'] < -0.005, 'signal'] = -1
-            data['rotation_rank'] = 0
+            data['rotation_rank'] = -1  # -1 indicates fallback mode
+            data['rotation_mode'] = 'fallback'  # Flag for telemetry
             return data
         
         # Find current symbol's rank
@@ -156,6 +238,8 @@ class CryptoRotationStrategy(StrategyBase):
         data['divergence'] = divergence
         data['signal'] = 0
         data['strength'] = 0.0
+        data['rotation_mode'] = 'multi_asset'  # Flag for telemetry
+        data['ranked_symbols_count'] = len(ranked)
         
         # Only signal if divergence is sufficient
         if divergence >= self.min_divergence:

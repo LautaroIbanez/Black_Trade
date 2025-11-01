@@ -15,7 +15,7 @@ This document describes the real-time recommendation API endpoints and their res
 
 The recommendation API provides real-time trading recommendations based on multiple strategy signals. It analyzes current market data across different timeframes and generates actionable trading advice with detailed strategy analysis.
 
-> ⚠️ **Warning**: La suite de QA de extremo a extremo está en progreso y algunas estrategias se encuentran en fase de calibración fina. Ver resultados reales en `docs/qa/status.md` (actualizado automáticamente tras ejecutar `python qa/generate_status.py`). Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración.
+> ⚠️ **Warning**: El pipeline de QA está reactivado y operativo. Algunas estrategias se encuentran en fase de calibración fina. Ver resultados reales en `docs/qa/status.md` (actualizado automáticamente tras ejecutar `python qa/generate_status.py`). Los campos y umbrales documentados son estables, pero los valores de confianza/pesos pueden variar entre versiones menores hasta concluir la calibración.
 
 ### Última Ejecución de QA
 
@@ -30,10 +30,13 @@ Ver `docs/qa/status.md` para:
 Los tests automatizados cubren:
 - ✅ Agregación de señales y cálculo de consenso
 - ✅ Normalización de confianza (limitada por mínimo y media de señales activas)
+- ✅ Consenso neutral (100% HOLD = 0% consenso, refleja incertidumbre)
+- ✅ Señales mixtas con predominio de neutrals (consenso escalado hacia abajo)
 - ✅ Servicio de recomendaciones con diferentes perfiles (balanced, conservative, aggressive)
 - ✅ Gestión de riesgo y cálculo de niveles SL/TP
 - ✅ Tests end-to-end del pipeline completo de agregación
-- ⚠️  Tests de backtesting y sincronización requieren ajustes menores
+- ✅ Tests de rotación multi-activo (CryptoRotation)
+- ⚠️  Algunos tests de backtesting pueden fallar (problemas conocidos en walk-forward y cost calculation)
 
 Para ejecutar la suite de QA y actualizar el estado:
 ```bash

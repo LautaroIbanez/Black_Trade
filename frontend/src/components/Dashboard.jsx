@@ -255,7 +255,7 @@ function Dashboard() {
                 <div className="consensus-summary">
                   <div className="consensus-header">
                     <h4>Multi-Timeframe Consensus</h4>
-                    <span className="consensus-tooltip" title="Consensus combines signals from multiple timeframes/strategies, weighted by historical performance and strength. Neutral (HOLD) signals receive dynamic weighting proportional to their share (min 30% of base ratio, capped at 15%) to prevent overconfidence when active signals are sparse.">
+                    <span className="consensus-tooltip" title="Consensus reflects agreement between strategies. Key: 100% HOLD = 0% consensus (uncertainty), not 100%. When mixed signals exist, neutrals have residual weight but consensus is scaled down if they predominate (>50%). Low consensus with many HOLD signals indicates market indecision, not weak conviction.">
                       ℹ️
                     </span>
                   </div>

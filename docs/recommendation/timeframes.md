@@ -79,39 +79,88 @@ Cuando hay señales activas (BUY/SELL) y neutrals (HOLD):
 
 ### Advertencias de Interpretación
 
-- **Consenso < 0.55 con señales mixtas**: Interpretar como señal débil o neutral; considerar esperar confirmación antes de tomar posición.
-- **Muchos neutrals (>50%)**: Incluso con una mayoría activa, el consenso será conservador, reflejando incertidumbre del mercado.
-- **Consenso > 0.70**: Señal más clara; múltiples estrategias alineadas con pocos neutrals.
+#### Consenso = 0.0 (100% HOLD)
+
+Cuando **todas las estrategias están en HOLD**, el consenso es **0.0**, reflejando **incertidumbre pura**, no convicción. Esto significa:
+- ❌ **No significa**: "Todos están seguros de esperar"
+- ✅ **Significa**: "Ninguna estrategia tiene convicción direccional suficiente"
+
+**Interpretación**: El mercado está en indecisión. Espere señales más claras antes de tomar posición.
+
+#### Consenso < 0.30 con Señales Mixtas
+
+Cuando hay señales activas (BUY/SELL) pero **muchos neutrals (>50%)**:
+- El consenso está escalado hacia abajo para reflejar la incertidumbre
+- **Interpretación**: Señal débil; la mayoría de estrategias están indecisas
+- **Recomendación**: Considerar esperar confirmación antes de tomar posición, o reducir tamaño de posición
+
+#### Consenso 0.30 - 0.60 con Señales Mixtas
+
+Cuando hay señales activas y neutrals están presentes pero no predominan:
+- El consenso refleja acuerdo moderado
+- **Interpretación**: Señal moderada; algunas estrategias están alineadas pero no todas
+- **Recomendación**: Posición con cautela, considerar gestión de riesgo estricta
+
+#### Consenso > 0.70
+
+Cuando múltiples estrategias están alineadas y pocos neutrals:
+- El consenso refleja alta convicción
+- **Interpretación**: Señal clara; múltiples estrategias alineadas con pocos neutrals
+- **Recomendación**: Señal más confiable; aún considerar gestión de riesgo adecuada
+
+### Reglas de Oro
+
+1. **Consenso bajo ≠ Señal débil automáticamente**: Si hay pocas estrategias activas pero todas están fuertemente alineadas, puede haber señal válida
+2. **Consenso alto + muchos neutrals = Falsa convicción**: Si el consenso es alto pero >50% son neutrals, el sistema lo escala hacia abajo automáticamente
+3. **100% HOLD siempre = Consenso 0.0**: Nunca interprete todos HOLD como consenso total
+4. **Contexto importa**: Combine consenso con `confidence`, `risk_level` y `supporting_strategies` para decisión completa
 
 ## Verificación y Estado de Tests
 
-> ⚠️ **Nota sobre QA**: El pipeline de QA está siendo reactivado. Ver `docs/qa/status.md` para el estado actual de los tests y la epic de reactivación de QA en progreso.
+> ⚠️ **Nota sobre QA**: Las pruebas de temporalidades dependen de la reactivación completa del pipeline de QA. Ver `docs/qa/status.md` para el estado actual de los tests y resultados de ejecuciones reales.
 
-### Tests Planeados
+### Limitaciones Actuales
 
-Los siguientes tests están definidos pero requieren que el pipeline de QA esté completamente operativo:
+Las siguientes verificaciones requieren que el pipeline de QA esté completamente operativo:
 
-- **`tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes`**: Verifica que los timeframes `15m`, `2h` y `12h` aparecen en `strategy_details` cuando hay datos disponibles
+1. **Validación automática de timeframes**: El test `test_recommendation_includes_new_timeframes` puede fallar si el servicio no incluye todos los timeframes disponibles en `strategy_details` (véase [Epic: Reactivar el pipeline de QA](docs/qa/status.md)).
+
+2. **Validación de pesos normalizados**: Aunque la lógica está implementada, la validación automatizada requiere ejecución de tests para confirmarse.
+
+3. **Tests de consenso con múltiples timeframes**: Los tests que verifican el cálculo de consenso con señales de múltiples timeframes dependen de que todos los módulos estén correctamente importados y configurados.
+
+Para más detalles sobre el estado de QA y problemas conocidos, consultar `docs/qa/status.md`.
+
+### Tests Disponibles
+
+Los siguientes tests están definidos y pueden ejecutarse con `python -m pytest`:
+
+- **`tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes`**: Verifica que los timeframes `15m`, `2h` y `12h` aparecen en `strategy_details` cuando hay datos disponibles (puede fallar - ver limitaciones)
 - **`tests/recommendation/test_aggregator.py`**: Tests unitarios del agregador que validan:
   - Que los pesos normalizados suman ≈ 1.0
   - Que el cálculo de consenso respeta los límites [0, 1]
   - Que la ponderación dinámica de neutrals funciona correctamente
-
-### Limitaciones Conocidas
-
-Hasta que la suite de QA esté completamente reactivada y todos los tests pasen:
-
-1. **Inclusión de timeframes**: El endpoint de recomendaciones puede no incluir todos los timeframes disponibles en `strategy_details` cuando hay datos disponibles para múltiples timeframes.
-2. **Validación de pesos**: La validación automática de que los pesos normalizados suman ~1.0 requiere ejecución de tests para confirmarse.
-3. **Consenso**: El cálculo de consenso con ponderación dinámica está implementado, pero requiere validación end-to-end mediante tests.
+  - Que 100% HOLD resulta en consenso = 0.0 (incertidumbre)
+  - Que señales mixtas con predominio de neutrals no saturan el consenso
 
 ### Verificación Manual
 
-Mientras tanto, se puede verificar manualmente:
+Mientras el pipeline de QA se completa, se puede verificar manualmente:
 
 1. **Ejecutar recomendación**: `GET /recommendation`
 2. **Verificar `strategy_details`**: Comprobar que contiene señales de todos los timeframes con datos disponibles
 3. **Validar suma de pesos**: Sumar todos los `weight` en `strategy_details` (debe ser ≈ 1.0)
 4. **Verificar consenso**: `signal_consensus` debe estar en [0, 1] y reflejar correctamente la dispersión de señales
+
+### Estado de Validación Automática
+
+Las pruebas automatizadas están disponibles en:
+- `tests/recommendation/test_aggregator.py`: Tests de consenso y normalización (✅ operativos)
+- `tests/recommendation/test_endpoints.py`: Test de inclusión de timeframes (⚠️ puede fallar - ver limitaciones)
+
+Para ejecutar los tests y obtener resultados actuales:
+```bash
+python qa/generate_status.py
+```
 
 Para más detalles sobre el estado de QA y cómo ejecutar los tests, ver `docs/qa/status.md` y `qa/README.md`.

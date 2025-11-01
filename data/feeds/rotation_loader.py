@@ -19,32 +19,105 @@ def default_universe() -> List[str]:
     return ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "ADAUSDT"]
 
 
-def load_rotation_universe(symbols: List[str], timeframe: str, data_dir: str = "data/ohlcv") -> Dict[str, pd.DataFrame]:
+def load_rotation_universe(symbols: List[str], timeframe: str, data_dir: str = "data/ohlcv", 
+                          min_required: Optional[int] = None, strict: bool = False) -> Dict[str, pd.DataFrame]:
     """Load OHLCV data for multiple symbols from CSV files.
     
     Args:
         symbols: List of symbol names to load
         timeframe: Timeframe string (e.g., '1h', '4h', '1d')
         data_dir: Base directory for OHLCV CSV files
+        min_required: Minimum number of symbols required (None = all symbols)
+        strict: If True, raise ValueError when symbols are missing. If False, warn and continue.
         
     Returns:
         Dictionary mapping symbol names to DataFrames with OHLCV data
+        
+    Raises:
+        ValueError: If strict=True and any required symbol is missing
+        RuntimeError: If strict=False but less than min_required symbols are loaded
     """
     base = Path(data_dir)
     universe: Dict[str, pd.DataFrame] = {}
+    missing_symbols: List[str] = []
+    failed_symbols: List[Tuple[str, str]] = []  # (symbol, error_message)
+    
     for sym in symbols:
         fp = base / f"{sym}_{timeframe}.csv"
-        if fp.exists():
-            try:
-                df = pd.read_csv(fp)
-                # Ensure timestamp column exists and is datetime
-                if 'timestamp' in df.columns:
-                    df['timestamp'] = pd.to_datetime(df['timestamp'])
-                    df = df.sort_values('timestamp').reset_index(drop=True)
-                universe[sym] = df
-            except Exception as e:
-                print(f"Warning: Failed to load {sym} from {fp}: {e}")
+        if not fp.exists():
+            missing_symbols.append(sym)
+            if strict:
+                raise ValueError(f"Required symbol data missing: {sym} at {fp}")
+            continue
+        
+        try:
+            df = pd.read_csv(fp)
+            
+            # Validate required columns
+            required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+            missing_cols = [col for col in required_cols if col not in df.columns]
+            if missing_cols:
+                error_msg = f"Missing required columns: {missing_cols}"
+                failed_symbols.append((sym, error_msg))
+                if strict:
+                    raise ValueError(f"Invalid data for {sym}: {error_msg}")
                 continue
+            
+            # Ensure timestamp column exists and is datetime
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.sort_values('timestamp').reset_index(drop=True)
+            
+            # Validate data is not empty
+            if df.empty:
+                failed_symbols.append((sym, "DataFrame is empty after loading"))
+                if strict:
+                    raise ValueError(f"Empty data for {sym}: {fp}")
+                continue
+            
+            # Validate minimum data points (at least lookback periods needed)
+            if len(df) < 50:  # Minimum for typical EMA calculations
+                failed_symbols.append((sym, f"Insufficient data points: {len(df)} < 50"))
+                # Don't fail strict mode for this, but warn
+            
+            universe[sym] = df
+            
+        except Exception as e:
+            error_msg = str(e)
+            failed_symbols.append((sym, error_msg))
+            if strict:
+                raise ValueError(f"Failed to load {sym} from {fp}: {error_msg}")
+            continue
+    
+    # Log warnings for missing/failed symbols
+    if missing_symbols or failed_symbols:
+        import logging
+        logger = logging.getLogger(__name__)
+        if missing_symbols:
+            logger.warning(f"Missing symbols ({len(missing_symbols)}/{len(symbols)}): {missing_symbols}")
+        if failed_symbols:
+            logger.warning(f"Failed to load symbols: {[s[0] for s in failed_symbols]}")
+            for sym, error in failed_symbols:
+                logger.warning(f"  {sym}: {error}")
+    
+    # Validate minimum required symbols
+    loaded_count = len(universe)
+    if min_required is not None and loaded_count < min_required:
+        error_msg = f"Insufficient symbols loaded: {loaded_count} < {min_required} required"
+        if strict:
+            raise RuntimeError(error_msg)
+        else:
+            import logging
+            logging.getLogger(__name__).error(error_msg)
+    
+    # Ensure at least 2 symbols for rotation (single symbol = no rotation)
+    if loaded_count < 2:
+        error_msg = f"Rotation requires at least 2 symbols, but only {loaded_count} loaded. Missing: {missing_symbols}"
+        if strict:
+            raise RuntimeError(error_msg)
+        else:
+            import logging
+            logging.getLogger(__name__).warning(error_msg)
+    
     return universe
 
 

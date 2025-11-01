@@ -70,6 +70,39 @@ Ver `backend/services/strategy_registry.py` y `backend/config/strategies.json` p
 
 ## Requisitos de Datos
 
+### Símbolos Soportados (Por Defecto)
+
+La estrategia soporta los siguientes símbolos por defecto:
+
+- **BTCUSDT**: Bitcoin/USDT
+- **ETHUSDT**: Ethereum/USDT
+- **BNBUSDT**: Binance Coin/USDT
+- **SOLUSDT**: Solana/USDT
+- **ADAUSDT**: Cardano/USDT
+
+### Personalización del Universo
+
+El universo puede personalizarse mediante:
+
+1. **Variable de entorno `ROTATION_UNIVERSE`**:
+   ```bash
+   export ROTATION_UNIVERSE="BTCUSDT,ETHUSDT,BNBUSDT,XRPUSDT"
+   ```
+
+2. **Configuración en `backend/config/strategies.json`**:
+   ```json
+   {
+     "crypto_rotation": {
+       "universe": ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+     }
+   }
+   ```
+
+3. **Parámetro en código**:
+   ```python
+   strategy = CryptoRotationStrategy(universe=["BTCUSDT", "ETHUSDT"])
+   ```
+
 ### Estructura de Archivos
 
 Los datos deben estar en formato CSV en `data/ohlcv/` con el patrón:
@@ -77,23 +110,102 @@ Los datos deben estar en formato CSV en `data/ohlcv/` con el patrón:
 data/ohlcv/{SYMBOL}_{TIMEFRAME}.csv
 ```
 
-Ejemplo:
-- `data/ohlcv/BTCUSDT_1h.csv`
-- `data/ohlcv/ETHUSDT_1h.csv`
-- `data/ohlcv/BNBUSDT_1h.csv`
+**Ubicación completa** (desde la raíz del proyecto):
+```
+data/
+  ohlcv/
+    BTCUSDT_1h.csv
+    BTCUSDT_4h.csv
+    BTCUSDT_1d.csv
+    ETHUSDT_1h.csv
+    ETHUSDT_4h.csv
+    ETHUSDT_1d.csv
+    BNBUSDT_1h.csv
+    ...
+```
+
+Ejemplos de rutas absolutas:
+- `C:\Users\...\Black_Trade\data\ohlcv\BTCUSDT_1h.csv` (Windows)
+- `/path/to/Black_Trade/data/ohlcv/BTCUSDT_1h.csv` (Linux/macOS)
 
 ### Columnas Requeridas
 
-Cada CSV debe tener:
-- `timestamp`: Fecha/hora en formato parseable
-- `open`, `high`, `low`, `close`: Precios OHLC
-- `volume`: Volumen de transacciones
+Cada CSV debe tener exactamente estas columnas (nombres sensibles a mayúsculas):
+- `timestamp`: Fecha/hora en formato parseable (ISO 8601 recomendado: `YYYY-MM-DD HH:MM:SS`)
+- `open`, `high`, `low`, `close`: Precios OHLC (números decimales)
+- `volume`: Volumen de transacciones (número decimal)
+
+**Formato de ejemplo**:
+```csv
+timestamp,open,high,low,close,volume
+2024-01-01 00:00:00,50000.0,50100.0,49900.0,50050.0,1000.5
+2024-01-01 01:00:00,50050.0,50200.0,50000.0,50150.0,1100.2
+```
 
 ### Requisitos de Cobertura
 
-- **Mínimo 2 símbolos** en el universo para rotación
+- **Mínimo 2 símbolos** en el universo para rotación real (un solo símbolo activa modo fallback)
 - **Timestamps comunes**: Los símbolos deben tener timestamps superpuestos para alineación
-- **Datos suficientes**: Mínimo `lookback + 5` períodos para cálculos estables
+- **Datos suficientes**: Mínimo 50 períodos por símbolo para cálculos estables de EMA
+- **Validación automática**: El loader valida columnas requeridas y rechaza datos inválidos
+
+### Comportamiento con Universo Incompleto
+
+Cuando no se pueden cargar todos los símbolos del universo, la estrategia maneja la situación de la siguiente manera:
+
+#### Modo Estricto (`strict=True`)
+
+- **Errores lanzados**:
+  - `ValueError`: Si falta un símbolo requerido o tiene datos inválidos
+  - `RuntimeError`: Si se cargan menos de 2 símbolos (insuficiente para rotación)
+  
+- **Uso recomendado**: Backtesting, validación de datos, despliegues en producción donde se requiere universo completo
+
+#### Modo No Estricto (`strict=False`, default)
+
+- **Advertencias registradas**: Se registran warnings en logs para símbolos faltantes o inválidos
+- **Fallback a modo single-asset**: Si hay menos de 2 símbolos disponibles, la estrategia degrada a lógica EMA simple del símbolo actual
+- **Telemetría**: Se registran métricas sobre participación:
+  - `universe_symbols_count`: Cuántos símbolos participaron
+  - `universe_participation`: Porcentaje de participación (símbolos cargados / total universo)
+  - `rotation_available`: Boolean indicando si rotación multi-activo está disponible
+  - `rotation_mode`: `'multi_asset'` o `'fallback'`
+  - `rotation_rank`: Ranking del símbolo actual (o `-1` en modo fallback)
+
+#### Ejemplos de Comportamiento
+
+**Escenario 1: Todos los símbolos disponibles**
+```
+Universe: ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+Cargados: 3/3 (100%)
+Resultado: Rotación multi-activo activa, modo 'multi_asset'
+```
+
+**Escenario 2: Un símbolo faltante**
+```
+Universe: ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+Cargados: 2/3 (66.7%) - FALTA: BNBUSDT
+Resultado: Rotación multi-activo activa con 2 símbolos, modo 'multi_asset'
+Log: WARNING - Missing symbols (1/3): ['BNBUSDT']
+```
+
+**Escenario 3: Solo un símbolo disponible**
+```
+Universe: ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+Cargados: 1/3 (33.3%) - FALTAN: ETHUSDT, BNBUSDT
+Resultado: Fallback a modo single-asset, modo 'fallback'
+Log: WARNING - Rotation requires at least 2 symbols, but only 1 loaded
+Log: WARNING - CryptoRotation fallback to single-symbol mode
+```
+
+**Escenario 4: Todos los símbolos faltantes**
+```
+Universe: ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+Cargados: 0/3 (0%)
+Resultado: Fallback a modo single-asset, modo 'fallback'
+Log: ERROR - No data loaded for universe [...]
+Log: WARNING - CryptoRotation fallback to single-symbol mode
+```
 
 ## Uso en Backtests
 

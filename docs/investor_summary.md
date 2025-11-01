@@ -6,10 +6,19 @@ Este documento resume el estado actual del sistema, sus limitaciones y el plan d
 
 - Confianza y Consenso:
   - No se aplican floors/boosts artificiales: la confianza proviene de señales reales (0–1) y el consenso está acotado a [0,1].
+  - **Consenso refleja explícitamente incertidumbre**: 
+    - **100% HOLD = 0% Consenso (Incertidumbre)**: Cuando todas las estrategias están en HOLD, el consenso es 0.0, reflejando indecisión del mercado, no convicción total.
+    - **Señales mixtas con predominio de HOLD**: Cuando hay señales activas (BUY/SELL) pero predominan los neutrals (>50%), el consenso se escala hacia abajo automáticamente para reflejar la incertidumbre subyacente.
+    - Esto previene falsa convicción cuando la mayoría de estrategias están indecisas.
   - Posible baja confianza en escenarios de señales débiles o conflictivas.
+  - Ver `docs/architecture/recommendation.md` y `docs/recommendation/timeframes.md` para detalles del cálculo y ejemplos numéricos.
 - Estrategias en ajuste:
   - MACD: se corrigió el filtro de línea cero; genera trades en datasets con cruces. Aún requiere calibración fina por timeframe.
   - CryptoRotation y OrderFlow: habilitadas con parámetros conservadores; requieren universo multi-símbolo actualizado y más calibración de triggers para mayor diversificación.
+  - **CryptoRotation - Monitoreo Multi-Activo**: 
+    - La estrategia registra telemetría sobre participación: porcentaje de decisiones basadas en ≥2 símbolos vs. modo fallback single-asset.
+    - Métricas disponibles: `universe_symbols_count`, `universe_participation`, `rotation_available`, `rotation_mode`.
+    - Ver `docs/strategies/rotation_orderflow.md` para detalles sobre símbolos soportados, requisitos de datos y comportamiento con universo incompleto.
 - Gestión de riesgo:
   - SL/TP validado con buffer dinámico (ATR × perfil). Fallback porcentual solo si no hay ATR.
 - QA y transparencia:

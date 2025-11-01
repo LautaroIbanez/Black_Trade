@@ -43,3 +43,4 @@
 - v3: Gráficos de equity (backtest vs live) y comparativa por perfil
 
 
+

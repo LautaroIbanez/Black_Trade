@@ -179,7 +179,9 @@ La especificación de API en `docs/api/recommendation.md` refleja el esquema act
 - ✅ Servicio de recomendaciones con diferentes perfiles
 - ✅ Gestión de riesgo y cálculo de niveles SL/TP
 - ✅ Tests end-to-end del pipeline completo
-- ⚠️  Algunos tests de backtesting y sincronización requieren ajustes menores
+- ✅ Consenso neutral (100% HOLD = 0% consenso) y señales mixtas
+- ✅ Tests de rotación multi-activo (CryptoRotation)
+- ⚠️  Algunos tests de backtesting pueden fallar (problemas conocidos documentados)
 
 ### Ejecutar QA
 
@@ -199,11 +201,21 @@ python -m pytest -q && python qa/generate_status.py
 
 Para más detalles sobre ejecución, configuración y solución de problemas, ver `qa/README.md`.
 
-### Notas
+### Limitaciones Actuales
 
-- QA en progreso: Algunas correcciones pendientes en tests de backtesting y sincronización de datos
-- Calibración de estrategias: MACD, CryptoRotation y OrderFlow están en fase de ajuste fino
-- Normalización de confianza: Implementada con límites dinámicos; validación en curso
+> ⚠️ **Nota importante**: Las siguientes limitaciones están documentadas para transparencia. Ver `docs/qa/status.md` para el estado actual de los tests y problemas conocidos.
+
+1. **Pipeline de QA**: Reactivado y operativo, pero algunos tests pueden fallar (problemas conocidos documentados). Ver [Epic: Reactivar el pipeline de QA](docs/qa/status.md) para detalles.
+
+2. **Tests de temporalidades**: Las pruebas que verifican la inclusión de nuevos timeframes (`15m`, `2h`, `12h`) pueden fallar si el servicio no los incluye en `strategy_details`. Esto requiere corrección en el servicio de recomendaciones.
+
+3. **Calibración de estrategias**: MACD, CryptoRotation y OrderFlow están en fase de ajuste fino. Parámetros pueden cambiar entre versiones menores.
+
+4. **Normalización de confianza/consenso**: Implementada y validada con tests. El consenso ahora refleja explícitamente incertidumbre (100% HOLD = 0% consenso).
+
+Para más detalles sobre limitaciones y problemas conocidos, ver:
+- `docs/qa/status.md` - Estado actual de QA y problemas conocidos
+- `docs/CHANGELOG.md` - Limitaciones funcionales y pendientes
 
 ## Estado de Confianza por Épica
 

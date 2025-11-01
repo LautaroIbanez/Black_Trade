@@ -272,21 +272,28 @@ class RecommendationService:
         active_count = len(active_signals)
         hold_count = len(hold_signals)
         
-        # Apply dynamic neutral signal weighting proportional to total strategies
-        # Reserve minimum percentage for neutrals based on their share, but scale down when active signals dominate
+        # Apply dynamic neutral signal weighting that reflects uncertainty
+        # Key principle: 100% HOLD = 0% consensus (uncertainty), not 100% consensus
+        
+        # Configuration: consensus for 100% HOLD scenarios (uncertainty threshold)
+        uncertainty_consensus = 0.0  # Configurable: 0.0 = pure uncertainty, higher values = slight directional bias
+        
         if active_count > 0 and hold_count > 0:
-            # Base weight: proportion of neutrals in total
+            # Mixed scenario: active signals + neutrals
+            # Neutrals maintain residual weight proportional to total strategies
+            # This prevents consensus saturation when active signals are sparse
             neutral_base_ratio = hold_count / total_signals
-            # Scale factor: reduce neutral influence when active signals are present
-            # But ensure minimum floor: neutrals get at least (hold_count / total_signals) * 0.3 weight
-            # This prevents consensus inflation when active signals are sparse
+            # Scale factor: neutrals get proportional weight but capped to prevent saturation
+            # Minimum: 30% of their base ratio, maximum: 15% of total effective weight
             neutral_weight_factor = max(neutral_base_ratio * 0.3, min(neutral_base_ratio, 0.15))
             weighted_hold_count = hold_count * neutral_weight_factor
         elif active_count == 0:
-            # Only neutrals: use full count
-            weighted_hold_count = hold_count
+            # 100% HOLD scenario: pure uncertainty
+            # Do not count holds as contributing to consensus
+            # This ensures signal_consensus reflects uncertainty, not conviction
+            weighted_hold_count = 0  # Neutrals don't contribute to consensus
         else:
-            # No neutrals
+            # No neutrals: only active signals
             weighted_hold_count = 0
         
         # Calculate consensus with weighted neutrals
@@ -361,12 +368,33 @@ class RecommendationService:
             active_min = min(active_confidences)
             weighted_confidence = min(weighted_confidence, active_mean, active_min)
 
-        # Calculate normalized signal consensus (0-1 range) without pre-boosts
+        # Calculate normalized signal consensus (0-1 range) reflecting true conviction
+        # Key principle: consensus = 0 when all HOLD (uncertainty), not 1.0
         if active_count > 0:
+            # Active signals present: consensus is the stronger of buy/sell ratios
+            # This reflects directional conviction when signals are clear
             signal_consensus = max(buy_ratio, sell_ratio)
+            
+            # Additional constraint: if neutrals dominate (>50%), cap consensus
+            # This prevents false conviction when most strategies are uncertain
+            if hold_count > active_count:
+                # More neutrals than active: consensus should reflect this uncertainty
+                # Scale down by the proportion of active signals
+                active_proportion = active_count / total_signals
+                signal_consensus = signal_consensus * active_proportion
         else:
-            signal_consensus = hold_ratio
+            # 100% HOLD scenario: consensus = uncertainty_consensus (default 0.0)
+            # This explicitly reflects uncertainty, not conviction
+            signal_consensus = uncertainty_consensus
+        
+        # Final normalization: ensure within [0, 1] bounds
         signal_consensus = max(0.0, min(signal_consensus, 1.0))
+        
+        # Additional safety: if consensus is driven primarily by neutrals, ensure it never reaches 1.0
+        if hold_count > active_count and signal_consensus > 0.5:
+            # Cap consensus when neutrals dominate to prevent false conviction
+            max_consensus_with_neutrals = 0.5 * (active_count / total_signals) + 0.3
+            signal_consensus = min(signal_consensus, max_consensus_with_neutrals)
         
         # Add timeframe analysis to strategy details
         timeframe_analysis = self._analyze_timeframe_contribution(signals)

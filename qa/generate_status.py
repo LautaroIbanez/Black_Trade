@@ -6,9 +6,9 @@ This script runs pytest, captures the output, and updates docs/qa/status.md.
 
 import subprocess
 import sys
+import re
 from pathlib import Path
 from datetime import datetime
-import json
 
 # Paths
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -38,9 +38,12 @@ def parse_summary(stdout):
     """Extract summary line from pytest output."""
     lines = stdout.strip().split('\n')
     # Look for the summary line (usually last line with numbers)
+    # Format: "X passed, Y failed, Z errors, N skipped in T seconds"
     for line in reversed(lines):
-        if 'passed' in line.lower() or 'failed' in line.lower() or 'error' in line.lower():
-            return line.strip()
+        if any(keyword in line.lower() for keyword in ['passed', 'failed', 'error', 'warnings']):
+            # Check if it looks like a summary line (contains numbers)
+            if any(char.isdigit() for char in line):
+                return line.strip()
     return "Summary not found"
 
 
@@ -49,11 +52,25 @@ def update_status_file(returncode, stdout, stderr, summary):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     status = "✅ PASSED" if returncode == 0 else "❌ FAILED"
     
-    # Count tests
-    passed = stdout.count(' PASSED') or stdout.count(' passed')
-    failed = stdout.count(' FAILED') or stdout.count(' failed')
-    errors = stdout.count(' ERROR') or stdout.count(' error')
-    skipped = stdout.count(' SKIPPED') or stdout.count(' skipped')
+    # Count tests - try to extract from summary line first
+    def extract_number(text, keyword):
+        """Extract number before keyword (e.g., '5 passed' -> 5)."""
+        pattern = rf'(\d+)\s+{keyword}'
+        match = re.search(pattern, text, re.IGNORECASE)
+        return int(match.group(1)) if match else 0
+    
+    summary_lower = summary.lower()
+    passed = extract_number(summary, 'passed')
+    failed = extract_number(summary, 'failed')
+    errors = extract_number(summary, 'error')
+    skipped = extract_number(summary, 'skipped')
+    
+    # Fallback to simple count if extraction failed
+    if passed == 0 and failed == 0 and errors == 0:
+        passed = stdout.count(' PASSED') or stdout.count(' passed')
+        failed = stdout.count(' FAILED') or stdout.count(' failed')
+        errors = stdout.count(' ERROR') or stdout.count(' error')
+        skipped = stdout.count(' SKIPPED') or stdout.count(' skipped')
     
     content = f"""# QA Status
 

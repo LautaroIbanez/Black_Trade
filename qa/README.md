@@ -4,20 +4,88 @@
 
 1. **Python 3.10+** requerido
 2. **Entorno virtual** activado (`.venv`)
-3. **Dependencias instaladas**:
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
-   O específicamente para QA:
-   ```bash
-   pip install -r qa/requirements.txt
-   ```
+3. **Dependencias instaladas**
+
+### Instalación Paso a Paso
+
+#### Opción A: Instalación Completa (Recomendada)
+
+```bash
+# 1. Crear/activar entorno virtual
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
+
+# 2. Instalar todas las dependencias de desarrollo
+pip install -r requirements-dev.txt
+```
+
+Esto instalará todas las dependencias incluyendo las requeridas para QA.
+
+#### Opción B: Solo Dependencias de QA
+
+Si solo necesitas ejecutar tests:
+
+```bash
+# Instalar solo dependencias de QA
+pip install -r qa/requirements.txt
+```
+
+**Nota**: `requirements-dev.txt` incluye `qa/requirements.txt`, por lo que la Opción A es preferible.
+
+### Dependencias Principales
+
+Las dependencias clave para QA incluyen:
+- `pytest==7.4.4` - Framework de testing
+- `pandas==2.1.4` - Manipulación de datos
+- `python-dotenv==1.0.0` - Carga de variables de entorno
+- `numpy==1.26.2` - Operaciones numéricas
+- `fastapi==0.109.0`, `httpx==0.26.0` - Para tests de API
+- `pytest-asyncio==0.23.3` - Soporte para tests asíncronos
+
+**Nota importante**: `ta-lib` está excluido de `requirements-dev.txt` para evitar problemas de compilación nativa. No es requerido para ejecutar la suite de tests.
 
 ## Configuración del Entorno
 
-Desde la raíz del repositorio, los tests importan `backend`, `backtest`, etc. Esto funciona porque:
-- `conftest.py` añade automáticamente la raíz del repositorio a `sys.path`
-- `pytest.ini` establece `pythonpath=.` y las rutas de descubrimiento de tests
+### Estructura de Módulos
+
+Desde la raíz del repositorio, los tests importan `backend`, `backtest`, `strategies`, etc. Esto funciona porque:
+
+1. **`conftest.py`** (en la raíz):
+   - Añade automáticamente la raíz del repositorio a `sys.path`
+   - Se ejecuta antes de cualquier test
+
+2. **`pytest.ini`**:
+   - Define `pythonpath = .` para que Python encuentre los módulos
+   - Especifica rutas de descubrimiento: `testpaths = backtest/tests backend/tests tests`
+   - Configura opciones por defecto: `addopts = -q` (modo quiet)
+
+### Rutas de Módulos Soportadas
+
+Los tests pueden importar desde:
+- `backend.services.*` → `backend/services/`
+- `backend.services.recommendation_service` → `backend/services/recommendation_service.py`
+- `backtest.analysis.*` → `backtest/analysis/`
+- `backtest.data_loader` → `backtest/data_loader.py`
+- `strategies.*` → `strategies/`
+- `data.feeds.*` → `data/feeds/`
+
+### Verificación de Configuración
+
+Para verificar que la configuración es correcta:
+
+```bash
+# Verificar que pytest puede encontrar los módulos
+python -m pytest --collect-only -q
+
+# Si no hay errores, la configuración está correcta
+# Si hay errores de importación, verifica:
+# 1. Estás en la raíz del repositorio
+# 2. conftest.py existe en la raíz
+# 3. pytest.ini tiene pythonpath = .
+```
 
 ### Variables de Entorno Opcionales
 
@@ -36,14 +104,31 @@ export TRADING_PAIRS="BTCUSDT"
 
 ## Comandos
 
-### Ejecutar Tests Manualmente
+### Comandos Oficiales de Ejecución
+
+#### Comando Principal (Recomendado)
 
 ```bash
-# Modo quiet (solo resumen)
+# Ejecutar toda la suite en modo quiet
 python -m pytest -q
+```
 
+Este es el comando estándar usado por el script de actualización automática de QA.
+
+#### Otros Comandos Útiles
+
+```bash
 # Modo verbose (detalles completos)
 python -m pytest -v
+
+# Modo muy verbose con output de print statements
+python -m pytest -vv -s
+
+# Ejecutar solo tests que fallen
+python -m pytest -q --lf  # last-failed
+
+# Ejecutar solo tests que fallaron previamente y sus dependencias
+python -m pytest -q --ff  # failed-first
 
 # Ejecutar un archivo específico
 python -m pytest backend/tests/test_recommendation_service.py
@@ -53,6 +138,12 @@ python -m pytest backend/tests/test_recommendation_service.py::TestRecommendatio
 
 # Ejecutar un test específico
 python -m pytest backend/tests/test_recommendation_service.py::TestRecommendationService::test_strategy_signal_creation
+
+# Ejecutar tests con marcadores específicos (si existen)
+python -m pytest -q -m "not slow"  # Excluir tests marcados como "slow"
+
+# Mostrar coverage (si pytest-cov está instalado)
+python -m pytest -q --cov=backend --cov=backtest --cov-report=term-missing
 ```
 
 ### Generar Estado de QA
@@ -72,16 +163,66 @@ Este script:
 
 ### Flujo Completo Recomendado
 
-```bash
-# 1. Activar entorno virtual (si no está activo)
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/Mac
+#### Paso 1: Preparar Entorno
 
-# 2. Verificar que se pueden recolectar los tests
+```bash
+# Crear entorno virtual (si no existe)
+python -m venv .venv
+
+# Activar entorno virtual
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements-dev.txt
+```
+
+#### Paso 2: Verificar Configuración
+
+```bash
+# Verificar que pytest puede encontrar todos los tests sin errores
 python -m pytest --collect-only
 
-# 3. Ejecutar tests y actualizar estado
+# Si hay errores, revisa:
+# - Estás en la raíz del repositorio
+# - El entorno virtual está activado
+# - Las dependencias están instaladas
+```
+
+#### Paso 3: Ejecutar Tests y Actualizar Estado
+
+**Opción A: Ejecución Automática (Recomendada)**
+
+```bash
+# Ejecuta tests y actualiza docs/qa/status.md automáticamente
 python qa/generate_status.py
+```
+
+Este script:
+- Ejecuta `pytest -q --tb=short`
+- Captura stdout y stderr
+- Extrae el resumen
+- Actualiza `docs/qa/status.md` con timestamp, estado y resultados
+
+**Opción B: Ejecución Manual**
+
+```bash
+# Ejecutar tests
+python -m pytest -q
+
+# Luego actualizar estado manualmente o ejecutar el script
+python qa/generate_status.py
+```
+
+#### Paso 4: Verificar Resultados
+
+```bash
+# Ver el estado actualizado
+cat docs/qa/status.md  # Linux/Mac
+type docs\qa\status.md  # Windows CMD
+Get-Content docs\qa\status.md  # Windows PowerShell
 ```
 
 ## Estructura de Tests

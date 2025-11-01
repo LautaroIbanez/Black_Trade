@@ -83,3 +83,4 @@ python backend/scripts/backtest_all.py \
 - Evitar sobreajuste; revisar estabilidad por ventanas
 
 
+

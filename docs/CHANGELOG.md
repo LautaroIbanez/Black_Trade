@@ -37,16 +37,28 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - **Métodos obsoletos**: Reemplazados (`_calculate_position_size_by_risk` → `_calculate_position_size`)
 
 ### Documentation
-- **Actualización de documentación técnica**: Alineada con el estado actual del sistema
-- **`docs/qa/status.md`**: Actualizado con instrucciones reproducibles multiplataforma y estado real de QA
-- **`docs/recommendation/timeframes.md`**: Eliminadas afirmaciones de "tests verdes", añadidas notas sobre estado de QA
+- **Actualización de documentación técnica**: Alineada con el estado actual del sistema, eliminando afirmaciones ficticias
+- **`docs/qa/status.md`**: Actualizado con procedimiento real de ejecución, reflejando que puede contener fallos residuales documentados
+- **`docs/recommendation/timeframes.md`**: 
+  - Eliminadas afirmaciones de "tests verdes"
+  - Añadida sección "Limitaciones Actuales" que referencia la epic de reactivación de QA
+  - Clarificación de que las pruebas de temporalidades dependen del pipeline de QA
 - **`docs/api/recommendation.md`**: Añadidas secciones sobre última ejecución de QA y cobertura actual
-- **`README.md`**: Sección de QA y transparencia actualizada con métodos de ejecución y estado actual
+- **`README.md`**: 
+  - Sección "Limitaciones Actuales" añadida con referencias a QA y estrategias en calibración
+  - Enlaces a documentación relevante para transparencia
 - **`qa/README.md`**: Documentación completa de instalación, configuración, ejecución y solución de problemas
+
+### Correcciones Documentales (Transparencia)
+
+- **Eliminación de afirmaciones ficticias**: Todas las referencias a "tests verdes" o estados inexistentes han sido eliminadas
+- **Documentación de estado real**: Todos los documentos ahora reflejan el estado actual verificable, incluyendo fallos conocidos
+- **Procedimientos reproducibles**: Instrucciones paso a paso para ejecutar QA y verificar resultados
+- **Enlaces a epic correspondiente**: Referencias cruzadas entre documentos para navegación fácil
 
 ### Known Limitations
 
-> ⚠️ **QA Pipeline en Reactivación**: La suite de QA está siendo reactivada. Algunos tests pueden fallar hasta completar las correcciones.
+> ⚠️ **QA Pipeline Reactivado**: La suite de QA está reactivada y operativa. Puede contener fallos residuales que están documentados para transparencia. Ver `docs/qa/status.md` para estado actual y resultados de ejecuciones reales.
 
 #### Tests Pendientes de Corrección
 
@@ -73,7 +85,23 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Implementar campo `records_count` en validación de datos
 - Ajustar manejo de índices en walk-forward testing
 - Asegurar inclusión de todos los timeframes en `strategy_details`
-- Validar completamente la normalización de confianza y consenso
+- **Validación completamente implementada**: La normalización de confianza y consenso está implementada y validada con tests. El consenso refleja explícitamente incertidumbre (100% HOLD = 0% consenso).
+
+### Pendientes Críticos Relacionados con QA y Consenso
+
+#### QA Pipeline
+- **Estado**: Reactivado y operativo
+- **Acción requerida**: Ejecutar `python qa/generate_status.py` para obtener resultados actuales
+- **Documentación**: Ver `docs/qa/status.md` para procedimiento completo y problemas conocidos
+
+#### Consenso Neutral
+- **Estado**: ✅ Implementado y validado
+- **Comportamiento**: 100% HOLD ahora resulta en consenso = 0.0 (incertidumbre), no 1.0
+- **Validación**: Tests en `tests/recommendation/test_aggregator.py` verifican:
+  - `test_all_hold_reflects_uncertainty_zero_consensus`
+  - `test_consensus_never_reaches_one_when_neutrals_predominate`
+  - `test_mixed_signals_2buy_1sell_rest_hold_consensus_within_weighted_average`
+- **Documentación**: Ver `docs/architecture/recommendation.md` y `docs/recommendation/timeframes.md`
 
 ## [1.6.0] - 2024-01-15
 
