@@ -27,11 +27,14 @@ Cuando hay señales activas (BUY/SELL) mezcladas con neutrales (HOLD):
 
 1. **Ponderación de Neutrals**: 
    - Los neutrals mantienen un peso residual proporcional al total de estrategias
-   - Fórmula: `neutral_weight_factor = max(neutral_base_ratio * 0.3, min(neutral_base_ratio, 0.15))`
-   - Esto previene sobreconfianza cuando pocas señales activas enfrentan muchas neutrales
+   - Fórmula: `neutral_weight_factor = max(neutral_base_ratio * neutral_floor, min(neutral_base_ratio, 0.15))`
+   - Parámetro configurable `neutral_floor` (default 0.3) previene sobreconfianza cuando pocas señales activas enfrentan muchas neutrales
 
 2. **Cálculo de Consenso**:
    - Si hay señales activas: `signal_consensus = max(buy_ratio, sell_ratio)`
+   - **MODERACIÓN PARA ESCENARIOS MIXTOS BUY/SELL/HOLD**: Si hay señales BUY y SELL coexistiendo con HOLD, el consenso se acota a `simple_majority - max_consensus_delta`
+     - `simple_majority = max(buy_count, sell_count) / active_count`
+     - Parámetro configurable `max_consensus_delta` (default 0.1) previene consenso inflado cuando señales activas están balanceadas
    - Si los neutrals predominan (>50% del total): el consenso se escala hacia abajo por la proporción de señales activas
    - Fórmula de escala: `signal_consensus = signal_consensus * (active_count / total_signals)`
 
@@ -49,7 +52,7 @@ Cuando todas las estrategias están en HOLD:
 
 Esto refleja explícitamente que no hay convicción direccional, solo incertidumbre.
 
-### Ejemplo Numérico: 2 BUY / 1 SELL / 4 HOLD
+### Ejemplo Numérico 1: 2 BUY / 1 SELL / 4 HOLD
 
 - Total: 7 señales (2 BUY, 1 SELL, 4 HOLD)
 - Active: 3, Hold: 4
@@ -65,5 +68,38 @@ Cálculo:
 7. Como neutrals (4) > active (3), se escala: `signal_consensus = 0.56 * (3/7) ≈ 0.24`
 
 **Resultado**: Consenso refleja incertidumbre, no convicción total, a pesar de que BUY > SELL.
+
+### Ejemplo Numérico 2: 2 BUY / 1 SELL / 1 HOLD (Escenario Mixto)
+
+- Total: 4 señales (2 BUY, 1 SELL, 1 HOLD)
+- Active: 3, Hold: 1
+- Proporción activa: 3/4 = 75%
+
+Cálculo (con parámetros por defecto: `neutral_floor=0.3`, `max_consensus_delta=0.1`):
+1. `neutral_base_ratio = 1/4 = 0.25`
+2. `neutral_weight_factor = max(0.25 * 0.3, min(0.25, 0.15)) = 0.15`
+3. `weighted_hold_count = 1 * 0.15 = 0.15`
+4. `effective_total = 3 + 0.15 = 3.15`
+5. `buy_ratio = 2 / 3.15 ≈ 0.635`
+6. **MODERACIÓN**: Como hay BUY y SELL mezclados, aplicar limitación:
+   - `simple_majority = 2/3 ≈ 0.667`
+   - `signal_consensus = min(0.635, 0.667 - 0.1) = min(0.635, 0.567) = 0.567`
+
+**Resultado**: Consenso moderado a 0.567, evitando inflación artificial por señales HOLD residuales. Sin moderación, el consenso sería 0.635, transmitiendo convicción superior a la justificada.
+
+### Configuración de Parámetros
+
+Los parámetros `neutral_floor` y `max_consensus_delta` se configuran al inicializar `RecommendationService`:
+
+```python
+# Valores por defecto: neutral_floor=0.3, max_consensus_delta=0.1
+svc = RecommendationService()
+
+# Personalización para escenarios más conservadores
+svc = RecommendationService(neutral_floor=0.2, max_consensus_delta=0.05)
+
+# Personalización para escenarios más permisivos
+svc = RecommendationService(neutral_floor=0.4, max_consensus_delta=0.15)
+```
 
 Ver `docs/recommendation/timeframes.md` para más ejemplos numéricos y advertencias de interpretación.

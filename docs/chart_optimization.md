@@ -344,3 +344,4 @@ const fetchChartDataWithCache = async (symbol, timeframe) => {
 
 
 
+

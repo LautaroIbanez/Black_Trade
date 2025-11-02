@@ -18,6 +18,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - **Script de actualización automática de QA** (`qa/generate_status.py`)
 - **Tests end-to-end del pipeline de agregación** (`tests/recommendation/test_e2e_aggregator.py`)
 - **Documentación completa de QA** (`qa/README.md`)
+- **Parámetros configurables de consenso** (`neutral_floor`, `max_consensus_delta`) en `RecommendationService`
+- **Tests de escenarios mixtos** (2 BUY / 1 SELL / 1 HOLD) para validar moderación de consenso
 
 ### Changed
 - Dashboard completamente rediseñado con layout responsive
@@ -35,6 +37,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - **Firmas de StrategySignal en tests**: Todos los tests actualizados para incluir `entry_range` y `risk_targets`
 - **Imports obsoletos**: Corregidos (`backtest.engine.analysis` → `backtest.analysis`)
 - **Métodos obsoletos**: Reemplazados (`_calculate_position_size_by_risk` → `_calculate_position_size`)
+- **Tests de rotación multi-activo**: Todos los mocks de `_load_and_rank_universe` actualizados con parámetro `strict`
+- **Tests de normalización**: Corregidas pruebas de consenso y tamaño de posición con valores reales
+- **Pipeline de QA**: Reactivado y operativo, genera reporte automático actualizado
 
 ### Documentation
 - **Actualización de documentación técnica**: Alineada con el estado actual del sistema, eliminando afirmaciones ficticias
@@ -58,19 +63,21 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Known Limitations
 
-> ⚠️ **QA Pipeline Reactivado**: La suite de QA está reactivada y operativa. Puede contener fallos residuales que están documentados para transparencia. Ver `docs/qa/status.md` para estado actual y resultados de ejecuciones reales.
+> ⚠️ **QA Pipeline Reactivado**: La suite de QA está reactivada y operativa. Estado actual: **129 passed, 4 failed**. Los fallos residuales están documentados para transparencia. Ver `docs/qa/status.md` para estado actual y resultados de ejecuciones reales.
 
 #### Tests Pendientes de Corrección
 
-1. **Backtesting**:
-   - `test_split_and_walk_forward`: KeyError en cierre forzado de posiciones (requiere ajuste en manejo de índices)
+1. **Backtesting** (3 tests):
+   - `test_split_and_walk_forward`: KeyError en cierre forzado de posiciones (requiere ajuste en manejo de índices en `strategies/momentum_strategy.py`)
    - `test_cost_calculation`: Desajuste en expectativas del modelo de costos
+   - `test_strategies_with_different_costs`: Aserciones de costos no cumplidas
 
-2. **Sincronización de Datos**:
-   - `test_continuity_across_timeframes`: Campo `records_count` falta en diccionario de validación
+2. **Endpoints** (1 test):
+   - `test_recommendation_includes_new_timeframes`: Error en generación de señales para Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic (tipo 'bool' object is not iterable)
 
-3. **Endpoints**:
-   - `test_recommendation_includes_new_timeframes`: Timeframes nuevos pueden no aparecer en `strategy_details` cuando hay datos disponibles
+**Responsable**: Equipo de Backend / Desarrolladores  
+**Prioridad**: Media (fallos no bloquean funcionalidad core)  
+**Target**: Revisar en próximo sprint (2-3 semanas)
 
 #### Limitaciones Funcionales
 

@@ -95,7 +95,7 @@ class TestCryptoRotationStrategy(unittest.TestCase):
         # Mock the load method to return our test universe
         original_load = self.strategy._load_and_rank_universe
         
-        def mock_load(timeframe):
+        def mock_load(timeframe, strict=False):
             aligned = align_universe_timestamps(self.universe)
             ranked = rank_universe_by_strength(aligned, ema_span=20)
             return aligned, ranked
@@ -128,7 +128,7 @@ class TestCryptoRotationStrategy(unittest.TestCase):
         
         original_load = self.strategy._load_and_rank_universe
         
-        def mock_load(timeframe):
+        def mock_load(timeframe, strict=False):
             aligned = align_universe_timestamps(self.universe)
             ranked = rank_universe_by_strength(aligned, ema_span=20)
             return aligned, ranked
@@ -149,7 +149,7 @@ class TestCryptoRotationStrategy(unittest.TestCase):
         # Generate signals first
         original_load = self.strategy._load_and_rank_universe
         
-        def mock_load(timeframe):
+        def mock_load(timeframe, strict=False):
             aligned = align_universe_timestamps(self.universe)
             ranked = rank_universe_by_strength(aligned, ema_span=20)
             return aligned, ranked
@@ -218,7 +218,7 @@ class TestCryptoRotationStrategy(unittest.TestCase):
         
         original_load = self.strategy._load_and_rank_universe
         
-        def mock_load(timeframe):
+        def mock_load(timeframe, strict=False):
             aligned = align_universe_timestamps(self.universe)
             ranked = rank_universe_by_strength(aligned, ema_span=20)
             return aligned, ranked

@@ -114,34 +114,36 @@ Cuando múltiples estrategias están alineadas y pocos neutrals:
 2. **Consenso alto + muchos neutrals = Falsa convicción**: Si el consenso es alto pero >50% son neutrals, el sistema lo escala hacia abajo automáticamente
 3. **100% HOLD siempre = Consenso 0.0**: Nunca interprete todos HOLD como consenso total
 4. **Contexto importa**: Combine consenso con `confidence`, `risk_level` y `supporting_strategies` para decisión completa
+5. **Consenso moderado en escenarios mixtos**: Cuando coexisten BUY y SELL (ej: 2 BUY / 1 SELL / 1 HOLD), el consenso se modera automáticamente para evitar sobreconfianza (ej: ~0.57 en lugar de ~0.63)
 
 ## Verificación y Estado de Tests
 
-> ⚠️ **Nota sobre QA**: Las pruebas de temporalidades dependen de la reactivación completa del pipeline de QA. Ver `docs/qa/status.md` para el estado actual de los tests y resultados de ejecuciones reales.
+> ⚠️ **Nota sobre QA**: El pipeline de QA está reactivado y operativo. Estado actual: **129 passed, 4 failed**. Ver `docs/qa/status.md` para el estado actual de los tests y resultados de ejecuciones reales.
 
 ### Limitaciones Actuales
 
-Las siguientes verificaciones requieren que el pipeline de QA esté completamente operativo:
+**Estado QA**: 129 passed, 4 failed
 
-1. **Validación automática de timeframes**: El test `test_recommendation_includes_new_timeframes` puede fallar si el servicio no incluye todos los timeframes disponibles en `strategy_details` (véase [Epic: Reactivar el pipeline de QA](docs/qa/status.md)).
+1. ✅ **Validación de consenso**: Tests de normalización y moderación de consenso (incluyendo escenarios mixtos 2 BUY / 1 SELL / 1 HOLD) operativos y pasando.
 
-2. **Validación de pesos normalizados**: Aunque la lógica está implementada, la validación automatizada requiere ejecución de tests para confirmarse.
+2. ⚠️ **Validación automática de timeframes**: El test `test_recommendation_includes_new_timeframes` falla por error en generación de señales (`'bool' object is not iterable` en Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic).
 
-3. **Tests de consenso con múltiples timeframes**: Los tests que verifican el cálculo de consenso con señales de múltiples timeframes dependen de que todos los módulos estén correctamente importados y configurados.
+3. ⚠️ **Validación de pesos normalizados**: Aunque la lógica está implementada, la validación automatizada requiere que todos los tests de timeframes pasen para confirmarse completamente.
 
-Para más detalles sobre el estado de QA y problemas conocidos, consultar `docs/qa/status.md`.
+Para más detalles sobre el estado de QA y problemas conocidos, consultar `docs/qa/status.md` y `docs/CHANGELOG.md`.
 
 ### Tests Disponibles
 
 Los siguientes tests están definidos y pueden ejecutarse con `python -m pytest`:
 
-- **`tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes`**: Verifica que los timeframes `15m`, `2h` y `12h` aparecen en `strategy_details` cuando hay datos disponibles (puede fallar - ver limitaciones)
-- **`tests/recommendation/test_aggregator.py`**: Tests unitarios del agregador que validan:
+- ✅ **`tests/recommendation/test_aggregator.py`**: Tests unitarios del agregador (OPERATIVOS) que validan:
   - Que los pesos normalizados suman ≈ 1.0
   - Que el cálculo de consenso respeta los límites [0, 1]
   - Que la ponderación dinámica de neutrals funciona correctamente
   - Que 100% HOLD resulta en consenso = 0.0 (incertidumbre)
   - Que señales mixtas con predominio de neutrals no saturan el consenso
+  - Que escenarios mixtos BUY/SELL/HOLD (ej: 2 BUY / 1 SELL / 1 HOLD) moderan el consenso correctamente
+- ⚠️ **`tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes`**: Verifica que los timeframes `15m`, `2h` y `12h` aparecen en `strategy_details` cuando hay datos disponibles (falla - ver limitaciones)
 
 ### Verificación Manual
 
@@ -155,8 +157,11 @@ Mientras el pipeline de QA se completa, se puede verificar manualmente:
 ### Estado de Validación Automática
 
 Las pruebas automatizadas están disponibles en:
-- `tests/recommendation/test_aggregator.py`: Tests de consenso y normalización (✅ operativos)
-- `tests/recommendation/test_endpoints.py`: Test de inclusión de timeframes (⚠️ puede fallar - ver limitaciones)
+- `tests/recommendation/test_aggregator.py`: Tests de consenso y normalización (✅ operativos, todos pasando)
+- `tests/recommendation/test_endpoints.py`: Test de inclusión de timeframes (⚠️ falla - ver limitaciones)
+- `tests/strategies/test_rotation.py`: Tests de CryptoRotation multi-activo (✅ operativos, todos pasando)
+
+**Resumen**: 129 passed, 4 failed (3 backtesting, 1 endpoints).
 
 Para ejecutar los tests y obtener resultados actuales:
 ```bash

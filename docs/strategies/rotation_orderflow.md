@@ -207,6 +207,27 @@ Log: ERROR - No data loaded for universe [...]
 Log: WARNING - CryptoRotation fallback to single-symbol mode
 ```
 
+### Garantías de Comportamiento
+
+La estrategia garantiza que:
+
+1. **No hay degradación silenciosa**: Todos los escenarios de datos faltantes generan logs explícitos (WARNING o ERROR según severidad)
+2. **Fallback controlado**: Cuando el universo es insuficiente, el modo fallback está explícitamente marcado en telemetría (`rotation_mode='fallback'`)
+3. **Telemetría completa**: Cada señal incluye métricas de participación del universo para auditoría
+4. **Modo estricto disponible**: Para tests y producción crítica, usar `strict=True` para fallar rápido en datos insuficientes
+
+### Uso en Tests vs Producción
+
+#### Tests (`strict=True`)
+- **Objetivo**: Detectar datos faltantes durante desarrollo
+- **Comportamiento**: Falla inmediatamente con excepciones claras
+- **Ejemplo**: `universe, ranked = strategy._load_and_rank_universe(timeframe, strict=True)`
+
+#### Producción (`strict=False`, default)
+- **Objetivo**: Continuar operando aunque el universo sea parcial
+- **Comportamiento**: Logs advertencias y degrada a fallback cuando necesario
+- **Ejemplo**: `signals = strategy.generate_signals(df, timeframe="1h")` (usa `strict=False` internamente)
+
 ## Uso en Backtests
 
 ### Escenario Básico

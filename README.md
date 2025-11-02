@@ -174,14 +174,17 @@ La especificación de API en `docs/api/recommendation.md` refleja el esquema act
 - Conteo de tests (passed/failed/errors/skipped)
 - Resumen y salida completa
 
-**Cobertura actual**: Los tests cubren:
+**Cobertura actual** (129 passed, 4 failed): Los tests cubren:
 - ✅ Agregación de señales y normalización de confianza/consenso
+- ✅ Moderación de consenso en escenarios mixtos BUY/SELL/HOLD
 - ✅ Servicio de recomendaciones con diferentes perfiles
 - ✅ Gestión de riesgo y cálculo de niveles SL/TP
 - ✅ Tests end-to-end del pipeline completo
 - ✅ Consenso neutral (100% HOLD = 0% consenso) y señales mixtas
-- ✅ Tests de rotación multi-activo (CryptoRotation)
-- ⚠️  Algunos tests de backtesting pueden fallar (problemas conocidos documentados)
+- ✅ Tests de rotación multi-activo (CryptoRotation) - todos pasando
+- ✅ Tests de normalización - todos pasando
+- ⚠️  3 tests de backtesting fallan (walk-forward, costes) - documentados
+- ⚠️  1 test de endpoints falla (timeframes) - documentado
 
 ### Ejecutar QA
 
@@ -205,13 +208,17 @@ Para más detalles sobre ejecución, configuración y solución de problemas, ve
 
 > ⚠️ **Nota importante**: Las siguientes limitaciones están documentadas para transparencia. Ver `docs/qa/status.md` para el estado actual de los tests y problemas conocidos.
 
-1. **Pipeline de QA**: Reactivado y operativo, pero algunos tests pueden fallar (problemas conocidos documentados). Ver [Epic: Reactivar el pipeline de QA](docs/qa/status.md) para detalles.
+**Estado QA**: 129 passed, 4 failed (ver `docs/qa/status.md` para detalles)
 
-2. **Tests de temporalidades**: Las pruebas que verifican la inclusión de nuevos timeframes (`15m`, `2h`, `12h`) pueden fallar si el servicio no los incluye en `strategy_details`. Esto requiere corrección en el servicio de recomendaciones.
+1. ✅ **Consenso mixto**: Resuelto con moderación configurable (`neutral_floor`, `max_consensus_delta`). Escenarios 2 BUY / 1 SELL / 1 HOLD ahora generan consenso razonable (~0.57 vs ~0.63 anterior).
 
-3. **Calibración de estrategias**: MACD, CryptoRotation y OrderFlow están en fase de ajuste fino. Parámetros pueden cambiar entre versiones menores.
+2. ✅ **CryptoRotation multi-activo**: Verificado y funcional. Tests de rotación pasando con datasets multi-símbolo y manejo correcto del parámetro `strict`.
 
-4. **Normalización de confianza/consenso**: Implementada y validada con tests. El consenso ahora refleja explícitamente incertidumbre (100% HOLD = 0% consenso).
+3. ⚠️ **Pipeline de QA**: Reactivado y operativo. 4 tests fallan (3 backtesting: walk-forward, costes; 1 endpoints: timeframes). Ver `docs/qa/status.md` y `docs/CHANGELOG.md` para detalles.
+
+4. ⚠️ **Tests de temporalidades**: La prueba de inclusión de timeframes (`15m`, `2h`, `12h`) falla por error en generación de señales (`'bool' object is not iterable`). Pendiente corrección.
+
+5. ⚠️ **Calibración de estrategias**: MACD y OrderFlow en fase de ajuste fino. Parámetros pueden cambiar entre versiones menores.
 
 Para más detalles sobre limitaciones y problemas conocidos, ver:
 - `docs/qa/status.md` - Estado actual de QA y problemas conocidos
@@ -223,10 +230,11 @@ Para más detalles sobre limitaciones y problemas conocidos, ver:
 |-------|--------|-----------|-------|
 | Normalización de Datos | Completa | Alta | Validaciones de continuidad/frescura operativas |
 | Recomendación Multi-timeframe | Completa | Media-Alta | Ponderación estable; mejoras de UX en curso |
+| Moderación de Consenso Mixto | ✅ Completa | Alta | Parámetros configurables; tests validando comportamiento |
 | MACD Rehabilitado | En progreso | Media | Cierres por histograma en cero listos; calibración por timeframe pendiente |
-| CryptoRotation | En progreso | Media | Multi-activo habilitado; ajuste de triggers y universo |
+| CryptoRotation Multi-Activo | ✅ Verificado | Alta | Tests pasando; manejo correcto de strict/fallback |
 | OrderFlow | En progreso | Media | Señales con volumen anómalo; calibración de vol_mult |
-| QA Integral | En progreso | Media | Suite ampliándose; cobertura de regresión parcial |
+| QA Integral | Mejorado | Media-Alta | 129/133 tests pasando; 4 fallos documentados; pipeline reactivado |
 
 ### Próximos Hitos (4–6 semanas)
 

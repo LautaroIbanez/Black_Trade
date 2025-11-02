@@ -139,6 +139,70 @@ def test_e2e_aggregator_conflicting_signals():
         assert result.signal_consensus > 0.0
 
 
+def test_e2e_aggregator_mixed_2buy_1sell_1hold_consensus_moderated():
+    """Test that 2 BUY / 1 SELL / 1 HOLD scenario keeps consensus moderated (not inflated)."""
+    svc = RecommendationService()
+    
+    signals = [
+        _make_signal("B1", 1, 0.6, 0.8, "1h", 100.0),
+        _make_signal("B2", 1, 0.5, 0.7, "4h", 100.0),
+        _make_signal("S1", -1, 0.4, 0.6, "1d", 100.0),
+        _make_signal("H1", 0, 0.0, 0.5, "12h", 100.0),
+    ]
+    
+    result = svc._analyze_signals(signals, data={}, profile="balanced")
+    
+    # Total: 4 signals (2 BUY, 1 SELL, 1 HOLD)
+    # Active: 3, Hold: 1
+    # Consensus should be moderated by max_consensus_delta when BUY/SELL coexist with HOLD
+    
+    assert result.action == "BUY"  # BUY should win (2 vs 1)
+    assert 0.0 <= result.signal_consensus <= 1.0
+    
+    # Consensus should be moderated to avoid inflated values
+    # Without moderation: buy_ratio ≈ 0.635
+    # With moderation (default max_consensus_delta=0.1): should be capped at simple_majority - 0.1
+    # Simple majority = 2/3 ≈ 0.667, so cap = 0.567
+    # Verify consensus is within reasonable bounds (not inflated)
+    assert result.signal_consensus <= 0.60, \
+        f"Consensus {result.signal_consensus} should be moderated (<= 0.60) in mixed BUY/SELL/HOLD scenario"
+    assert result.signal_consensus >= 0.50, \
+        f"Consensus {result.signal_consensus} should still show BUY preference (>= 0.50)"
+
+
+def test_e2e_aggregator_mixed_2buy_1sell_1hold_with_custom_delta():
+    """Test that custom max_consensus_delta affects consensus moderation.
+    
+    Note: max_consensus_delta is SUBTRACTED from simple majority to create the cap.
+    - Lower delta = tighter cap = lower consensus
+    - Higher delta = looser cap = higher consensus (but still below simple majority)
+    """
+    # Tighter cap (lower delta)
+    svc_tighter = RecommendationService(max_consensus_delta=0.05)
+    # Looser cap (higher delta, but still moderated)
+    svc_looser = RecommendationService(max_consensus_delta=0.15)
+    
+    signals = [
+        _make_signal("B1", 1, 0.6, 0.8, "1h", 100.0),
+        _make_signal("B2", 1, 0.5, 0.7, "4h", 100.0),
+        _make_signal("S1", -1, 0.4, 0.6, "1d", 100.0),
+        _make_signal("H1", 0, 0.0, 0.5, "12h", 100.0),
+    ]
+    
+    result_tighter = svc_tighter._analyze_signals(signals, data={}, profile="balanced")
+    result_looser = svc_looser._analyze_signals(signals, data={}, profile="balanced")
+    
+    # Tighter cap should yield higher consensus than looser cap (counterintuitive but correct)
+    # This is because we're CAPPING at (majority - delta)
+    # Tighter cap = higher floor, so consensus is less moderated
+    assert result_tighter.signal_consensus >= result_looser.signal_consensus, \
+        f"Tighter cap (lower delta) should yield higher/equal consensus. Got: {result_tighter.signal_consensus} vs {result_looser.signal_consensus}"
+    
+    # Both should be moderated (not inflated)
+    assert result_tighter.signal_consensus <= 0.65
+    assert result_looser.signal_consensus <= 0.60
+
+
 def test_e2e_aggregator_empty_signals():
     """Test aggregator with empty signal list."""
     svc = RecommendationService()

@@ -69,14 +69,23 @@ class RecommendationResult:
 class RecommendationService:
     """Service for generating real-time trading recommendations."""
     
-    def __init__(self):
-        """Initialize recommendation service."""
+    def __init__(self, neutral_floor: float = 0.3, max_consensus_delta: float = 0.1):
+        """Initialize recommendation service.
+        
+        Args:
+            neutral_floor: Minimum weight factor for neutrals when mixed (default 0.3)
+                          Used to prevent consensus saturation in mixed scenarios
+            max_consensus_delta: Maximum deviation from simple majority in mixed scenarios (default 0.1)
+                                Prevents inflated consensus when BUY/SELL coexist with HOLD
+        """
         self.strategy_registry = strategy_registry
         self.risk_levels = {
             "LOW": {"max_confidence": 0.6, "min_supporting": 1},
             "MEDIUM": {"max_confidence": 0.8, "min_supporting": 2},
             "HIGH": {"max_confidence": 1.0, "min_supporting": 3}
         }
+        self.neutral_floor = neutral_floor
+        self.max_consensus_delta = max_consensus_delta
     
     def generate_recommendation(self, data: Dict[str, pd.DataFrame], 
                               historical_metrics: Optional[Dict[str, List[Dict]]] = None,
@@ -284,8 +293,8 @@ class RecommendationService:
             # This prevents consensus saturation when active signals are sparse
             neutral_base_ratio = hold_count / total_signals
             # Scale factor: neutrals get proportional weight but capped to prevent saturation
-            # Minimum: 30% of their base ratio, maximum: 15% of total effective weight
-            neutral_weight_factor = max(neutral_base_ratio * 0.3, min(neutral_base_ratio, 0.15))
+            # Use configurable neutral_floor parameter instead of hardcoded 0.3
+            neutral_weight_factor = max(neutral_base_ratio * self.neutral_floor, min(neutral_base_ratio, 0.15))
             weighted_hold_count = hold_count * neutral_weight_factor
         elif active_count == 0:
             # 100% HOLD scenario: pure uncertainty
@@ -374,6 +383,16 @@ class RecommendationService:
             # Active signals present: consensus is the stronger of buy/sell ratios
             # This reflects directional conviction when signals are clear
             signal_consensus = max(buy_ratio, sell_ratio)
+            
+            # MODERATION FOR MIXED BUY/SELL/HOLD SCENARIOS
+            # When BUY and SELL coexist with HOLD, prevent inflated consensus
+            # Simple majority among active signals is the baseline
+            if len(buy_signals) > 0 and len(sell_signals) > 0:
+                # Mixed BUY/SELL scenario: consensus should not exceed simple majority
+                simple_majority = max(len(buy_signals), len(sell_signals)) / active_count
+                # Cap consensus to simple majority - max_consensus_delta to ensure moderation
+                # This prevents inflated consensus when HOLD signals add residual weight
+                signal_consensus = min(signal_consensus, simple_majority - self.max_consensus_delta)
             
             # Additional constraint: if neutrals dominate (>50%), cap consensus
             # This prevents false conviction when most strategies are uncertain

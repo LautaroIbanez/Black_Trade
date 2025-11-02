@@ -13,7 +13,7 @@ from datetime import datetime
 # Paths
 ROOT_DIR = Path(__file__).resolve().parent.parent
 STATUS_FILE = ROOT_DIR / "docs" / "qa" / "status.md"
-PYTEST_CMD = [sys.executable, "-m", "pytest", "-q", "--tb=short"]
+PYTEST_CMD = [sys.executable, "-m", "pytest", "--tb=short"]
 
 
 def run_pytest():
@@ -120,7 +120,7 @@ python -m pytest -q && python qa/generate_status.py
     
     STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATUS_FILE.write_text(content, encoding='utf-8')
-    print(f"✅ Status updated: {STATUS_FILE}")
+    print(f"[OK] Status updated: {STATUS_FILE}")
 
 
 def main():
@@ -141,7 +141,7 @@ def main():
         print(stderr)
     
     summary = parse_summary(stdout)
-    print(f"\n📊 Summary: {summary}")
+    print(f"\n[Summary] {summary}")
     
     update_status_file(returncode, stdout, stderr, summary)
     

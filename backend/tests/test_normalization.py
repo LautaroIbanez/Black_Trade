@@ -60,38 +60,12 @@ class TestNormalization(unittest.TestCase):
     
     def test_signal_consensus_normalization(self):
         """Test that signal_consensus is normalized to 0-1 range."""
-        # Test with active signals (should be capped at 1.0)
-        buy_signals = [s for s in self.mock_signals if s.signal == 1]
-        sell_signals = []
-        hold_signals = [s for s in self.mock_signals if s.signal == 0]
+        # Call the real method to test actual normalization behavior
+        result = self.service._analyze_signals(self.mock_signals, {}, profile="balanced")
         
-        # Mock the _analyze_signals method to test consensus calculation
-        with patch.object(self.service, '_analyze_signals') as mock_analyze:
-            mock_analyze.return_value = Mock(
-                action="BUY",
-                confidence=0.8,
-                entry_range={"min": 49000.0, "max": 51000.0},
-                stop_loss=48000.0,
-                take_profit=52000.0,
-                current_price=50000.0,
-                primary_strategy="Strategy1",
-                supporting_strategies=["Strategy2"],
-                strategy_details=[],
-                signal_consensus=1.5,  # This should be capped at 1.0
-                risk_level="MEDIUM",
-                trade_management=None,
-                contribution_breakdown=None,
-                risk_reward_ratio=2.0,
-                suggested_position_size=1.2,
-                entry_label="Test label",
-                risk_percentage=4.0,
-                normalized_weights_sum=1.0
-            )
-            
-            result = self.service._analyze_signals(self.mock_signals, {}, profile="balanced")
-            
-            # Signal consensus should be capped at 1.0
-            self.assertLessEqual(result.signal_consensus, 1.0)
+        # Signal consensus should always be in [0, 1] range
+        self.assertGreaterEqual(result.signal_consensus, 0.0)
+        self.assertLessEqual(result.signal_consensus, 1.0)
     
     def test_weights_normalization(self):
         """Test that strategy weights are normalized to sum to 1.0."""
@@ -152,14 +126,14 @@ class TestNormalization(unittest.TestCase):
     
     def test_position_size_calculation(self):
         """Test position size calculation."""
-        # Test different profiles
+        # Test different profiles (day_trading < balanced < long_term risk)
         usd_balanced, pct_balanced = self.service._calculate_position_size(50000.0, 48000.0, "balanced")
-        usd_conservative, pct_conservative = self.service._calculate_position_size(50000.0, 48000.0, "conservative")
-        usd_aggressive, pct_aggressive = self.service._calculate_position_size(50000.0, 48000.0, "aggressive")
+        usd_day_trading, pct_day_trading = self.service._calculate_position_size(50000.0, 48000.0, "day_trading")
+        usd_long_term, pct_long_term = self.service._calculate_position_size(50000.0, 48000.0, "long_term")
         
-        # Conservative should be smaller than balanced, balanced smaller than aggressive
-        self.assertLess(pct_conservative, pct_balanced)
-        self.assertLess(pct_balanced, pct_aggressive)
+        # Day trading should be smaller than balanced, balanced smaller than long term (more risk)
+        self.assertLess(pct_day_trading, pct_balanced)
+        self.assertLess(pct_balanced, pct_long_term)
         
         # Test zero cases
         usd_zero, pct_zero = self.service._calculate_position_size(0.0, 0.0, "balanced")

@@ -279,3 +279,4 @@ python qa/strategy_checklist.py 1h --strict
 - `data/feeds/rotation_loader.py` - Código del loader con validaciones
 - `strategies/crypto_rotation_strategy.py` - Implementación de la estrategia
 
+
