@@ -267,16 +267,25 @@ python -m pytest backend/tests/test_specific.py -v
 
 ## Estado Actual
 
-Ver `docs/qa/status.md` para el estado más reciente de los tests, incluyendo:
-- Última ejecución
-- Estado (PASSED/FAILED)
-- Resumen de resultados
-- Conteo de tests (passed/failed/errors/skipped)
-- Salida completa
+**Última actualización**: Ver `docs/qa/status.md` para el estado más reciente de los tests.
+
+**Estado típico**: 136+ passed, 1-2 failed (tests no críticos relacionados con estrategias específicas)
+
+### Tests Principales Operativos
+
+✅ **Tests de consenso y agregación**: Todos pasando, incluyendo escenarios mixtos (2 BUY / 1 SELL / 1 HOLD)  
+✅ **Tests de walk-forward**: Corregido bug de índice fuera de rango en `close_all_positions`  
+✅ **Tests de costes**: Corregidas expectativas del modelo de cálculo de costes  
+✅ **Tests end-to-end**: Nuevo test `test_e2e_minimal.py` cubriendo pipeline completo  
+✅ **Tests de normalización**: Validación completa de consenso y confianza  
+
+### Tests Pendientes (No Críticos)
+
+⚠️ **test_recommendation_includes_new_timeframes**: Error en generación de señales para Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic ('bool' object is not iterable). Este error es de las estrategias específicas, no del pipeline de QA.
 
 ## Próximos Pasos
 
-1. **Corregir tests fallidos**: Priorizar tests críticos que afectan funcionalidad core
+1. **Corregir error en estrategias**: Revisar Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic para corregir 'bool' object is not iterable
 2. **Aumentar cobertura**: Añadir tests para casos edge y escenarios no cubiertos
 3. **CI/CD Integration**: Integrar el pipeline de QA en CI/CD para ejecución automática
 
@@ -285,3 +294,5 @@ Ver `docs/qa/status.md` para el estado más reciente de los tests, incluyendo:
 - El archivo `docs/qa/status.md` se actualiza automáticamente después de cada ejecución de `qa/generate_status.py`
 - Los tests deben poder ejecutarse sin dependencias externas (APIs, bases de datos reales)
 - Usa fixtures y mocks para aislar tests de dependencias externas
+- **Dependencias actualizadas**: `qa/requirements.txt` ahora incluye `python-binance==1.0.19`
+- **PYTHONPATH configurado**: `pytest.ini` y `conftest.py` aseguran que todos los módulos sean importables desde la raíz

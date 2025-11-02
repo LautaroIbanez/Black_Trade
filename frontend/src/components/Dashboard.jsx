@@ -255,7 +255,7 @@ function Dashboard() {
                 <div className="consensus-summary">
                   <div className="consensus-header">
                     <h4>Multi-Timeframe Consensus</h4>
-                    <span className="consensus-tooltip" title="Consensus reflects agreement between strategies. Key: 100% HOLD = 0% consensus (uncertainty), not 100%. When mixed signals exist, neutrals have residual weight but consensus is scaled down if they predominate (>50%). Low consensus with many HOLD signals indicates market indecision, not weak conviction.">
+                    <span className="consensus-tooltip" title="Consensus reflects agreement between strategies. Key principles: 100% HOLD = 0% consensus (uncertainty), not 100%. When BUY and SELL coexist (e.g., 2 BUY / 1 SELL / 1 HOLD), consensus is capped at ~0.60 to reflect market uncertainty from opposing signals - this means moderate conviction, not high confidence. When mixed signals exist, neutrals have residual weight but consensus is scaled down if they predominate (>50%). A consensus of 0.50-0.60 with opposing signals indicates cautious recommendation despite clear direction.">
                       ℹ️
                     </span>
                   </div>

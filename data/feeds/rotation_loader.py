@@ -88,16 +88,28 @@ def load_rotation_universe(symbols: List[str], timeframe: str, data_dir: str = "
                 raise ValueError(f"Failed to load {sym} from {fp}: {error_msg}")
             continue
     
-    # Log warnings for missing/failed symbols
+    # Log warnings/errors for missing/failed symbols
     if missing_symbols or failed_symbols:
         import logging
         logger = logging.getLogger(__name__)
         if missing_symbols:
-            logger.warning(f"Missing symbols ({len(missing_symbols)}/{len(symbols)}): {missing_symbols}")
+            error_msg = f"ALERT: Missing symbols ({len(missing_symbols)}/{len(symbols)}): {missing_symbols}. Rotation may degrade to fallback mode."
+            if strict:
+                logger.error(error_msg)
+            else:
+                logger.warning(error_msg)
         if failed_symbols:
-            logger.warning(f"Failed to load symbols: {[s[0] for s in failed_symbols]}")
+            error_msg = f"ALERT: Failed to load symbols ({len(failed_symbols)}/{len(symbols)}): {[s[0] for s in failed_symbols]}"
+            if strict:
+                logger.error(error_msg)
+            else:
+                logger.warning(error_msg)
             for sym, error in failed_symbols:
-                logger.warning(f"  {sym}: {error}")
+                detail_msg = f"  {sym}: {error}"
+                if strict:
+                    logger.error(detail_msg)
+                else:
+                    logger.warning(detail_msg)
     
     # Validate minimum required symbols
     loaded_count = len(universe)
@@ -111,8 +123,10 @@ def load_rotation_universe(symbols: List[str], timeframe: str, data_dir: str = "
     
     # Ensure at least 2 symbols for rotation (single symbol = no rotation)
     if loaded_count < 2:
-        error_msg = f"Rotation requires at least 2 symbols, but only {loaded_count} loaded. Missing: {missing_symbols}"
+        error_msg = f"ALERT: Rotation requires at least 2 symbols, but only {loaded_count} loaded. Missing: {missing_symbols}. Strategy will degrade to single-asset fallback mode."
         if strict:
+            import logging
+            logging.getLogger(__name__).error(error_msg)
             raise RuntimeError(error_msg)
         else:
             import logging

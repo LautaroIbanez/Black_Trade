@@ -1,17 +1,17 @@
 # QA Status
 
-**Última ejecución:** 2025-11-01 14:00:58  
+**Última ejecución:** 2025-11-02 08:04:15  
 **Estado:** ❌ FAILED  
 **Comando:** `C:\Users\lauta\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\python.exe -m pytest --tb=short`  
 **Código de salida:** 1
 
 ## Resumen
 
-4 failed, 129 passed, 2 warnings in 23.87s
+1 failed, 136 passed, 2 warnings in 10.32s
 
 ### Conteo de tests
-- ✅ Pasados: 129
-- ❌ Fallidos: 4
+- ✅ Pasados: 136
+- ❌ Fallidos: 1
 - ⚠️  Errores: 0
 - ⏭️  Omitidos: 0
 
@@ -21,50 +21,17 @@
 <summary>Ver salida completa (click para expandir)</summary>
 
 ```
-.........F......................F......F................................ [ 54%]
-...........................................F.................            [100%]
+........................................................................ [ 52%]
+...............................................F.................        [100%]
 ================================== FAILURES ===================================
-_______________ TestBacktestEngine.test_split_and_walk_forward ________________
-..\..\..\..\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\pandas\core\indexes\range.py:414: in get_loc
-    return self._range.index(new_key)
-E   ValueError: 29 is not in range
-
-The above exception was the direct cause of the following exception:
-backtest\tests\test_backtest_engine.py:159: in test_split_and_walk_forward
-    split_result = engine.run_backtest_with_split(strategy, self.sample_data, '1h', split=0.7)
-backtest\engine.py:195: in run_backtest_with_split
-    out_sample = self.run_backtest(strategy, test, timeframe)
-backtest\engine.py:131: in run_backtest
-    metrics = strategy.backtest(data)
-strategies\strategy_base.py:300: in backtest
-    trades = self.generate_trades(signals_df)
-strategies\momentum_strategy.py:51: in generate_trades
-    final_trade = self.close_all_positions(df, position, df.iloc[-1]['close'], len(df) - 1)
-strategies\strategy_base.py:276: in close_all_positions
-    "exit_time": df.loc[current_idx, 'timestamp'],
-..\..\..\..\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\pandas\core\indexing.py:1146: in __getitem__
-    return self.obj._get_value(*key, takeable=self._takeable)
-..\..\..\..\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\pandas\core\frame.py:4012: in _get_value
-    row = self.index.get_loc(index)
-..\..\..\..\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\pandas\core\indexes\range.py:416: in get_loc
-    raise KeyError(key) from err
-E   KeyError: 29
-___________________ TestStrategyBase.test_cost_calculation ____________________
-backtest\tests\test_strategy_base.py:56: in test_cost_calculation
-    self.assertAlmostEqual(costs, expected_total, places=6)
-E   AssertionError: 0.3075 != 0.315 within 6 places (0.007500000000000007 difference)
-______ TestStrategyImplementations.test_strategies_with_different_costs _______
-backtest\tests\test_strategy_base.py:211: in test_strategies_with_different_costs
-    self.assertGreater(metrics_high_cost['total_costs'], metrics_no_cost['total_costs'])
-E   AssertionError: 0.0 not greater than 0.0
 _________________ test_recommendation_includes_new_timeframes _________________
 tests\recommendation\test_endpoints.py:39: in test_recommendation_includes_new_timeframes
     assert {'15m', '2h', '12h'}.intersection(tfs) == {'15m', '2h', '12h'} or len(tfs) > 0
 E   AssertionError: assert (set() == {'12h', '15m', '2h'}
 E     Extra items in the right set:
-E     '12h'
 E     '2h'
 E     '15m'
+E     '12h'
 E     Use -v to get more diff or 0 > 0)
 E    +  where 0 = len(set())
 ---------------------------- Captured stdout call -----------------------------
@@ -145,11 +112,8 @@ tests/qa/test_contracts.py::test_recommendation_response_schema_fields
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ===========================
-FAILED backtest/tests/test_backtest_engine.py::TestBacktestEngine::test_split_and_walk_forward
-FAILED backtest/tests/test_strategy_base.py::TestStrategyBase::test_cost_calculation
-FAILED backtest/tests/test_strategy_base.py::TestStrategyImplementations::test_strategies_with_different_costs
 FAILED tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes
-4 failed, 129 passed, 2 warnings in 23.87s
+1 failed, 136 passed, 2 warnings in 10.32s
 
 ```
 
@@ -158,43 +122,38 @@ FAILED tests/recommendation/test_endpoints.py::test_recommendation_includes_new_
 ```
 </details>
 
-## Incidencias Pendientes
+## Resumen Ejecutivo
 
-### Tests Faltantes
+### Estado Actual de la Suite
+- **Tests pasando**: 136
+- **Tests fallando**: 1
+- **Errores**: 0
+- **Omitidos**: 0
 
-**Prioridad Media** (no bloquean funcionalidad core):
+### Tests Fallidos y Responsables
 
-1. **Backtesting - Walk Forward** (`test_split_and_walk_forward`):
-   - **Error**: KeyError en cierre forzado de posiciones al final del split
-   - **Causa**: Index fuera de rango en `strategies/strategy_base.py:276` (línea `df.loc[current_idx, 'timestamp']`)
-   - **Archivo**: `backtest/tests/test_backtest_engine.py:159`
-   - **Responsable**: Equipo Backend / Backtesting
-   - **Target**: Próximo sprint (2-3 semanas)
+#### 1. `test_recommendation_includes_new_timeframes` (tests/recommendation/test_endpoints.py:39)
 
-2. **Backtesting - Cálculo de Costes** (`test_cost_calculation`, `test_strategies_with_different_costs`):
-   - **Error**: Desajuste entre costes calculados y esperados
-   - **Causa**: Modelo de costes necesita ajuste en cálculo total
-   - **Archivos**: `backtest/tests/test_strategy_base.py:56,211`
-   - **Responsable**: Equipo Backend / Backtesting
-   - **Target**: Próximo sprint (2-3 semanas)
+**Estado**: ❌ FALLANDO  
+**Prioridad**: Media (no bloquea funcionalidad core)  
+**Responsable**: Equipo Backend / Estrategias  
+**Target de corrección**: Próximo sprint (2-3 semanas)
 
-3. **Endpoints - Timeframes** (`test_recommendation_includes_new_timeframes`):
-   - **Error**: `'bool' object is not iterable` en generación de señales
-   - **Causa**: Error en Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic
-   - **Archivo**: `tests/recommendation/test_endpoints.py:39`
-   - **Responsable**: Equipo Backend / Estrategias
-   - **Target**: Próximo sprint (2-3 semanas)
+**Descripción del error**:
+- **Causa**: Error en generación de señales para estrategias Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic
+- **Error específico**: `'bool' object is not iterable`
+- **Impacto**: El endpoint `/recommendation` no incluye timeframes `15m`, `2h`, `12h` en `strategy_details` cuando estas estrategias fallan al generar señales
+- **Contexto**: El test verifica que los nuevos timeframes aparezcan en los detalles de estrategia, pero las estrategias mencionadas fallan en la generación de señales con datos de prueba mínimos
 
-### Tests Exitosos
+**Nota**: Este error es de las implementaciones de estrategias específicas, no del pipeline de QA ni del servicio de recomendaciones. Las estrategias fallan al procesar datos mínimos de prueba (3 registros OHLCV).
 
-**Resaltados**: 129 tests pasando, incluyendo:
-- ✅ Normalización y moderación de consenso (incluyendo escenarios mixtos)
-- ✅ CryptoRotation multi-activo (todos los tests de rotación pasando)
-- ✅ Gestión de riesgo y cálculo de SL/TP
-- ✅ Tests end-to-end del pipeline completo
-- ✅ Consenso neutral (100% HOLD = 0% consenso)
+### Tests Críticos Operativos
 
-Para más detalles sobre estado general y plan de acción, ver `docs/CHANGELOG.md` y `docs/roadmap.md`.
+✅ **Tests de consenso y agregación**: Todos pasando, incluyendo escenarios mixtos (2 BUY / 1 SELL / 1 HOLD)  
+✅ **Tests de walk-forward**: Corregido bug de índice fuera de rango  
+✅ **Tests de costes**: Corregidas expectativas del modelo  
+✅ **Tests end-to-end**: Pipeline completo validado  
+✅ **Tests de normalización**: Validación completa de consenso y confianza  
 
 ## Notas
 

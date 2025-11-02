@@ -267,13 +267,27 @@ class StrategyBase(ABC):
         """Hook to close all positions at end of backtest. Override if needed."""
         if current_position:
             pnl = (current_price - current_position['entry_price']) if current_position['side'] == 'long' else (current_position['entry_price'] - current_price)
+            # Ensure current_idx is within valid range
+            if current_idx >= len(df):
+                current_idx = len(df) - 1
+            if current_idx < 0:
+                current_idx = 0
+            # Get timestamp safely - use last valid timestamp if needed
+            if 'timestamp' in df.columns:
+                if current_idx < len(df):
+                    exit_time = df.iloc[current_idx]['timestamp'] if current_idx < len(df) else df.iloc[-1]['timestamp']
+                else:
+                    exit_time = df.iloc[-1]['timestamp']
+            else:
+                # Fallback to entry_time if no timestamp column
+                exit_time = current_position.get('entry_time', None)
             trade = {
                 "entry_price": current_position['entry_price'],
                 "exit_price": current_price,
                 "side": current_position['side'],
                 "pnl": pnl,
                 "entry_time": current_position['entry_time'],
-                "exit_time": df.loc[current_idx, 'timestamp'],
+                "exit_time": exit_time,
                 "forced_close": True
             }
             return trade

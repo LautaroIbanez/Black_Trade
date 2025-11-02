@@ -364,6 +364,165 @@ class TestCryptoRotationStrategy(unittest.TestCase):
                 self.assertIsInstance(log_output, str)
         finally:
             logger.removeHandler(handler)
+    
+    def test_complete_universe_strict_mode_succeeds(self):
+        """Test that complete universe succeeds in strict mode."""
+        # Mock complete universe (all symbols available)
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {
+                "BTCUSDT": self.btc_df,
+                "ETHUSDT": self.eth_df,
+                "BNBUSDT": self.bnb_df
+            }
+            
+            # Should not raise in strict mode with complete universe
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT",
+                strict=True
+            )
+            
+            # Should generate signals successfully
+            self.assertFalse(signals.empty)
+            self.assertIn('signal', signals.columns)
+            # Should be in multi_asset mode, not fallback
+            self.assertTrue(all(signals['rotation_mode'] == 'multi_asset'))
+            self.assertTrue(all(signals['universe_symbols_count'] == 3))
+    
+    def test_incomplete_universe_strict_mode_raises(self):
+        """Test that incomplete universe raises RuntimeError in strict mode."""
+        # Mock incomplete universe (only 1 symbol)
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {"BTCUSDT": self.btc_df}  # Only 1 symbol
+            
+            # Should raise RuntimeError in strict mode
+            with self.assertRaises(RuntimeError) as context:
+                self.strategy.generate_signals(
+                    self.btc_df,
+                    timeframe="1h",
+                    current_symbol="BTCUSDT",
+                    strict=True
+                )
+            
+            # Error message should indicate insufficient symbols
+            error_msg = str(context.exception)
+            self.assertIn("insufficient", error_msg.lower() or "cannot generate signals", error_msg.lower())
+    
+    def test_incomplete_universe_non_strict_mode_fallback(self):
+        """Test that incomplete universe falls back gracefully in non-strict mode."""
+        # Mock incomplete universe (only 1 symbol) - loader will return empty after validation
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            # Simulate loader detecting < 2 symbols and returning empty (after validation)
+            mock_load.return_value = {}  # Empty because < 2 symbols fails validation
+            
+            # Should not raise, but fallback to single-asset mode
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT",
+                strict=False  # Non-strict mode
+            )
+            
+            # Should still generate signals in fallback mode
+            self.assertFalse(signals.empty)
+            self.assertIn('signal', signals.columns)
+            # Should indicate fallback mode
+            self.assertTrue(all(signals['rotation_mode'] == 'fallback'))
+            # Universe count will be 0 because loader rejected < 2 symbols
+            self.assertTrue(all(signals['universe_symbols_count'] == 0))
+            self.assertTrue(all(signals['rotation_available'] == False))
+    
+    def test_partial_universe_2_symbols_non_strict(self):
+        """Test that 2 symbols work in non-strict mode (minimum for rotation)."""
+        # Mock universe with 2 symbols (minimum for rotation)
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {
+                "BTCUSDT": self.btc_df,
+                "ETHUSDT": self.eth_df
+            }
+            
+            # Should work with 2 symbols
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT",
+                strict=False
+            )
+            
+            # Should be in multi_asset mode (2 symbols is enough for rotation)
+            self.assertFalse(signals.empty)
+            self.assertTrue(all(signals['rotation_mode'] == 'multi_asset'))
+            self.assertTrue(all(signals['universe_symbols_count'] == 2))
+            self.assertTrue(all(signals['rotation_available'] == True))
+    
+    def test_partial_universe_2_symbols_strict(self):
+        """Test that 2 symbols work in strict mode if universe is 2 symbols."""
+        # Set universe to exactly 2 symbols
+        self.strategy.universe = ["BTCUSDT", "ETHUSDT"]
+        
+        # Mock loader to return both
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {
+                "BTCUSDT": self.btc_df,
+                "ETHUSDT": self.eth_df
+            }
+            
+            # Should work in strict mode with complete 2-symbol universe
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT",
+                strict=True
+            )
+            
+            # Should be in multi_asset mode
+            self.assertFalse(signals.empty)
+            self.assertTrue(all(signals['rotation_mode'] == 'multi_asset'))
+            self.assertTrue(all(signals['universe_symbols_count'] == 2))
+    
+    def test_empty_universe_strict_mode_raises(self):
+        """Test that empty universe raises error in strict mode."""
+        # Mock empty universe
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {}  # Empty
+            
+            # Should raise RuntimeError in strict mode
+            with self.assertRaises(RuntimeError):
+                self.strategy.generate_signals(
+                    self.btc_df,
+                    timeframe="1h",
+                    current_symbol="BTCUSDT",
+                    strict=True
+                )
+    
+    def test_telemetry_records_exact_participation_count(self):
+        """Test that telemetry records exact number of symbols that participated."""
+        # Test with partial universe (2 out of 3)
+        self.strategy.universe = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+        
+        with patch('strategies.crypto_rotation_strategy.load_rotation_universe') as mock_load:
+            mock_load.return_value = {
+                "BTCUSDT": self.btc_df,
+                "ETHUSDT": self.eth_df
+                # BNBUSDT missing
+            }
+            
+            signals = self.strategy.generate_signals(
+                self.btc_df,
+                timeframe="1h",
+                current_symbol="BTCUSDT",
+                strict=False
+            )
+            
+            # Telemetry should show 2 symbols participated
+            self.assertTrue(all(signals['universe_symbols_count'] == 2))
+            # Participation should be 2/3 = 0.666...
+            expected_participation = 2/3
+            self.assertTrue(all(abs(signals['universe_participation'] - expected_participation) < 0.01))
+            # Should still be in multi_asset mode (2 >= 2)
+            self.assertTrue(all(signals['rotation_available'] == True))
+            self.assertTrue(all(signals['rotation_mode'] == 'multi_asset'))
 
 
 if __name__ == '__main__':

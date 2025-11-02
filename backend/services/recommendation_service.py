@@ -7,6 +7,7 @@ from strategies.strategy_base import StrategyBase
 from backend.services.strategy_registry import strategy_registry
 from backend.services.regime_detector import regime_detector
 from backend.services.risk_management import risk_management_service, RiskTarget
+from recommendation.config import MIXED_CONSENSUS_CAP, NEUTRAL_COUNT_FACTOR, NEUTRAL_COUNT_THRESHOLD
 
 
 @dataclass
@@ -69,23 +70,34 @@ class RecommendationResult:
 class RecommendationService:
     """Service for generating real-time trading recommendations."""
     
-    def __init__(self, neutral_floor: float = 0.3, max_consensus_delta: float = 0.1):
+    def __init__(self, neutral_floor: float = None, max_consensus_delta: float = None,
+                 mixed_consensus_cap: float = None, neutral_count_factor: float = None,
+                 neutral_count_threshold: int = None):
         """Initialize recommendation service.
         
         Args:
-            neutral_floor: Minimum weight factor for neutrals when mixed (default 0.3)
+            neutral_floor: Minimum weight factor for neutrals when mixed (default from config)
                           Used to prevent consensus saturation in mixed scenarios
-            max_consensus_delta: Maximum deviation from simple majority in mixed scenarios (default 0.1)
+            max_consensus_delta: Maximum deviation from simple majority in mixed scenarios (default from config)
                                 Prevents inflated consensus when BUY/SELL coexist with HOLD
+            mixed_consensus_cap: Maximum consensus value in mixed scenarios with opposing signals (default from config)
+                                When BUY and SELL coexist, this cap ensures consensus stays closer to weighted average
+            neutral_count_factor: Additional penalty factor when multiple HOLD signals present (default from config)
+                                  Applied when hold_count exceeds neutral_count_threshold
+            neutral_count_threshold: Number of HOLD signals before applying neutral_count_factor penalty (default from config)
         """
+        from recommendation.config import NEUTRAL_FLOOR, MAX_CONSENSUS_DELTA
         self.strategy_registry = strategy_registry
         self.risk_levels = {
             "LOW": {"max_confidence": 0.6, "min_supporting": 1},
             "MEDIUM": {"max_confidence": 0.8, "min_supporting": 2},
             "HIGH": {"max_confidence": 1.0, "min_supporting": 3}
         }
-        self.neutral_floor = neutral_floor
-        self.max_consensus_delta = max_consensus_delta
+        self.neutral_floor = neutral_floor if neutral_floor is not None else NEUTRAL_FLOOR
+        self.max_consensus_delta = max_consensus_delta if max_consensus_delta is not None else MAX_CONSENSUS_DELTA
+        self.mixed_consensus_cap = mixed_consensus_cap if mixed_consensus_cap is not None else MIXED_CONSENSUS_CAP
+        self.neutral_count_factor = neutral_count_factor if neutral_count_factor is not None else NEUTRAL_COUNT_FACTOR
+        self.neutral_count_threshold = neutral_count_threshold if neutral_count_threshold is not None else NEUTRAL_COUNT_THRESHOLD
     
     def generate_recommendation(self, data: Dict[str, pd.DataFrame], 
                               historical_metrics: Optional[Dict[str, List[Dict]]] = None,
@@ -385,22 +397,27 @@ class RecommendationService:
             signal_consensus = max(buy_ratio, sell_ratio)
             
             # MODERATION FOR MIXED BUY/SELL/HOLD SCENARIOS
-            # When BUY and SELL coexist with HOLD, prevent inflated consensus
-            # Simple majority among active signals is the baseline
+            # When BUY and SELL coexist with HOLD, apply configurable cap to prevent inflated consensus
+            # This brings consensus closer to the weighted average when opposing signals exist
             if len(buy_signals) > 0 and len(sell_signals) > 0:
-                # Mixed BUY/SELL scenario: consensus should not exceed simple majority
-                simple_majority = max(len(buy_signals), len(sell_signals)) / active_count
-                # Cap consensus to simple majority - max_consensus_delta to ensure moderation
-                # This prevents inflated consensus when HOLD signals add residual weight
-                signal_consensus = min(signal_consensus, simple_majority - self.max_consensus_delta)
+                # Mixed BUY/SELL scenario: apply mixed_consensus_cap to ensure moderation
+                # This prevents consensus from exceeding a reasonable threshold when signals oppose
+                signal_consensus = min(signal_consensus, self.mixed_consensus_cap)
             
-            # Additional constraint: if neutrals dominate (>50%), cap consensus
+            # Additional constraint: if neutrals dominate (>50%), scale down consensus
             # This prevents false conviction when most strategies are uncertain
             if hold_count > active_count:
                 # More neutrals than active: consensus should reflect this uncertainty
                 # Scale down by the proportion of active signals
                 active_proportion = active_count / total_signals
                 signal_consensus = signal_consensus * active_proportion
+            
+            # Neutral count penalty: additional scaling when multiple HOLD signals present
+            # This accounts for broader market indecision beyond simple signal opposition
+            if hold_count > self.neutral_count_threshold:
+                excess_neutrals = hold_count - self.neutral_count_threshold
+                neutral_penalty = self.neutral_count_factor ** excess_neutrals
+                signal_consensus = signal_consensus * neutral_penalty
         else:
             # 100% HOLD scenario: consensus = uncertainty_consensus (default 0.0)
             # This explicitly reflects uncertainty, not conviction

@@ -1,8 +1,20 @@
 # Checklist Operativo: Verificación de Estrategias Multi-Activo
 
-Este checklist debe ejecutarse antes de cada despliegue o backtest para garantizar que las estrategias multi-activo tienen datos suficientes y coherentes.
+Este checklist debe ejecutarse **antes de cada despliegue o backtest** para garantizar que las estrategias multi-activo tienen datos suficientes y coherentes. Es especialmente crítico para CryptoRotation, que depende de múltiples símbolos para funcionar correctamente.
 
-## CryptoRotation Strategy
+## CryptoRotation Strategy - Verificación de Universo Multi-Símbolo
+
+**IMPORTANTE**: CryptoRotation requiere datos OHLCV para múltiples símbolos. Sin datos completos, la estrategia degrada silenciosamente a modo single-asset EMA, lo cual **no es el comportamiento deseado** para una estrategia de rotación multi-activo.
+
+**Ejecutar este checklist**:
+- ✅ Antes de cada backtest con CryptoRotation
+- ✅ Antes de cada despliegue en producción
+- ✅ Después de actualizar datos o símbolos
+- ✅ En pipeline de CI/CD antes de despliegue
+
+**Símbolos requeridos por defecto**: BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, ADAUSDT  
+**Mínimo absoluto**: 2 símbolos (para rotación funcional)  
+**Recomendado**: 5+ símbolos (para universo robusto)
 
 ### Pre-Despliegue / Pre-Backtest
 
@@ -105,7 +117,9 @@ Este checklist debe ejecutarse antes de cada despliegue o backtest para garantiz
       'universe_symbols_count',
       'universe_participation',
       'rotation_available',
-      'rotation_mode'
+      'rotation_mode',
+      'rotation_rank',
+      'ranked_symbols_count'  # Solo en modo multi_asset
   ]
   
   for col in required_telemetry:
@@ -116,12 +130,19 @@ Este checklist debe ejecutarse antes de cada despliegue o backtest para garantiz
   ```python
   if signals['universe_symbols_count'].iloc[0] >= 2:
       assert all(signals['rotation_mode'] == 'multi_asset'), \
-          "Expected multi_asset mode but got fallback"
+          "Expected multi_asset mode but got fallback. Universe may be incomplete."
+  ```
+
+- [ ] **Participación verificada**: Calcular y verificar porcentaje de participación del universo
+  ```python
+  avg_participation = signals['universe_participation'].mean()
+  assert avg_participation >= 0.8, \
+      f"Low universe participation: {avg_participation:.1%} < 80%. Check for missing symbols."
   ```
 
 ### Post-Backtest / Post-Despliegue
 
-#### 6. Verificación de Resultados
+#### 6. Verificación de Resultados y Degradación
 
 - [ ] **Porcentaje de decisiones multi-activo**: Calcular porcentaje de decisiones basadas en ≥2 símbolos
   ```python
@@ -131,6 +152,24 @@ Este checklist debe ejecutarse antes de cada despliegue o backtest para garantiz
   
   print(f"Multi-asset decisions: {participation_pct:.1f}%")
   # Idealmente >80% para estrategia multi-activo genuina
+  # Si <80%, investigar qué símbolos faltaron y por qué
+  ```
+
+- [ ] **ALERTA si degradación detectada**: Verificar que no hubo degradación excesiva a modo fallback
+  ```python
+  fallback_decisions = (signals['rotation_mode'] == 'fallback').sum()
+  fallback_pct = (fallback_decisions / total_decisions) * 100
+  
+  if fallback_pct > 20:
+      print(f"⚠️  ALERT: {fallback_pct:.1f}% of decisions in fallback mode. "
+            f"Universe may be incomplete. Check missing symbols.")
+  ```
+
+- [ ] **Verificar que universo estaba disponible**: En producción, verificar logs para alertas sobre símbolos faltantes
+  ```bash
+  # Revisar logs para alertas
+  grep -i "ALERT.*missing symbols" logs/*.log
+  grep -i "fallback to single-symbol" logs/*.log
   ```
 
 - [ ] **Logs revisados**: Verificar que no hay warnings excesivos sobre símbolos faltantes
@@ -266,12 +305,51 @@ python qa/strategy_checklist.py 1h
 python qa/strategy_checklist.py 1h --strict
 ```
 
+## Comportamiento en Modo Estricto vs No Estricto
+
+### Modo Estricto (`--strict`)
+
+**Cuándo usar**:
+- ✅ Antes de despliegue en producción
+- ✅ En pipeline de CI/CD
+- ✅ Validación de datos antes de backtest crítico
+- ✅ Tests automatizados
+
+**Comportamiento**:
+- Falla inmediatamente si faltan símbolos requeridos
+- Lanza `ValueError` o `RuntimeError` con mensajes claros
+- No genera señales si universo < 2 símbolos
+- Permite detectar problemas de datos antes de ejecutar estrategia
+
+### Modo No Estricto (default)
+
+**Cuándo usar**:
+- ✅ Desarrollo y exploración con datos limitados
+- ✅ Backtesting exploratorio con universo parcial
+- ✅ Monitoreo en producción donde queremos continuidad
+
+**Comportamiento**:
+- Genera warnings en logs con prefijo `"ALERT:"`
+- Degrada a modo fallback si universo < 2 símbolos
+- Continúa operando pero marca degradación en telemetría
+- Permite registrar participación del universo para auditoría
+
+### Checklist de Verificación de Degradación
+
+Después de ejecutar backtest o estrategia, verificar:
+
+- [ ] **Logs revisados**: Buscar mensajes `"ALERT:"` sobre símbolos faltantes
+- [ ] **Telemetría analizada**: Verificar `rotation_mode` - debe ser `'multi_asset'` si universo completo
+- [ ] **Participación calculada**: Calcular porcentaje de decisiones multi-activo vs. fallback
+- [ ] **Acción tomada**: Si degradación detectada, investigar qué símbolos faltaron y corregir datos
+
 ## Notas
 
 - **Antes de producción**: Ejecutar en modo estricto (`--strict`) para asegurar universo completo
-- **Para backtesting**: Modo no estricto aceptable si se quiere probar con datos parciales
+- **Para backtesting exploratorio**: Modo no estricto aceptable si se quiere probar con datos parciales, pero documentar degradación
 - **Monitoreo continuo**: Ejecutar este checklist periódicamente para detectar datos faltantes o corruptos
-- **Integración CI/CD**: Incluir este checklist en pipeline de CI antes de despliegue
+- **Integración CI/CD**: Incluir este checklist en pipeline de CI antes de despliegue con modo estricto habilitado
+- **Alertas automáticas**: Configurar alertas en producción si `universe_participation < 0.8` o `rotation_mode == 'fallback'` de forma persistente
 
 ## Referencias
 

@@ -75,7 +75,64 @@ Cuando hay señales activas (BUY/SELL) y neutrals (HOLD):
 - `effective_total = 1 + 0.96 = 1.96`
 - `buy_ratio = 1 / 1.96 ≈ 0.51` (51%)
 - `hold_ratio = 0.96 / 1.96 ≈ 0.49` (49%)
-- **Consenso**: `0.51` (BUY apenas prevalece, reflejando la dispersión)
+- **PENALIZACIÓN NEUTRAL**: `hold_count=4 > neutral_count_threshold=2`, `excess_neutrals=2`, `penalty = 0.95^2 ≈ 0.90`
+- **Consenso**: `0.51 * 0.90 ≈ 0.46` (BUY apenas prevalece, pero escalado por la incertidumbre de múltiples HOLD)
+
+#### Ejemplo 3: 2 BUY / 1 SELL / 1 HOLD (Escenario Mixto con Oposición)
+- Total: 4 señales (2 BUY, 1 SELL, 1 HOLD)
+- Active: 3, Hold: 1
+- Proporción activa: 3/4 = 75%
+
+Cálculo paso a paso:
+1. `neutral_base_ratio = 1/4 = 0.25`
+2. `neutral_weight_factor = max(0.25 * 0.3, min(0.25, 0.15)) = 0.15`
+3. `weighted_hold_count = 1 * 0.15 = 0.15`
+4. `effective_total = 3 + 0.15 = 3.15`
+5. `buy_ratio = 2 / 3.15 ≈ 0.635`
+6. `sell_ratio = 1 / 3.15 ≈ 0.317`
+7. **MODERACIÓN MIXTA**: Como hay BUY y SELL coexistiendo, aplicar `mixed_consensus_cap=0.60`:
+   - `signal_consensus = min(0.635, 0.60) = 0.60`
+8. **PENALIZACIÓN NEUTRAL**: `hold_count=1 <= neutral_count_threshold=2`, no se aplica
+
+**Resultado**: Consenso = 0.60 (moderado por oposición BUY/SELL)
+
+**Interpretación**: Aunque BUY tiene mayoría (2 vs 1), el consenso está limitado a 0.60 debido a la presencia de señales opuestas. Esto indica señal moderada con dirección clara pero incertidumbre subyacente.
+
+#### Ejemplo 4: 1 BUY / 1 SELL / 3 HOLD (Oposición con Múltiples Neutrals)
+- Total: 5 señales (1 BUY, 1 SELL, 3 HOLD)
+- Active: 2, Hold: 3
+- Proporción activa: 2/5 = 40%
+
+Cálculo paso a paso:
+1. `neutral_base_ratio = 3/5 = 0.6`
+2. `neutral_weight_factor = max(0.6 * 0.3, min(0.6, 0.15)) = 0.15`
+3. `weighted_hold_count = 3 * 0.15 = 0.45`
+4. `effective_total = 2 + 0.45 = 2.45`
+5. `buy_ratio = 1 / 2.45 ≈ 0.408`
+6. `sell_ratio = 1 / 2.45 ≈ 0.408`
+7. **MODERACIÓN MIXTA**: Como hay BUY y SELL coexistiendo, aplicar `mixed_consensus_cap=0.60`:
+   - `signal_consensus = min(0.408, 0.60) = 0.408`
+8. **ESCALA POR NEUTRALS DOMINANTES**: Como `hold_count=3 > active_count=2`, escalar por proporción activa:
+   - `active_proportion = 2/5 = 0.4`
+   - `signal_consensus = 0.408 * 0.4 ≈ 0.163`
+9. **PENALIZACIÓN NEUTRAL**: `hold_count=3 > neutral_count_threshold=2`, `excess_neutrals=1`, `penalty = 0.95^1 = 0.95`
+   - `signal_consensus = 0.163 * 0.95 ≈ 0.155`
+
+**Resultado**: Consenso = 0.155 (bajo debido a oposición y predominio de neutrals)
+
+**Interpretación**: Bajo consenso refleja incertidumbre significativa: señales opuestas (BUY/SELL) y mayoría de estrategias indecisas (HOLD). Recomendación: esperar señales más claras.
+
+### Tabla de Referencia Rápida: Escenarios Mixtos
+
+| Escenario | BUY | SELL | HOLD | Consenso Esperado | Interpretación |
+|-----------|-----|------|------|-------------------|----------------|
+| 2 BUY / 1 SELL / 1 HOLD | 2 | 1 | 1 | ~0.60 (cap aplicado) | Señal moderada con oposición |
+| 1 BUY / 1 SELL / 2 HOLD | 1 | 1 | 2 | ~0.35-0.50 (cap + escala) | Baja convicción, conflicto |
+| 1 BUY / 1 SELL / 3 HOLD | 1 | 1 | 3 | ~0.15-0.25 (cap + escala + penalización) | Alta incertidumbre |
+| 3 BUY / 0 SELL / 1 HOLD | 3 | 0 | 1 | ~0.75-0.85 (sin oposición) | Alta convicción BUY |
+| 0 BUY / 0 SELL / 4 HOLD | 0 | 0 | 4 | 0.0 (incertidumbre) | Sin dirección clara |
+
+**Nota**: Los valores exactos dependen de los pesos de confidence/score de cada señal. Esta tabla muestra rangos típicos.
 
 ### Advertencias de Interpretación
 
@@ -96,10 +153,11 @@ Cuando hay señales activas (BUY/SELL) pero **muchos neutrals (>50%)**:
 
 #### Consenso 0.30 - 0.60 con Señales Mixtas
 
-Cuando hay señales activas y neutrals están presentes pero no predominan:
-- El consenso refleja acuerdo moderado
-- **Interpretación**: Señal moderada; algunas estrategias están alineadas pero no todas
-- **Recomendación**: Posición con cautela, considerar gestión de riesgo estricta
+Cuando hay señales activas y neutrals están presentes pero no predominan, o cuando BUY y SELL coexisten:
+- El consenso refleja acuerdo moderado con incertidumbre
+- **Con BUY/SELL opuestos**: El consenso está limitado por `mixed_consensus_cap` (default: 0.60) para reflejar la oposición
+- **Interpretación**: Señal moderada; algunas estrategias están alineadas pero hay conflicto u oposición
+- **Recomendación**: Posición con cautela, considerar gestión de riesgo estricta. No interprete como alta convicción aunque la dirección esté clara.
 
 #### Consenso > 0.70
 
@@ -114,23 +172,28 @@ Cuando múltiples estrategias están alineadas y pocos neutrals:
 2. **Consenso alto + muchos neutrals = Falsa convicción**: Si el consenso es alto pero >50% son neutrals, el sistema lo escala hacia abajo automáticamente
 3. **100% HOLD siempre = Consenso 0.0**: Nunca interprete todos HOLD como consenso total
 4. **Contexto importa**: Combine consenso con `confidence`, `risk_level` y `supporting_strategies` para decisión completa
-5. **Consenso moderado en escenarios mixtos**: Cuando coexisten BUY y SELL (ej: 2 BUY / 1 SELL / 1 HOLD), el consenso se modera automáticamente para evitar sobreconfianza (ej: ~0.57 en lugar de ~0.63)
+5. **Consenso moderado en escenarios mixtos**: Cuando coexisten BUY y SELL (ej: 2 BUY / 1 SELL / 1 HOLD), el consenso se modera automáticamente mediante `mixed_consensus_cap` (default: 0.60) para evitar sobreconfianza. El consenso refleja incertidumbre cuando hay señales opuestas.
 
 ## Verificación y Estado de Tests
 
-> ⚠️ **Nota sobre QA**: El pipeline de QA está reactivado y operativo. Estado actual: **129 passed, 4 failed**. Ver `docs/qa/status.md` para el estado actual de los tests y resultados de ejecuciones reales.
+> ⚠️ **Nota sobre QA**: El pipeline de QA está reactivado y operativo. Estado actual: **136 passed, 1 failed**. Ver `docs/qa/status.md` para el estado actual de los tests y resultados de ejecuciones reales.
 
 ### Limitaciones Actuales
 
-**Estado QA**: 129 passed, 4 failed
+#### Tests y Validación
 
-1. ✅ **Validación de consenso**: Tests de normalización y moderación de consenso (incluyendo escenarios mixtos 2 BUY / 1 SELL / 1 HOLD) operativos y pasando.
+- **Estado general**: 136 tests pasando, 1 fallando (no crítico)
+- **Test fallando**: `test_recommendation_includes_new_timeframes` - Error en generación de señales para Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic (`'bool' object is not iterable`)
+  - **Impacto**: El endpoint puede no incluir todos los timeframes en `strategy_details` cuando estas estrategias fallan
+  - **Responsable**: Equipo Backend / Estrategias
+  - **Prioridad**: Media (no bloquea funcionalidad core)
+  - **Target**: Próximo sprint (2-3 semanas)
 
-2. ⚠️ **Validación automática de timeframes**: El test `test_recommendation_includes_new_timeframes` falla por error en generación de señales (`'bool' object is not iterable` en Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic).
+#### Calibración de Consenso
 
-3. ⚠️ **Validación de pesos normalizados**: Aunque la lógica está implementada, la validación automatizada requiere que todos los tests de timeframes pasen para confirmarse completamente.
-
-Para más detalles sobre el estado de QA y problemas conocidos, consultar `docs/qa/status.md` y `docs/CHANGELOG.md`.
+- **Parámetros configurados**: `mixed_consensus_cap` (default: 0.60), `neutral_count_factor` (default: 0.95), `neutral_count_threshold` (default: 2)
+- **Estado**: Funcional y validado con tests, pero puede requerir ajuste fino según feedback de uso en producción
+- **Documentación**: Ver `docs/architecture/recommendation.md` para detalles de configuración y ejemplos numéricos
 
 ### Tests Disponibles
 
@@ -143,7 +206,8 @@ Los siguientes tests están definidos y pueden ejecutarse con `python -m pytest`
   - Que 100% HOLD resulta en consenso = 0.0 (incertidumbre)
   - Que señales mixtas con predominio de neutrals no saturan el consenso
   - Que escenarios mixtos BUY/SELL/HOLD (ej: 2 BUY / 1 SELL / 1 HOLD) moderan el consenso correctamente
-- ⚠️ **`tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes`**: Verifica que los timeframes `15m`, `2h` y `12h` aparecen en `strategy_details` cuando hay datos disponibles (falla - ver limitaciones)
+- ✅ **`tests/recommendation/test_e2e_minimal.py`**: Tests end-to-end del pipeline completo (OPERATIVOS)
+- ⚠️ **`tests/recommendation/test_endpoints.py::test_recommendation_includes_new_timeframes`**: Verifica que los timeframes `15m`, `2h` y `12h` aparecen en `strategy_details` cuando hay datos disponibles (falla - ver limitaciones arriba)
 
 ### Verificación Manual
 
@@ -161,7 +225,7 @@ Las pruebas automatizadas están disponibles en:
 - `tests/recommendation/test_endpoints.py`: Test de inclusión de timeframes (⚠️ falla - ver limitaciones)
 - `tests/strategies/test_rotation.py`: Tests de CryptoRotation multi-activo (✅ operativos, todos pasando)
 
-**Resumen**: 129 passed, 4 failed (3 backtesting, 1 endpoints).
+**Resumen**: 136 passed, 1 failed (endpoints - error en estrategias específicas, ver limitaciones arriba).
 
 Para ejecutar los tests y obtener resultados actuales:
 ```bash

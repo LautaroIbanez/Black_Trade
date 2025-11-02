@@ -75,31 +75,61 @@ Cálculo:
 - Active: 3, Hold: 1
 - Proporción activa: 3/4 = 75%
 
-Cálculo (con parámetros por defecto: `neutral_floor=0.3`, `max_consensus_delta=0.1`):
+Cálculo (con parámetros por defecto: `neutral_floor=0.3`, `mixed_consensus_cap=0.60`, `neutral_count_threshold=2`):
 1. `neutral_base_ratio = 1/4 = 0.25`
 2. `neutral_weight_factor = max(0.25 * 0.3, min(0.25, 0.15)) = 0.15`
 3. `weighted_hold_count = 1 * 0.15 = 0.15`
 4. `effective_total = 3 + 0.15 = 3.15`
 5. `buy_ratio = 2 / 3.15 ≈ 0.635`
-6. **MODERACIÓN**: Como hay BUY y SELL mezclados, aplicar limitación:
-   - `simple_majority = 2/3 ≈ 0.667`
-   - `signal_consensus = min(0.635, 0.667 - 0.1) = min(0.635, 0.567) = 0.567`
+6. **MODERACIÓN**: Como hay BUY y SELL mezclados, aplicar `mixed_consensus_cap`:
+   - `signal_consensus = min(0.635, 0.60) = 0.60`
+7. **PENALIZACIÓN NEUTRAL**: Como `hold_count=1 <= neutral_count_threshold=2`, no se aplica penalización adicional.
 
-**Resultado**: Consenso moderado a 0.567, evitando inflación artificial por señales HOLD residuales. Sin moderación, el consenso sería 0.635, transmitiendo convicción superior a la justificada.
+**Resultado**: Consenso moderado a 0.60 (límite configurable), evitando inflación artificial por señales HOLD residuales y oposición BUY/SELL. Sin moderación, el consenso sería 0.635, transmitiendo convicción superior a la justificada.
+
+**Interpretación**: Consenso del 60% indica señal moderada con dirección (BUY) pero con incertidumbre debido a la oposición. El usuario debe interpretar esto como una recomendación cautelosa, no como alta convicción.
 
 ### Configuración de Parámetros
 
-Los parámetros `neutral_floor` y `max_consensus_delta` se configuran al inicializar `RecommendationService`:
+Los parámetros de calibración de consenso se configuran en `recommendation/config.py` y pueden ajustarse al inicializar `RecommendationService`:
+
+**Parámetros principales:**
+
+1. **`mixed_consensus_cap`** (default: 0.60): Límite máximo de consenso cuando BUY y SELL coexisten
+   - Valores más bajos = consenso más conservador en escenarios mixtos
+   - Valores más altos = menos moderación (mayor consenso permitido)
+
+2. **`neutral_count_factor`** (default: 0.95): Factor de penalización cuando hay múltiples HOLD
+   - Aplicado cuando `hold_count > neutral_count_threshold`
+   - Fórmula: `penalty = neutral_count_factor ** excess_neutrals`
+   - Valores más bajos = mayor penalización
+
+3. **`neutral_count_threshold`** (default: 2): Umbral de HOLD antes de aplicar penalización
+   - Si hay más HOLD que este umbral, se aplica `neutral_count_factor`
+
+4. **`neutral_floor`** (default: 0.3): Peso mínimo residual para neutrals (legacy, mantiene compatibilidad)
+
+5. **`max_consensus_delta`** (default: 0.1): Desviación máxima de mayoría simple (legacy, mantiene compatibilidad)
+
+**Ejemplos de personalización:**
 
 ```python
-# Valores por defecto: neutral_floor=0.3, max_consensus_delta=0.1
+# Valores por defecto (desde config.py)
 svc = RecommendationService()
 
 # Personalización para escenarios más conservadores
-svc = RecommendationService(neutral_floor=0.2, max_consensus_delta=0.05)
+svc = RecommendationService(mixed_consensus_cap=0.55, neutral_count_factor=0.90, neutral_count_threshold=1)
 
 # Personalización para escenarios más permisivos
-svc = RecommendationService(neutral_floor=0.4, max_consensus_delta=0.15)
+svc = RecommendationService(mixed_consensus_cap=0.65, neutral_count_factor=0.98, neutral_count_threshold=3)
+```
+
+**Configuración mediante variables de entorno:**
+
+```bash
+export MIXED_CONSENSUS_CAP=0.55
+export NEUTRAL_COUNT_FACTOR=0.90
+export NEUTRAL_COUNT_THRESHOLD=1
 ```
 
 Ver `docs/recommendation/timeframes.md` para más ejemplos numéricos y advertencias de interpretación.

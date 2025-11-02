@@ -70,15 +70,32 @@ Ver `backend/services/strategy_registry.py` y `backend/config/strategies.json` p
 
 ## Requisitos de Datos
 
-### Símbolos Soportados (Por Defecto)
+### Símbolos Requeridos y Soportados
 
-La estrategia soporta los siguientes símbolos por defecto:
+#### Lista de Símbolos por Defecto
 
-- **BTCUSDT**: Bitcoin/USDT
-- **ETHUSDT**: Ethereum/USDT
-- **BNBUSDT**: Binance Coin/USDT
-- **SOLUSDT**: Solana/USDT
-- **ADAUSDT**: Cardano/USDT
+La estrategia requiere los siguientes símbolos para operación completa (configurados por defecto):
+
+1. **BTCUSDT** (Bitcoin/USDT) - **Requerido** para universo completo
+2. **ETHUSDT** (Ethereum/USDT) - **Requerido** para universo completo
+3. **BNBUSDT** (Binance Coin/USDT) - **Requerido** para universo completo
+4. **SOLUSDT** (Solana/USDT) - Requerido para universo completo
+5. **ADAUSDT** (Cardano/USDT) - Requerido para universo completo
+
+#### Mínimo para Rotación
+
+- **Mínimo absoluto**: 2 símbolos para realizar rotación multi-activo
+- **Recomendado**: 3+ símbolos para diversificación adecuada
+- **Ideal**: 5+ símbolos para universo robusto
+
+#### Verificación de Disponibilidad
+
+Antes de usar la estrategia, verificar que existen archivos CSV para todos los símbolos requeridos:
+```bash
+# Verificar símbolos del universo por defecto
+ls -la data/ohlcv/{BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,ADAUSDT}_*.csv  # Linux/macOS
+dir data\ohlcv\{BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,ADAUSDT}_*.csv    # Windows
+```
 
 ### Personalización del Universo
 
@@ -103,30 +120,74 @@ El universo puede personalizarse mediante:
    strategy = CryptoRotationStrategy(universe=["BTCUSDT", "ETHUSDT"])
    ```
 
-### Estructura de Archivos
+### Estructura de Archivos y Rutas
 
-Los datos deben estar en formato CSV en `data/ohlcv/` con el patrón:
+#### Formato de Nombres de Archivo
+
+Los datos deben estar en formato CSV en `data/ohlcv/` con el patrón exacto:
 ```
-data/ohlcv/{SYMBOL}_{TIMEFRAME}.csv
+{SYMBOL}_{TIMEFRAME}.csv
 ```
 
-**Ubicación completa** (desde la raíz del proyecto):
+**Ejemplos válidos**:
+- `BTCUSDT_1h.csv`
+- `ETHUSDT_4h.csv`
+- `BNBUSDT_1d.csv`
+- `SOLUSDT_15m.csv`
+
+#### Rutas Requeridas
+
+**Ubicación base**: `data/ohlcv/` (desde la raíz del proyecto)
+
+**Estructura completa requerida** (para universo por defecto):
 ```
 data/
   ohlcv/
-    BTCUSDT_1h.csv
-    BTCUSDT_4h.csv
-    BTCUSDT_1d.csv
-    ETHUSDT_1h.csv
-    ETHUSDT_4h.csv
-    ETHUSDT_1d.csv
-    BNBUSDT_1h.csv
-    ...
+    BTCUSDT_1h.csv     # Requerido
+    BTCUSDT_4h.csv     # Requerido
+    BTCUSDT_1d.csv     # Requerido
+    ETHUSDT_1h.csv     # Requerido
+    ETHUSDT_4h.csv     # Requerido
+    ETHUSDT_1d.csv     # Requerido
+    BNBUSDT_1h.csv     # Requerido
+    BNBUSDT_4h.csv     # Requerido
+    BNBUSDT_1d.csv     # Requerido
+    SOLUSDT_1h.csv     # Requerido
+    SOLUSDT_4h.csv     # Requerido
+    SOLUSDT_1d.csv     # Requerido
+    ADAUSDT_1h.csv     # Requerido
+    ADAUSDT_4h.csv     # Requerido
+    ADAUSDT_1d.csv     # Requerido
 ```
 
-Ejemplos de rutas absolutas:
-- `C:\Users\...\Black_Trade\data\ohlcv\BTCUSDT_1h.csv` (Windows)
-- `/path/to/Black_Trade/data/ohlcv/BTCUSDT_1h.csv` (Linux/macOS)
+**Rutas absolutas de ejemplo**:
+- Windows: `C:\Users\...\Black_Trade\data\ohlcv\BTCUSDT_1h.csv`
+- Linux/macOS: `/path/to/Black_Trade/data/ohlcv/BTCUSDT_1h.csv`
+
+#### Verificación de Rutas
+
+Ejecutar verificación antes de usar la estrategia:
+```python
+from pathlib import Path
+from data.feeds.rotation_loader import default_universe
+
+symbols = default_universe()
+timeframe = "1h"
+data_dir = Path("data/ohlcv")
+
+missing = []
+for sym in symbols:
+    filepath = data_dir / f"{sym}_{timeframe}.csv"
+    if not filepath.exists():
+        missing.append(str(filepath))
+
+if missing:
+    print(f"ALERT: Missing {len(missing)} files:")
+    for f in missing:
+        print(f"  - {f}")
+else:
+    print(f"✅ All {len(symbols)} files present for timeframe {timeframe}")
+```
 
 ### Columnas Requeridas
 
@@ -149,28 +210,66 @@ timestamp,open,high,low,close,volume
 - **Datos suficientes**: Mínimo 50 períodos por símbolo para cálculos estables de EMA
 - **Validación automática**: El loader valida columnas requeridas y rechaza datos inválidos
 
-### Comportamiento con Universo Incompleto
+### Comportamiento Exacto con Universo Incompleto
 
-Cuando no se pueden cargar todos los símbolos del universo, la estrategia maneja la situación de la siguiente manera:
+La estrategia garantiza fallo controlado cuando faltan datos. El comportamiento exacto depende del parámetro `strict`:
 
 #### Modo Estricto (`strict=True`)
 
-- **Errores lanzados**:
-  - `ValueError`: Si falta un símbolo requerido o tiene datos inválidos
-  - `RuntimeError`: Si se cargan menos de 2 símbolos (insuficiente para rotación)
-  
-- **Uso recomendado**: Backtesting, validación de datos, despliegues en producción donde se requiere universo completo
+**Comportamiento**: Falla inmediatamente con excepciones claras si faltan datos requeridos.
+
+**Errores lanzados**:
+- `ValueError`: Si falta un archivo CSV requerido o tiene columnas inválidas
+- `RuntimeError`: Si se cargan menos de 2 símbolos (insuficiente para rotación) o si `generate_signals()` es llamado con `strict=True` y universo incompleto
+
+**Ejemplo de uso**:
+```python
+strategy = CryptoRotationStrategy(universe=["BTCUSDT", "ETHUSDT", "BNBUSDT"])
+signals = strategy.generate_signals(df, timeframe="1h", current_symbol="BTCUSDT", strict=True)
+# Si faltan símbolos: RuntimeError inmediato con mensaje claro
+```
+
+**Logs generados**:
+- `ERROR`: Mensajes de alerta sobre símbolos faltantes
+- `ERROR`: Detalles de errores de carga
+
+**Uso recomendado**: 
+- Backtesting donde se requiere universo completo
+- Validación de datos antes de producción
+- Despliegues en producción donde rotación multi-activo es crítica
 
 #### Modo No Estricto (`strict=False`, default)
 
-- **Advertencias registradas**: Se registran warnings en logs para símbolos faltantes o inválidos
-- **Fallback a modo single-asset**: Si hay menos de 2 símbolos disponibles, la estrategia degrada a lógica EMA simple del símbolo actual
-- **Telemetría**: Se registran métricas sobre participación:
-  - `universe_symbols_count`: Cuántos símbolos participaron
-  - `universe_participation`: Porcentaje de participación (símbolos cargados / total universo)
-  - `rotation_available`: Boolean indicando si rotación multi-activo está disponible
-  - `rotation_mode`: `'multi_asset'` o `'fallback'`
-  - `rotation_rank`: Ranking del símbolo actual (o `-1` en modo fallback)
+**Comportamiento**: Registra alertas y degrada a fallback cuando faltan datos, pero continúa operando.
+
+**Advertencias registradas**: 
+- `WARNING`: Símbolos faltantes con mensaje: `"ALERT: Missing symbols (X/Y): [lista]. Rotation may degrade to fallback mode."`
+- `WARNING`: Fallback a modo single-asset cuando universo < 2 símbolos
+
+**Fallback documentado**: Si hay menos de 2 símbolos disponibles:
+1. Estrategia degrada a lógica EMA simple del símbolo actual
+2. Telemetría marca `rotation_mode='fallback'` explícitamente
+3. No se realiza comparación multi-activo
+
+**Telemetría registrada**:
+- `universe_symbols_count`: Número exacto de símbolos que participaron en la decisión
+- `universe_participation`: Porcentaje de participación (símbolos cargados / total universo esperado)
+- `rotation_available`: Boolean (`True` si ≥2 símbolos, `False` si <2)
+- `rotation_mode`: `'multi_asset'` (rotación activa) o `'fallback'` (EMA single-asset)
+- `rotation_rank`: Ranking del símbolo actual en universo (o `-1` si modo fallback)
+- `ranked_symbols_count`: Número de símbolos en el ranking (solo en modo multi_asset)
+
+**Ejemplo de uso**:
+```python
+strategy = CryptoRotationStrategy(universe=["BTCUSDT", "ETHUSDT", "BNBUSDT"])
+signals = strategy.generate_signals(df, timeframe="1h", current_symbol="BTCUSDT", strict=False)
+# Si faltan símbolos: WARNING en logs, modo fallback activado, telemetría documenta degradación
+```
+
+**Uso recomendado**: 
+- Producción donde queremos continuidad aunque universo sea parcial
+- Desarrollo/exploración con datos limitados
+- Monitoreo donde queremos registrar participación del universo
 
 #### Ejemplos de Comportamiento
 
@@ -207,14 +306,33 @@ Log: ERROR - No data loaded for universe [...]
 Log: WARNING - CryptoRotation fallback to single-symbol mode
 ```
 
-### Garantías de Comportamiento
+### Garantías de Comportamiento Controlado
 
-La estrategia garantiza que:
+La estrategia garantiza fallo controlado y sin degradación silenciosa:
 
-1. **No hay degradación silenciosa**: Todos los escenarios de datos faltantes generan logs explícitos (WARNING o ERROR según severidad)
-2. **Fallback controlado**: Cuando el universo es insuficiente, el modo fallback está explícitamente marcado en telemetría (`rotation_mode='fallback'`)
-3. **Telemetría completa**: Cada señal incluye métricas de participación del universo para auditoría
-4. **Modo estricto disponible**: Para tests y producción crítica, usar `strict=True` para fallar rápido en datos insuficientes
+1. **No hay degradación silenciosa**: 
+   - Todos los escenarios de datos faltantes generan logs explícitos con prefijo `"ALERT:"`
+   - En modo estricto: ERROR logs + excepción inmediata
+   - En modo no estricto: WARNING logs + telemetría documentando degradación
+
+2. **Fallback documentado explícitamente**: 
+   - Cuando universo < 2 símbolos, `rotation_mode='fallback'` se establece en telemetría
+   - Logs incluyen mensaje: `"CryptoRotation fallback to single-symbol mode: ... This degrades strategy from multi-asset rotation to single-asset EMA."`
+   - Telemetría registra `universe_symbols_count` y `universe_participation` para auditoría
+
+3. **Telemetría completa y verificable**:
+   - Cada señal incluye métricas exactas de participación (`universe_symbols_count`, `universe_participation`)
+   - Permite calcular porcentaje de decisiones basadas en ≥2 símbolos vs. fallback
+   - Campos `rotation_available` y `rotation_mode` permiten filtrado en análisis
+
+4. **Modo estricto para validación**:
+   - Usar `strict=True` en tests y validación previa a producción
+   - Falla inmediatamente con mensajes de error claros si datos insuficientes
+   - Permite detectar problemas de datos antes del despliegue
+
+5. **Mensajes de error informativos**:
+   - Todos los errores incluyen contexto: qué símbolos faltan, cuántos se cargaron, qué se requiere
+   - Facilita diagnóstico y corrección rápida
 
 ### Uso en Tests vs Producción
 

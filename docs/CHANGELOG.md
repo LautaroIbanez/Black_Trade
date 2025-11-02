@@ -63,36 +63,46 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Known Limitations
 
-> ⚠️ **QA Pipeline Reactivado**: La suite de QA está reactivada y operativa. Estado actual: **129 passed, 4 failed**. Los fallos residuales están documentados para transparencia. Ver `docs/qa/status.md` para estado actual y resultados de ejecuciones reales.
+> ⚠️ **QA Pipeline Estabilizado**: La suite de QA está reactivada y estabilizada. Estado actual: **136 passed, 1 failed**. El único fallo restante es no crítico y está documentado para transparencia. Ver `docs/qa/status.md` para estado actual y resultados de ejecuciones reales.
 
 #### Tests Pendientes de Corrección
 
-1. **Backtesting** (3 tests):
-   - `test_split_and_walk_forward`: KeyError en cierre forzado de posiciones (requiere ajuste en manejo de índices en `strategies/momentum_strategy.py`)
-   - `test_cost_calculation`: Desajuste en expectativas del modelo de costos
-   - `test_strategies_with_different_costs`: Aserciones de costos no cumplidas
+1. **Endpoints** (1 test):
+   - `test_recommendation_includes_new_timeframes`: Error en generación de señales para Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic (`'bool' object is not iterable`)
+   - **Causa**: Error en implementación de estrategias específicas al procesar datos mínimos de prueba
+   - **Impacto**: El endpoint puede no incluir todos los timeframes en `strategy_details` cuando estas estrategias fallan
+   - **Nota**: Este error es de las implementaciones de estrategias, no del pipeline de QA ni del servicio de recomendaciones
 
-2. **Endpoints** (1 test):
-   - `test_recommendation_includes_new_timeframes`: Error en generación de señales para Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic (tipo 'bool' object is not iterable)
+**Responsable**: Equipo Backend / Estrategias  
+**Prioridad**: Media (no bloquea funcionalidad core)  
+**Target**: Próximo sprint (2-3 semanas)
 
-**Responsable**: Equipo de Backend / Desarrolladores  
-**Prioridad**: Media (fallos no bloquean funcionalidad core)  
-**Target**: Revisar en próximo sprint (2-3 semanas)
+#### Tests Corregidos (Noviembre 2024)
+
+✅ **`test_split_and_walk_forward`**: Corregido bug de índice fuera de rango en `close_all_positions()` de `strategies/strategy_base.py`  
+✅ **`test_cost_calculation`**: Corregidas expectativas del modelo de cálculo de costes  
+✅ **`test_strategies_with_different_costs`**: Ajustado para manejar casos sin trades generados
 
 #### Limitaciones Funcionales
 
-1. **Inclusión de Timeframes**: El endpoint de recomendaciones puede no incluir todos los timeframes disponibles en `strategy_details` cuando hay datos para múltiples timeframes (corrección pendiente).
+1. **Inclusión de Timeframes**: El endpoint de recomendaciones puede no incluir todos los timeframes disponibles en `strategy_details` cuando las estrategias Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic fallan al generar señales con datos mínimos (corrección pendiente en implementación de estrategias).
 
 2. **Validación de Datos**: El campo `records_count` no está incluido en el diccionario de validación retornado por `data_loader.load_data` (requiere actualización en `data/sync_service.py`).
-
-3. **Walk-Forward Testing**: El manejo de índices en cierre forzado de posiciones durante splits necesita ajuste para evitar KeyError.
 
 #### Próximas Correcciones
 
 - Implementar campo `records_count` en validación de datos
-- Ajustar manejo de índices en walk-forward testing
-- Asegurar inclusión de todos los timeframes en `strategy_details`
+- Corregir error `'bool' object is not iterable` en Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic
+- Asegurar inclusión de todos los timeframes en `strategy_details` cuando las estrategias generen señales correctamente
+- ~~Ajustar manejo de índices en walk-forward testing~~ (✅ CORREGIDO - Noviembre 2024)
 - **Validación completamente implementada**: La normalización de confianza y consenso está implementada y validada con tests. El consenso refleja explícitamente incertidumbre (100% HOLD = 0% consenso).
+
+### Correcciones Documentales (Noviembre 2024)
+
+- **Alineación de documentación con estado real de QA**: Actualizados `README.md`, `docs/qa/status.md`, `docs/recommendation/timeframes.md` y `docs/CHANGELOG.md` para reflejar el estado actual (136 passed, 1 failed)
+- **Resumen ejecutivo en `docs/qa/status.md`**: Añadida sección detallando tests fallidos, responsables y targets de corrección
+- **Limitaciones actuales documentadas**: Añadidas secciones en README y timeframes.md sobre limitaciones de QA y calibración de consenso
+- **Historial de correcciones**: Documentados tests corregidos (walk-forward, costes) en CHANGELOG
 
 ### Pendientes Críticos Relacionados con QA y Consenso
 

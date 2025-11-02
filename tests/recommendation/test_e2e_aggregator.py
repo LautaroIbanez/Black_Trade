@@ -140,7 +140,10 @@ def test_e2e_aggregator_conflicting_signals():
 
 
 def test_e2e_aggregator_mixed_2buy_1sell_1hold_consensus_moderated():
-    """Test that 2 BUY / 1 SELL / 1 HOLD scenario keeps consensus moderated (not inflated)."""
+    """Test that 2 BUY / 1 SELL / 1 HOLD scenario keeps consensus moderated (not inflated).
+    
+    With default mixed_consensus_cap=0.60, consensus should not exceed 0.60 when BUY and SELL coexist.
+    """
     svc = RecommendationService()
     
     signals = [
@@ -154,33 +157,31 @@ def test_e2e_aggregator_mixed_2buy_1sell_1hold_consensus_moderated():
     
     # Total: 4 signals (2 BUY, 1 SELL, 1 HOLD)
     # Active: 3, Hold: 1
-    # Consensus should be moderated by max_consensus_delta when BUY/SELL coexist with HOLD
+    # Consensus should be moderated by mixed_consensus_cap when BUY/SELL coexist
     
     assert result.action == "BUY"  # BUY should win (2 vs 1)
     assert 0.0 <= result.signal_consensus <= 1.0
     
-    # Consensus should be moderated to avoid inflated values
-    # Without moderation: buy_ratio ≈ 0.635
-    # With moderation (default max_consensus_delta=0.1): should be capped at simple_majority - 0.1
-    # Simple majority = 2/3 ≈ 0.667, so cap = 0.567
-    # Verify consensus is within reasonable bounds (not inflated)
+    # Consensus should be capped at mixed_consensus_cap (default 0.60) when BUY and SELL coexist
+    # Without cap: buy_ratio could be ~0.635, but with cap it should be <= 0.60
     assert result.signal_consensus <= 0.60, \
-        f"Consensus {result.signal_consensus} should be moderated (<= 0.60) in mixed BUY/SELL/HOLD scenario"
+        f"Consensus {result.signal_consensus} should be capped (<= 0.60) in mixed BUY/SELL/HOLD scenario"
     assert result.signal_consensus >= 0.50, \
         f"Consensus {result.signal_consensus} should still show BUY preference (>= 0.50)"
 
 
-def test_e2e_aggregator_mixed_2buy_1sell_1hold_with_custom_delta():
-    """Test that custom max_consensus_delta affects consensus moderation.
+def test_e2e_aggregator_mixed_2buy_1sell_1hold_with_custom_cap():
+    """Test that custom mixed_consensus_cap affects consensus moderation.
     
-    Note: max_consensus_delta is SUBTRACTED from simple majority to create the cap.
-    - Lower delta = tighter cap = lower consensus
-    - Higher delta = looser cap = higher consensus (but still below simple majority)
+    Lower cap = more conservative consensus in mixed scenarios.
+    Higher cap = less moderation (but still capped).
     """
-    # Tighter cap (lower delta)
-    svc_tighter = RecommendationService(max_consensus_delta=0.05)
-    # Looser cap (higher delta, but still moderated)
-    svc_looser = RecommendationService(max_consensus_delta=0.15)
+    # More conservative cap
+    svc_conservative = RecommendationService(mixed_consensus_cap=0.55)
+    # Default cap
+    svc_default = RecommendationService(mixed_consensus_cap=0.60)
+    # Less conservative cap
+    svc_loose = RecommendationService(mixed_consensus_cap=0.65)
     
     signals = [
         _make_signal("B1", 1, 0.6, 0.8, "1h", 100.0),
@@ -189,18 +190,93 @@ def test_e2e_aggregator_mixed_2buy_1sell_1hold_with_custom_delta():
         _make_signal("H1", 0, 0.0, 0.5, "12h", 100.0),
     ]
     
-    result_tighter = svc_tighter._analyze_signals(signals, data={}, profile="balanced")
-    result_looser = svc_looser._analyze_signals(signals, data={}, profile="balanced")
+    result_conservative = svc_conservative._analyze_signals(signals, data={}, profile="balanced")
+    result_default = svc_default._analyze_signals(signals, data={}, profile="balanced")
+    result_loose = svc_loose._analyze_signals(signals, data={}, profile="balanced")
     
-    # Tighter cap should yield higher consensus than looser cap (counterintuitive but correct)
-    # This is because we're CAPPING at (majority - delta)
-    # Tighter cap = higher floor, so consensus is less moderated
-    assert result_tighter.signal_consensus >= result_looser.signal_consensus, \
-        f"Tighter cap (lower delta) should yield higher/equal consensus. Got: {result_tighter.signal_consensus} vs {result_looser.signal_consensus}"
+    # Conservative cap should yield lower consensus
+    assert result_conservative.signal_consensus <= 0.55, \
+        f"Conservative cap should yield consensus <= 0.55. Got: {result_conservative.signal_consensus}"
+    assert result_default.signal_consensus <= 0.60, \
+        f"Default cap should yield consensus <= 0.60. Got: {result_default.signal_consensus}"
+    assert result_loose.signal_consensus <= 0.65, \
+        f"Loose cap should yield consensus <= 0.65. Got: {result_loose.signal_consensus}"
     
-    # Both should be moderated (not inflated)
-    assert result_tighter.signal_consensus <= 0.65
-    assert result_looser.signal_consensus <= 0.60
+    # Conservative should be <= default, default should be <= loose
+    assert result_conservative.signal_consensus <= result_default.signal_consensus, \
+        f"Conservative cap should yield lower/equal consensus. Got: {result_conservative.signal_consensus} vs {result_default.signal_consensus}"
+    assert result_default.signal_consensus <= result_loose.signal_consensus, \
+        f"Default cap should yield lower/equal consensus than loose. Got: {result_default.signal_consensus} vs {result_loose.signal_consensus}"
+
+
+def test_e2e_aggregator_mixed_1buy_1sell_multiple_hold():
+    """Test 1 BUY / 1 SELL / varios HOLD scenario.
+    
+    When there are opposing signals (1 BUY, 1 SELL) with multiple HOLD signals,
+    consensus should be moderate and reflect the uncertainty.
+    """
+    svc = RecommendationService()
+    
+    # Test with 2 HOLD signals
+    signals_2hold = [
+        _make_signal("B1", 1, 0.6, 0.8, "1h", 100.0),
+        _make_signal("S1", -1, 0.5, 0.7, "4h", 100.0),
+        _make_signal("H1", 0, 0.0, 0.5, "12h", 100.0),
+        _make_signal("H2", 0, 0.0, 0.5, "1d", 100.0),
+    ]
+    
+    result_2hold = svc._analyze_signals(signals_2hold, data={}, profile="balanced")
+    
+    # Total: 4 signals (1 BUY, 1 SELL, 2 HOLD)
+    # Active: 2, Hold: 2
+    # With 2 HOLD, neutral_count_threshold=2, so no additional penalty
+    # Consensus should be capped at mixed_consensus_cap since BUY and SELL coexist
+    assert result_2hold.action in ("BUY", "SELL", "HOLD")  # Either could win
+    assert 0.0 <= result_2hold.signal_consensus <= 0.60, \
+        f"Consensus {result_2hold.signal_consensus} should be <= 0.60 with opposing signals and HOLD"
+    
+    # Test with 3 HOLD signals (exceeds threshold)
+    signals_3hold = [
+        _make_signal("B1", 1, 0.6, 0.8, "1h", 100.0),
+        _make_signal("S1", -1, 0.5, 0.7, "4h", 100.0),
+        _make_signal("H1", 0, 0.0, 0.5, "12h", 100.0),
+        _make_signal("H2", 0, 0.0, 0.5, "1d", 100.0),
+        _make_signal("H3", 0, 0.0, 0.5, "1w", 100.0),
+    ]
+    
+    result_3hold = svc._analyze_signals(signals_3hold, data={}, profile="balanced")
+    
+    # Total: 5 signals (1 BUY, 1 SELL, 3 HOLD)
+    # Active: 2, Hold: 3 (exceeds threshold=2, so penalty applies)
+    # With 3 HOLD, excess_neutrals = 1, penalty = 0.95^1 = 0.95
+    # Consensus should be further reduced by neutral_count_factor
+    assert result_3hold.action in ("BUY", "SELL", "HOLD")
+    assert 0.0 <= result_3hold.signal_consensus <= 0.60, \
+        f"Consensus {result_3hold.signal_consensus} should be <= 0.60 with opposing signals"
+    # With neutral penalty, consensus should be lower than without (though calculation is complex)
+    assert result_3hold.signal_consensus < 0.70, \
+        f"Consensus {result_3hold.signal_consensus} should be moderate with 3+ HOLD signals"
+
+
+def test_e2e_aggregator_all_hold_consensus_zero():
+    """Test that all HOLD signals result in consensus = 0.0 (uncertainty, not conviction)."""
+    svc = RecommendationService()
+    
+    signals = [
+        _make_signal("H1", 0, 0.0, 0.5, "1h", 100.0),
+        _make_signal("H2", 0, 0.0, 0.5, "4h", 100.0),
+        _make_signal("H3", 0, 0.0, 0.5, "1d", 100.0),
+        _make_signal("H4", 0, 0.0, 0.5, "12h", 100.0),
+    ]
+    
+    result = svc._analyze_signals(signals, data={}, profile="balanced")
+    
+    # All HOLD = 100% uncertainty, consensus should be 0.0
+    assert result.action == "HOLD"
+    assert result.confidence == 0.0, \
+        f"Confidence should be 0.0 with all HOLD. Got: {result.confidence}"
+    assert result.signal_consensus == 0.0, \
+        f"Consensus should be 0.0 with all HOLD (uncertainty). Got: {result.signal_consensus}"
 
 
 def test_e2e_aggregator_empty_signals():

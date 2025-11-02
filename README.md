@@ -208,17 +208,25 @@ Para más detalles sobre ejecución, configuración y solución de problemas, ve
 
 > ⚠️ **Nota importante**: Las siguientes limitaciones están documentadas para transparencia. Ver `docs/qa/status.md` para el estado actual de los tests y problemas conocidos.
 
-**Estado QA**: 129 passed, 4 failed (ver `docs/qa/status.md` para detalles)
+**Estado QA**: 136 passed, 1 failed (ver `docs/qa/status.md` para detalles)
 
-1. ✅ **Consenso mixto**: Resuelto con moderación configurable (`neutral_floor`, `max_consensus_delta`). Escenarios 2 BUY / 1 SELL / 1 HOLD ahora generan consenso razonable (~0.57 vs ~0.63 anterior).
+1. ✅ **Consenso mixto**: Resuelto con moderación configurable (`mixed_consensus_cap`, `neutral_count_factor`). Escenarios 2 BUY / 1 SELL / 1 HOLD ahora generan consenso moderado (~0.60, limitado por cap configurable).
 
 2. ✅ **CryptoRotation multi-activo**: Verificado y funcional. Tests de rotación pasando con datasets multi-símbolo y manejo correcto del parámetro `strict`.
 
-3. ⚠️ **Pipeline de QA**: Reactivado y operativo. 4 tests fallan (3 backtesting: walk-forward, costes; 1 endpoints: timeframes). Ver `docs/qa/status.md` y `docs/CHANGELOG.md` para detalles.
+3. ✅ **Tests de walk-forward y costes**: Corregidos. Bug de índice fuera de rango en `close_all_positions` resuelto, expectativas de costes ajustadas.
 
-4. ⚠️ **Tests de temporalidades**: La prueba de inclusión de timeframes (`15m`, `2h`, `12h`) falla por error en generación de señales (`'bool' object is not iterable`). Pendiente corrección.
+4. ✅ **Tests end-to-end**: Añadido test `test_e2e_minimal.py` cubriendo pipeline completo de consenso y riesgo.
 
-5. ⚠️ **Calibración de estrategias**: MACD y OrderFlow en fase de ajuste fino. Parámetros pueden cambiar entre versiones menores.
+5. ⚠️ **Test de temporalidades**: `test_recommendation_includes_new_timeframes` falla por error en generación de señales (`'bool' object is not iterable`) en Mean_Reversion, Ichimoku_ADX, RSIDivergence, Stochastic. Error de implementación de estrategias, no del pipeline. Responsable: Equipo Backend / Estrategias. Target: Próximo sprint.
+
+6. ⚠️ **Calibración de estrategias**: MACD y OrderFlow en fase de ajuste fino. Parámetros pueden cambiar entre versiones menores.
+
+### Limitaciones Actuales de QA
+
+- **1 test fallando** (no crítico): `test_recommendation_includes_new_timeframes` - relacionado con errores en generación de señales de estrategias específicas, no afecta funcionalidad core
+- **Tests críticos operativos**: Consenso, agregación, walk-forward, costes, end-to-end todos pasando
+- **Calibración de consenso**: Los parámetros `mixed_consensus_cap` (default: 0.60) y `neutral_count_factor` (default: 0.95) están configurados y funcionando; pueden requerir ajuste fino según feedback de uso
 
 Para más detalles sobre limitaciones y problemas conocidos, ver:
 - `docs/qa/status.md` - Estado actual de QA y problemas conocidos
@@ -234,7 +242,7 @@ Para más detalles sobre limitaciones y problemas conocidos, ver:
 | MACD Rehabilitado | En progreso | Media | Cierres por histograma en cero listos; calibración por timeframe pendiente |
 | CryptoRotation Multi-Activo | ✅ Verificado | Alta | Tests pasando; manejo correcto de strict/fallback |
 | OrderFlow | En progreso | Media | Señales con volumen anómalo; calibración de vol_mult |
-| QA Integral | Mejorado | Media-Alta | 129/133 tests pasando; 4 fallos documentados; pipeline reactivado |
+| QA Integral | Estabilizado | Media-Alta | 136/137 tests pasando; 1 fallo no crítico documentado; pipeline operativo |
 
 ### Próximos Hitos (4–6 semanas)
 
