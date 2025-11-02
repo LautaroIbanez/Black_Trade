@@ -1,0 +1,181 @@
+.execution-tracker {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tracker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tracker-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.refresh-btn {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.refresh-btn:hover {
+  background: #e0e0e0;
+}
+
+.orders-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.no-orders {
+  text-align: center;
+  padding: 32px;
+  color: #999;
+}
+
+.order-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.order-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.order-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+}
+
+.order-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.order-status.blue {
+  background: #E3F2FD;
+  color: #1976D2;
+}
+
+.order-status.orange {
+  background: #FFF3E0;
+  color: #F57C00;
+}
+
+.order-status.green {
+  background: #E8F5E9;
+  color: #388E3C;
+}
+
+.order-status.red {
+  background: #FFEBEE;
+  color: #D32F2F;
+}
+
+.order-status.gray {
+  background: #F5F5F5;
+  color: #616161;
+}
+
+.order-details {
+  margin-bottom: 8px;
+}
+
+.order-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.order-symbol {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.order-side {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.order-side.buy {
+  background: #4CAF50;
+  color: white;
+}
+
+.order-side.sell {
+  background: #F44336;
+  color: white;
+}
+
+.order-quantity {
+  color: #666;
+  font-size: 14px;
+}
+
+.order-price {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.order-fill {
+  color: #2196F3;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.order-actions {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.cancel-btn {
+  background: #F44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.cancel-btn:hover {
+  background: #D32F2F;
+}
+
+.order-timestamp {
+  font-size: 11px;
+  color: #999;
+  margin-top: 8px;
+}
+

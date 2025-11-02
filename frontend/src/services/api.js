@@ -28,6 +28,78 @@ export async function getStrategies() {
   return handleResponse(response)
 }
 
+export async function getRiskStatus(token) {
+  const response = await fetch(`${API_BASE_URL}/risk/status`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function getMetrics(token) {
+  const response = await fetch(`${API_BASE_URL}/metrics`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function getExecutionOrders(status, token) {
+  const url = new URL(`${API_BASE_URL}/execution/orders`)
+  if (status) url.searchParams.set('status', status)
+  const response = await fetch(url, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function createOrder(orderData, token) {
+  const response = await fetch(`${API_BASE_URL}/execution/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(orderData)
+  })
+  return handleResponse(response)
+}
+
+export async function cancelOrder(orderId, reason, token) {
+  const response = await fetch(`${API_BASE_URL}/execution/orders/${orderId}/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ reason })
+  })
+  return handleResponse(response)
+}
+
+export async function updateRiskLimits(limits, token) {
+  const response = await fetch(`${API_BASE_URL}/risk/limits`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(limits)
+  })
+  return handleResponse(response)
+}
+
+export async function toggleStrategy(strategyName, enabled, token) {
+  // This would need to be implemented in the backend
+  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/toggle`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ enabled })
+  })
+  return handleResponse(response)
+}
+
 
 
 

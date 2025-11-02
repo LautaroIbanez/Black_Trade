@@ -2,7 +2,7 @@
 import os
 import logging
 from typing import Dict, Any, List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
@@ -17,14 +17,46 @@ from backend.services.recommendation_service import recommendation_service
 from backtest.data_loader import data_loader
 from backend.api.routes.chart import router as chart_router
 from backend.api.routes.monitoring import router as monitoring_router
+from backend.api.routes.risk import router as risk_router
+from backend.api.routes.execution import router as execution_router
+from backend.api.routes.observability import router as observability_router
+from backend.api.routes.websocket import router as websocket_router
 from recommendation.config import TIMEFRAMES_ACTIVE
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging for compliance
+from backend.config.logging_config import configure_logging
+configure_logging()
+
 logger = logging.getLogger(__name__)
 
+# Initialize observability
+from backend.observability.telemetry import init_telemetry
+from backend.observability.metrics import get_metrics_collector
+from backend.observability.middleware import ObservabilityMiddleware
+
+# Initialize telemetry (OpenTelemetry)
+telemetry_manager = init_telemetry(
+    service_name="black-trade",
+    otlp_endpoint=os.getenv("OTLP_ENDPOINT"),
+    enable_tracing=os.getenv("ENABLE_TRACING", "true").lower() == "true",
+    enable_metrics=os.getenv("ENABLE_METRICS", "true").lower() == "true",
+)
+
 app = FastAPI(title="Black Trade API", version="1.0.0")
+
+# Add security middleware
+from backend.config.middleware_security import SecurityMiddleware, InputSanitizationMiddleware
+app.add_middleware(SecurityMiddleware)
+app.add_middleware(InputSanitizationMiddleware)
+
+# Add observability middleware
+app.add_middleware(ObservabilityMiddleware)
+
+# Instrument FastAPI
+telemetry_manager.instrument_fastapi(app)
+telemetry_manager.instrument_requests()
 
 app.add_middleware(
     CORSMiddleware,
@@ -336,6 +368,13 @@ async def reload_strategies() -> Dict[str, Any]:
 # Include routers
 app.include_router(chart_router, prefix="/api", tags=["chart"])
 app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
+app.include_router(risk_router, prefix="/api/risk", tags=["risk"])
+app.include_router(execution_router, prefix="/api/execution", tags=["execution"])
+app.include_router(observability_router, prefix="/api", tags=["observability"])
+
+# WebSocket route
+from backend.api.routes.websocket import manager, websocket_endpoint
+app.add_websocket_route("/ws", websocket_endpoint)
 
 if __name__ == "__main__":
     import uvicorn

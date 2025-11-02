@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
 import Dashboard from './components/Dashboard'
 import Strategies from './components/Strategies'
+import TradingDashboard from './components/TradingDashboard'
 import './App.css'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState('trading')
+  // In production, this would come from authentication
+  const [token] = useState(null)
 
   return (
     <div className="app">
@@ -12,21 +15,29 @@ function App() {
         <h1>Black Trade</h1>
         <nav className="tabs">
           <button 
+            className={activeTab === 'trading' ? 'active' : ''}
+            onClick={() => setActiveTab('trading')}
+          >
+            Trading
+          </button>
+          <button 
             className={activeTab === 'dashboard' ? 'active' : ''}
             onClick={() => setActiveTab('dashboard')}
           >
-            Dashboard
+            Análisis
           </button>
           <button 
             className={activeTab === 'strategies' ? 'active' : ''}
             onClick={() => setActiveTab('strategies')}
           >
-            Strategies
+            Estrategias
           </button>
         </nav>
       </header>
       <main className="main-content">
-        {activeTab === 'dashboard' ? <Dashboard /> : <Strategies />}
+        {activeTab === 'trading' && <TradingDashboard token={token} />}
+        {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'strategies' && <Strategies />}
       </main>
     </div>
   )

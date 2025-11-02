@@ -1,0 +1,233 @@
+.opportunity-card {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.opportunity-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.opportunity-card.executing {
+  border-color: #2196F3;
+  background: #E3F2FD;
+}
+
+.opportunity-card.filled {
+  border-color: #4CAF50;
+  background: #E8F5E9;
+}
+
+.opportunity-card.expired {
+  border-color: #9E9E9E;
+  background: #F5F5F5;
+  opacity: 0.7;
+}
+
+.opportunity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.symbol-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.symbol {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.action {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.action.buy {
+  background: #4CAF50;
+  color: white;
+}
+
+.action.sell {
+  background: #F44336;
+  color: white;
+}
+
+.confidence-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.confidence-badge.high {
+  background: #4CAF50;
+  color: white;
+}
+
+.confidence-badge.medium {
+  background: #FF9800;
+  color: white;
+}
+
+.confidence-badge.low {
+  background: #9E9E9E;
+  color: white;
+}
+
+.opportunity-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.current-price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.risk-reward {
+  background: #2196F3;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opportunity-details {
+  margin-bottom: 12px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.detail-row .label {
+  color: #666;
+}
+
+.detail-row .value {
+  color: #333;
+  font-weight: 500;
+}
+
+.strategies {
+  margin-bottom: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.strategies .label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.strategy-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.strategy-tag {
+  background: #E3F2FD;
+  color: #1976D2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.opportunity-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #2196F3;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.btn-primary:disabled {
+  background: #9E9E9E;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.execution-status {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2196F3;
+  animation: progress 2s infinite;
+}
+
+@keyframes progress {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
+.status-text {
+  font-size: 12px;
+  color: #666;
+}
+
