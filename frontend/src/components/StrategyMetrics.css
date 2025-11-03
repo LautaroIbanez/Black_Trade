@@ -1,0 +1,155 @@
+.strategy-metrics {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.strategy-metrics h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.strategy-metrics h5 {
+  margin: 16px 0 8px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.optimal-parameters {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.parameters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.parameter-item {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.param-key {
+  font-weight: 500;
+  color: #666;
+}
+
+.param-value {
+  color: #333;
+  font-family: monospace;
+}
+
+.validation-metrics {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.metric-item {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.metric-label {
+  color: #666;
+}
+
+.metric-value {
+  font-weight: bold;
+  color: #333;
+}
+
+.performance-comparison {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.comparison-col {
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+}
+
+.comparison-header {
+  font-weight: bold;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.comparison-metric {
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.consistency-good {
+  color: #4CAF50;
+  margin-left: 6px;
+}
+
+.summary-metrics {
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.summary-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+}
+
+.summary-metric .metric-label {
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.summary-metric .metric-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .comparison-grid,
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+

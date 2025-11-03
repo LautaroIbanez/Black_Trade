@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { getRecommendation, getRiskStatus, getMetrics, getExecutionOrders, createOrder } from '../services/api'
+import { getRecommendation, getRiskStatus, getMetrics, getExecutionOrders, createOrder, getStrategiesConfig } from '../services/api'
 import { wsService } from '../services/websocket'
 import OpportunityCard from './OpportunityCard'
 import RiskOverview from './RiskOverview'
@@ -14,6 +14,8 @@ function TradingDashboard({ token }) {
   const [metrics, setMetrics] = useState(null)
   const [strategies, setStrategies] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [wsStatus, setWsStatus] = useState('connecting')
   const [selectedOpportunity, setSelectedOpportunity] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
 
@@ -21,6 +23,9 @@ function TradingDashboard({ token }) {
     loadDashboardData()
 
     // Subscribe to WebSocket updates
+    const unsubscribeConn = wsService.subscribe('connection', (data) => {
+      setWsStatus(data?.status || 'disconnected')
+    })
     const unsubscribeOrder = wsService.subscribe('order_update', (data) => {
       // Refresh orders when update received
       loadExecutionData()
@@ -34,6 +39,7 @@ function TradingDashboard({ token }) {
     const interval = setInterval(loadDashboardData, 30000)
 
     return () => {
+      unsubscribeConn()
       unsubscribeOrder()
       unsubscribeRisk()
       clearInterval(interval)
@@ -42,6 +48,7 @@ function TradingDashboard({ token }) {
 
   const loadDashboardData = async () => {
     try {
+      setError(null)
       await Promise.all([
         loadOpportunities(),
         loadRiskData(),
@@ -51,6 +58,7 @@ function TradingDashboard({ token }) {
       ])
     } catch (error) {
       console.error('Error loading dashboard:', error)
+      setError(error?.message || 'Error al cargar el dashboard')
     } finally {
       setLoading(false)
     }
@@ -93,12 +101,10 @@ function TradingDashboard({ token }) {
 
   const loadStrategies = async () => {
     try {
-      // This would fetch actual strategy data
-      setStrategies([
-        { name: 'EMA_RSI', enabled: true, metrics: { pnl: 500, win_rate: 0.65, trades: 45 } },
-        { name: 'Momentum', enabled: true, metrics: { pnl: 300, win_rate: 0.58, trades: 32 } },
-        { name: 'Breakout', enabled: false, metrics: { pnl: -50, win_rate: 0.45, trades: 28 } },
-      ])
+      const config = await getStrategiesConfig()
+      // Normalize into { name, enabled } items; metrics may come from separate endpoints
+      const list = (config || []).map((c) => ({ name: c.name, enabled: !!c.enabled, metrics: null }))
+      setStrategies(list)
     } catch (error) {
       console.error('Error loading strategies:', error)
     }
@@ -136,6 +142,14 @@ function TradingDashboard({ token }) {
   return (
     <div className="trading-dashboard">
       <NotificationSystem />
+
+      {/* Connection status & global error */}
+      <div className={`connection-banner ${wsStatus === 'connected' ? 'ok' : 'warn'}`}>
+        WS: {wsStatus}
+      </div>
+      {error && (
+        <div className="alert-banner error">{error}</div>
+      )}
 
       {/* Alert Banner */}
       {riskData?.metrics && riskData.metrics.current_drawdown_pct > 18 && (

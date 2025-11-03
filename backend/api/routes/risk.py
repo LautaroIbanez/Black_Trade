@@ -1,11 +1,13 @@
 """API routes for risk management."""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
 from backend.risk.engine import RiskEngine, RiskLimits, RiskMetrics
 from backend.integrations.base import ExchangeAdapter
+from backend.auth.permissions import AuthService, Permission
+from backend.config.security import rate_limit
 
 router = APIRouter(tags=["risk"])  # Prefix is added in app.py
 
@@ -48,7 +50,8 @@ def set_risk_engine(engine: RiskEngine):
 
 
 @router.get("/status")
-async def get_risk_status(engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+@rate_limit(max_requests=120, window_seconds=60)
+async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
     """Get current risk status."""
     try:
         metrics = engine.get_risk_metrics()
@@ -87,7 +90,8 @@ async def get_risk_status(engine: RiskEngine = Depends(get_risk_engine)) -> Dict
 
 
 @router.get("/exposure")
-async def get_exposure(engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+@rate_limit(max_requests=120, window_seconds=60)
+async def get_exposure(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
     """Get exposure breakdown by asset and strategy."""
     try:
         exposure_data = engine.calculate_exposure()
@@ -122,7 +126,8 @@ async def get_var(
 
 
 @router.get("/drawdown")
-async def get_drawdown(engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+@rate_limit(max_requests=120, window_seconds=60)
+async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
     """Get drawdown metrics."""
     try:
         drawdown_data = engine.calculate_drawdown()
@@ -138,7 +143,8 @@ async def get_drawdown(engine: RiskEngine = Depends(get_risk_engine)) -> Dict[st
 
 
 @router.get("/limits")
-async def get_limits(engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+@rate_limit(max_requests=60, window_seconds=60)
+async def get_limits(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
     """Get current risk limits."""
     return {
         "global_limits": {
@@ -154,9 +160,12 @@ async def get_limits(engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str,
 
 
 @router.post("/limits")
+@rate_limit(max_requests=30, window_seconds=60)
 async def update_limits(
+    request: Request,
     limits: RiskLimitsRequest,
     engine: RiskEngine = Depends(get_risk_engine),
+    user=Depends(lambda: AuthService().require_permission(Permission.WRITE_RISK_LIMITS)),
 ) -> Dict[str, Any]:
     """Update risk limits."""
     try:

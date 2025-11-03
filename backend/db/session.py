@@ -56,8 +56,9 @@ def db_session() -> Generator[Session, None, None]:
 
 def check_timescaledb_extension():
     """Check if TimescaleDB extension is available."""
+    from sqlalchemy import text
     with db_session() as db:
-        result = db.execute("SELECT * FROM pg_extension WHERE extname = 'timescaledb'")
+        result = db.execute(text("SELECT * FROM pg_extension WHERE extname = 'timescaledb'"))
         return result.fetchone() is not None
 
 
@@ -66,15 +67,16 @@ def enable_timescaledb_hypertable():
     if not check_timescaledb_extension():
         raise RuntimeError("TimescaleDB extension not found. Install TimescaleDB first.")
     
+    from sqlalchemy import text
     with db_session() as db:
         # Check if hypertable already exists
         result = db.execute(
-            "SELECT * FROM _timescaledb_catalog.hypertable WHERE table_name = 'ohlcv_candles'"
+            text("SELECT * FROM _timescaledb_catalog.hypertable WHERE table_name = 'ohlcv_candles'")
         )
         if result.fetchone() is None:
             db.execute(
-                "SELECT create_hypertable('ohlcv_candles', 'timestamp', "
-                "chunk_time_interval => INTERVAL '7 days')"
+                text("SELECT create_hypertable('ohlcv_candles', 'timestamp', "
+                "chunk_time_interval => INTERVAL '7 days')")
             )
             db.commit()
 

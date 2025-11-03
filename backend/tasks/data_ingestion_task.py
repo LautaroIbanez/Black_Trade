@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from backend.ingestion.websocket_consumer import BinanceWebSocketConsumer
 from backend.ingestion.polling_consumer import PollingConsumer
@@ -41,7 +41,7 @@ class DataIngestionTask:
         self.running = False
         self.ingestion_repo = IngestionRepository()
     
-    async def _message_callback(self, candle: Dict):
+    async def _message_callback(self, candle: dict):
         """Callback for processing incoming candles."""
         await self.processor.process_candle(candle)
     

@@ -38,3 +38,4 @@ python backend/scripts/backtest_all.py --initial-capital 20000 --position-size-p
 
 
 
+

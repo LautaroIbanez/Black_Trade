@@ -29,21 +29,21 @@ export async function getStrategies() {
 }
 
 export async function getRiskStatus(token) {
-  const response = await fetch(`${API_BASE_URL}/risk/status`, {
+  const response = await fetch(`${API_BASE_URL}/api/risk/status`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   })
   return handleResponse(response)
 }
 
 export async function getMetrics(token) {
-  const response = await fetch(`${API_BASE_URL}/metrics`, {
+  const response = await fetch(`${API_BASE_URL}/api/metrics`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   })
   return handleResponse(response)
 }
 
 export async function getExecutionOrders(status, token) {
-  const url = new URL(`${API_BASE_URL}/execution/orders`)
+  const url = new URL(`${API_BASE_URL}/api/execution/orders`)
   if (status) url.searchParams.set('status', status)
   const response = await fetch(url, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -52,7 +52,7 @@ export async function getExecutionOrders(status, token) {
 }
 
 export async function createOrder(orderData, token) {
-  const response = await fetch(`${API_BASE_URL}/execution/orders`, {
+  const response = await fetch(`${API_BASE_URL}/api/execution/orders`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export async function createOrder(orderData, token) {
 }
 
 export async function cancelOrder(orderId, reason, token) {
-  const response = await fetch(`${API_BASE_URL}/execution/orders/${orderId}/cancel`, {
+  const response = await fetch(`${API_BASE_URL}/api/execution/orders/${orderId}/cancel`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ export async function cancelOrder(orderId, reason, token) {
 }
 
 export async function updateRiskLimits(limits, token) {
-  const response = await fetch(`${API_BASE_URL}/risk/limits`, {
+  const response = await fetch(`${API_BASE_URL}/api/risk/limits`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -87,16 +87,61 @@ export async function updateRiskLimits(limits, token) {
   return handleResponse(response)
 }
 
-export async function toggleStrategy(strategyName, enabled, token) {
-  // This would need to be implemented in the backend
-  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/toggle`, {
+export async function enableStrategy(strategyName, token) {
+  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/enable`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({ enabled })
+    }
   })
+  return handleResponse(response)
+}
+
+export async function disableStrategy(strategyName, token) {
+  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/disable`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    }
+  })
+  return handleResponse(response)
+}
+
+export async function getStrategyOptimalParameters(strategyName, token) {
+  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/optimal-parameters`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function getStrategyResults(strategyName, limit = 10, splitType = null, token) {
+  const url = new URL(`${API_BASE_URL}/strategies/${strategyName}/results`)
+  url.searchParams.set('limit', limit)
+  if (splitType) url.searchParams.set('split_type', splitType)
+  const response = await fetch(url, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function getStrategyMetrics(strategyName, token) {
+  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/metrics`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function getStrategyPerformance(strategyName, token) {
+  const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/performance`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  })
+  return handleResponse(response)
+}
+
+export async function getStrategiesConfig() {
+  const response = await fetch(`${API_BASE_URL}/strategies/config`)
   return handleResponse(response)
 }
 

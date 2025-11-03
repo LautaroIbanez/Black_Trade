@@ -48,6 +48,9 @@ opentelemetry-instrumentation-sqlalchemy
 opentelemetry-exporter-otlp-proto-grpc
 psutil
 
+# Task scheduling
+apscheduler
+
 # Optional
 aiofiles==23.2.1
 

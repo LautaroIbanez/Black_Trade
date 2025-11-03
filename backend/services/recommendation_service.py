@@ -8,6 +8,7 @@ from backend.services.strategy_registry import strategy_registry
 from backend.services.regime_detector import regime_detector
 from backend.services.risk_management import risk_management_service, RiskTarget
 from recommendation.config import MIXED_CONSENSUS_CAP, NEUTRAL_COUNT_FACTOR, NEUTRAL_COUNT_THRESHOLD
+from backend.observability.metrics import get_metrics_collector
 
 
 @dataclass
@@ -104,8 +105,8 @@ class RecommendationService:
                               profile: str = "balanced") -> RecommendationResult:
         """Generate trading recommendation from current signals and historical data."""
         
-        # Get enabled strategies
-        strategies = self.strategy_registry.get_enabled_strategies()
+        # Get enabled strategies with optimal parameters from walk-forward
+        strategies = self.strategy_registry.get_enabled_strategies(use_optimal_parameters=True)
         
         # Define timeframe weights based on trading profile
         timeframe_weights = self._get_profile_weights(profile)
@@ -143,6 +144,8 @@ class RecommendationService:
                 if regime != 'unknown' and regime not in allowed:
                     continue
                 try:
+                    import time as _t
+                    _t0 = _t.perf_counter()
                     signal_data = strategy.generate_signal(df)
                     
                     # Calculate strategy-specific entry range
@@ -150,6 +153,11 @@ class RecommendationService:
                     
                     # Calculate strategy-specific risk targets
                     risk_targets = strategy.risk_targets(df, signal_data['signal'], signal_data['price'])
+                    # Metrics: record strategy generation time
+                    try:
+                        get_metrics_collector().record_strategy_metric(strategy.name, 'generation_time', (_t.perf_counter() - _t0) * 1000.0)
+                    except Exception:
+                        pass
                     
                     # Apply timeframe weight to confidence and strength
                     weighted_confidence = signal_data['confidence'] * timeframe_weight

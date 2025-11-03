@@ -8,6 +8,9 @@ from dataclasses import dataclass, field
 
 from recommendation.orchestrator import Order, OrderSide
 from backend.logging.journal import transaction_journal, JournalEntryType
+from backend.api.routes.websocket import broadcast_order_update, broadcast_order_filled
+from backend.observability.metrics import get_metrics_collector
+from backend.observability.alerts import ObservabilityAlertManager, AlertType, AlertSeverity
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +83,20 @@ class OrderState:
         
         if reason:
             self.rejection_reason = reason
+        # Emit WebSocket event (best-effort)
+        try:
+            import asyncio
+            coro = broadcast_order_update(self.order.order_id, new_status.value, {'reason': reason} if reason else None)
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(coro)
+                else:
+                    loop.run_until_complete(coro)
+            except RuntimeError:
+                asyncio.run(coro)
+        except Exception:
+            pass
 
 
 class ExecutionEngine:
@@ -137,6 +154,11 @@ class ExecutionEngine:
         
         # Log to journal
         transaction_journal.log_order_created(order)
+        # Metrics: record order created
+        try:
+            get_metrics_collector().record_order(rejected=False)
+        except Exception:
+            pass
         
         self.logger.info(f"Order submitted to queue: {order_id} - {order.side.value} {order.quantity:.6f} {order.symbol}")
         
@@ -212,6 +234,22 @@ class ExecutionEngine:
                     else:
                         order_state.update_status(OrderStatus.REJECTED, "Max retries exceeded")
                         self.logger.error(f"Order {order_state.order.order_id} rejected after {order_state.max_retries} retries")
+                    try:
+                        get_metrics_collector().record_order(rejected=True)
+                    except Exception:
+                        pass
+                    try:
+                        ObservabilityAlertManager()._process_alert(
+                            ObservabilityAlertManager()._create_alert(
+                                AlertType.ORDER_EXECUTION_FAILURE,
+                                AlertSeverity.WARNING,
+                                "Order Rejected After Retries",
+                                f"Order {order_state.order.order_id} rejected after retries",
+                                {"order_id": order_state.order.order_id}
+                            )
+                        )
+                    except Exception:
+                        pass
             except Exception as e:
                 self.logger.error(f"Error processing order {order_state.order.order_id}: {e}")
                 order_state.update_status(OrderStatus.REJECTED, str(e))
@@ -296,6 +334,20 @@ class ExecutionEngine:
                 'fills': order_state.fills,
             })
             self.logger.info(f"Order filled: {order_id} - {total_filled:.6f} @ {order_state.average_fill_price:.2f}")
+            # Notify WebSocket
+            try:
+                import asyncio
+                coro = broadcast_order_filled(order_id, order_state.average_fill_price, total_filled)
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        asyncio.create_task(coro)
+                    else:
+                        loop.run_until_complete(coro)
+                except RuntimeError:
+                    asyncio.run(coro)
+            except Exception:
+                pass
         else:
             order_state.update_status(OrderStatus.PARTIALLY_FILLED)
             # Log partial fill

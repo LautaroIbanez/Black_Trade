@@ -163,18 +163,42 @@ class StrategyRegistry:
         except Exception as e:
             print(f"Error saving strategy config: {e}")
     
-    def get_enabled_strategies(self) -> List[StrategyBase]:
-        """Get list of enabled strategy instances."""
+    def get_enabled_strategies(self, use_optimal_parameters: bool = True) -> List[StrategyBase]:
+        """
+        Get list of enabled strategy instances.
+        
+        Args:
+            use_optimal_parameters: If True, use optimal parameters from walk-forward (default: True)
+        
+        Returns:
+            List of strategy instances
+        """
         enabled_strategies = []
+        
+        # Get optimal parameters repository if needed
+        optimal_params = {}
+        if use_optimal_parameters:
+            try:
+                from backend.repositories.strategy_results_repository import StrategyResultsRepository
+                repo = StrategyResultsRepository()
+                for config in self.strategies.values():
+                    if config.enabled:
+                        optimal = repo.get_latest_optimal_parameters(config.name)
+                        if optimal and optimal.get('parameters'):
+                            optimal_params[config.name] = optimal['parameters']
+            except Exception as e:
+                print(f"Warning: Could not load optimal parameters: {e}")
         
         for config in self.strategies.values():
             if config.enabled and config.class_name in self.strategy_classes:
                 try:
                     strategy_class = self.strategy_classes[config.class_name]
+                    # Use optimal parameters if available, otherwise use config parameters
+                    parameters = optimal_params.get(config.name, config.parameters)
                     strategy = strategy_class(
                         commission=config.commission,
                         slippage=config.slippage,
-                        **config.parameters
+                        **parameters
                     )
                     enabled_strategies.append(strategy)
                 except Exception as e:
@@ -230,9 +254,37 @@ class StrategyRegistry:
             return True
         return False
     
-    def get_strategy_config(self, name: str) -> Optional[StrategyConfig]:
-        """Get strategy configuration by name."""
-        return self.strategies.get(name)
+    def get_strategy_config(self, name: str, use_optimal: bool = True) -> Optional[StrategyConfig]:
+        """
+        Get strategy configuration by name.
+        
+        Args:
+            name: Name of the strategy
+            use_optimal: If True, use optimal parameters from walk-forward (default: True)
+        
+        Returns:
+            StrategyConfig with parameters (optimal if available)
+        """
+        config = self.strategies.get(name)
+        if not config:
+            return None
+        
+        # Create a copy to avoid modifying original
+        from copy import deepcopy
+        config_copy = deepcopy(config)
+        
+        # Load optimal parameters if requested
+        if use_optimal:
+            try:
+                from backend.repositories.strategy_results_repository import StrategyResultsRepository
+                repo = StrategyResultsRepository()
+                optimal = repo.get_latest_optimal_parameters(name)
+                if optimal and optimal.get('parameters'):
+                    config_copy.parameters = optimal['parameters']
+            except Exception as e:
+                print(f"Warning: Could not load optimal parameters for {name}: {e}")
+        
+        return config_copy
     
     def list_strategies(self) -> List[Dict[str, Any]]:
         """List all strategies with their configurations."""

@@ -1,5 +1,5 @@
 """API routes for order execution and journal."""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from datetime import datetime
@@ -8,6 +8,10 @@ from recommendation.orchestrator import Order, OrderSide, OrderType
 from backend.execution.engine import ExecutionEngine, OrderStatus
 from backend.execution.coordinator import ExecutionCoordinator
 from backend.logging.journal import transaction_journal, JournalEntryType
+from backend.auth.permissions import AuthService, Permission
+from backend.config.security import rate_limit
+from backend.compliance.kyc_aml import get_kyc_service, get_aml_service
+from backend.repositories.journal_repository import JournalRepository
 
 router = APIRouter(tags=["execution"])
 
@@ -49,9 +53,12 @@ def set_execution_coordinator(coordinator: ExecutionCoordinator):
 
 
 @router.post("/orders")
+@rate_limit(max_requests=30, window_seconds=60)
 async def create_order(
+    req: Request,
     request: OrderRequest,
     coordinator: ExecutionCoordinator = Depends(get_execution_coordinator),
+    user=Depends(lambda: AuthService().require_permission(Permission.CREATE_ORDERS)),
 ) -> Dict[str, Any]:
     """Create and submit an order."""
     try:
@@ -66,6 +73,22 @@ async def create_order(
             take_profit=request.take_profit,
             strategy_name=request.strategy_name,
         )
+        
+        # KYC verification
+        kyc = get_kyc_service()
+        if not kyc.is_verified(user.user_id):
+            raise HTTPException(status_code=403, detail="User not KYC-verified")
+        
+        # AML check (best-effort estimate)
+        try:
+            aml = get_aml_service()
+            est_notional = (request.price or 0.0) * float(request.quantity)
+            suspicious, alert = aml.check_transaction(user.user_id, order.order_id or "PENDING", est_notional, "ORDER_SUBMIT", {})
+            if suspicious:
+                # Soft-block or allow based on policy; here we allow but log
+                transaction_journal.log(JournalEntryType.SYSTEM_EVENT, order_id=order.order_id, details={"aml_alert": alert.alert_id if alert else None})
+        except Exception:
+            pass
         
         # Execute via coordinator
         success, order_id, error = coordinator.execute_order(order)
@@ -129,10 +152,13 @@ async def list_orders(
 
 
 @router.post("/orders/{order_id}/cancel")
+@rate_limit(max_requests=30, window_seconds=60)
 async def cancel_order(
+    req: Request,
     order_id: str,
     request: CancelOrderRequest,
     coordinator: ExecutionCoordinator = Depends(get_execution_coordinator),
+    user=Depends(lambda: AuthService().require_permission(Permission.CANCEL_ORDERS)),
 ) -> Dict[str, Any]:
     """Cancel an order."""
     success = coordinator.execution_engine.cancel_order(order_id, request.reason)
@@ -151,6 +177,7 @@ async def cancel_order(
 
 
 @router.get("/journal")
+@rate_limit(max_requests=60, window_seconds=60)
 async def get_journal(
     order_id: Optional[str] = None,
     entry_type: Optional[str] = None,
@@ -158,25 +185,19 @@ async def get_journal(
 ) -> Dict[str, Any]:
     """Get journal entries."""
     try:
-        entry_type_enum = None
+        repo = JournalRepository()
+        entry_type_str = None
         if entry_type:
-            entry_type_enum = JournalEntryType(entry_type.lower())
-        
-        entries = transaction_journal.get_entries(
-            order_id=order_id,
-            entry_type=entry_type_enum,
-            limit=limit,
-        )
-        
-        return {
-            "entries": entries,
-            "count": len(entries),
-        }
+            # Validate type
+            entry_type_str = JournalEntryType(entry_type.lower()).value
+        entries = repo.get_entries(order_id=order_id, entry_type=entry_type_str, limit=limit)
+        return {"entries": entries, "count": len(entries)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/journal/{order_id}")
+@rate_limit(max_requests=60, window_seconds=60)
 async def get_order_history(order_id: str) -> Dict[str, Any]:
     """Get complete history for an order."""
     history = transaction_journal.get_order_history(order_id)

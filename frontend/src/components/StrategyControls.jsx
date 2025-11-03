@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { toggleStrategy } from '../services/api'
+import { enableStrategy, disableStrategy } from '../services/api'
+import StrategyMetrics from './StrategyMetrics'
 import './StrategyControls.css'
 
 function StrategyControls({ strategies, token, onUpdate }) {
@@ -15,7 +16,11 @@ function StrategyControls({ strategies, token, onUpdate }) {
     setLoading({ ...loading, [strategyName]: true })
 
     try {
-      await toggleStrategy(strategyName, newEnabled, token)
+      if (newEnabled) {
+        await enableStrategy(strategyName, token)
+      } else {
+        await disableStrategy(strategyName, token)
+      }
       if (onUpdate) {
         onUpdate()
       }
@@ -82,6 +87,11 @@ function StrategyControls({ strategies, token, onUpdate }) {
                   )}
                 </div>
               )}
+
+              {/* Walk-forward metrics */}
+              <div className="walk-forward-metrics">
+                <StrategyMetrics strategyName={strategy.name} token={token} />
+              </div>
             </div>
           </div>
         ))}

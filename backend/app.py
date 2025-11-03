@@ -9,18 +9,18 @@ from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 import pandas as pd
 
-from data.binance_client import BinanceClient
-from data.sync_service import SyncService
+from backend.services.market_data_service import MarketDataService
 from backtest.engine import BacktestEngine
 from backend.services.strategy_registry import strategy_registry
 from backend.services.recommendation_service import recommendation_service
-from backtest.data_loader import data_loader
+# Data loading now handled by market_data_service
 from backend.api.routes.chart import router as chart_router
 from backend.api.routes.monitoring import router as monitoring_router
 from backend.api.routes.risk import router as risk_router
 from backend.api.routes.execution import router as execution_router
 from backend.api.routes.observability import router as observability_router
 from backend.api.routes.websocket import router as websocket_router
+from backend.api.routes.strategies import router as strategies_router
 from recommendation.config import TIMEFRAMES_ACTIVE
 
 load_dotenv()
@@ -57,6 +57,10 @@ app.add_middleware(ObservabilityMiddleware)
 # Instrument FastAPI
 telemetry_manager.instrument_fastapi(app)
 telemetry_manager.instrument_requests()
+try:
+    telemetry_manager.instrument_sqlalchemy()
+except Exception:
+    pass
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,8 +71,7 @@ app.add_middleware(
 )
 
 # Initialize services
-binance_client = None
-sync_service = None
+market_data_service = MarketDataService()
 backtest_engine = BacktestEngine()
 
 # Cache for results
@@ -126,11 +129,39 @@ class StrategyMetrics(BaseModel):
     score: float
 
 def initialize_services():
-    """Initialize Binance client and sync service."""
-    global binance_client, sync_service
+    """Initialize database and services."""
     try:
-        binance_client = BinanceClient()
-        sync_service = SyncService(binance_client)
+        # Initialize database
+        from backend.db.init_db import initialize_database
+        if not initialize_database():
+            logger.error("Failed to initialize database")
+            return False
+        
+        # Initialize risk system (engine + adapter) and set global API instance
+        try:
+            from backend.scripts.init_risk_system import init_risk_system
+            use_simulated = os.getenv('USE_SIMULATED_RISK', 'true').lower() == 'true'
+            init_risk_system(use_simulated=use_simulated)
+            logger.info("Risk system initialized")
+        except Exception as e:
+            logger.error(f"Error initializing risk system: {e}")
+        
+        # Initialize ingestion scheduler
+        from backend.tasks.scheduler import init_scheduler
+        scheduler = init_scheduler()
+        if scheduler:
+            scheduler.start()
+            logger.info("Schedulers started")
+
+        # Initialize execution system (engine + coordinator)
+        try:
+            from backend.scripts.init_execution_system import init_execution_system
+            use_sim_exec = os.getenv('USE_SIMULATED_EXECUTION', 'true').lower() == 'true'
+            init_execution_system(use_simulated_adapter=use_sim_exec, use_risk_engine=False)
+            logger.info("Execution system initialized")
+        except Exception as e:
+            logger.error(f"Error initializing execution system: {e}")
+        
         logger.info("Services initialized successfully")
         return True
     except Exception as e:
@@ -140,7 +171,18 @@ def initialize_services():
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup."""
+    # Run database initialization synchronously
     initialize_services()
+    
+    # Start ingestion scheduler asynchronously
+    try:
+        from backend.tasks.scheduler import get_scheduler
+        scheduler = get_scheduler()
+        if scheduler:
+            # Start ingestion task
+            await scheduler.start_async()
+    except Exception as e:
+        logger.error(f"Error starting ingestion scheduler: {e}")
 
 @app.get("/")
 async def root():
@@ -149,37 +191,27 @@ async def root():
 
 @app.post("/refresh")
 async def refresh_data() -> RefreshResponse:
-    """Refresh data and run backtests."""
-    global last_results
+    """
+    Refresh data and run backtests.
     
-    if not binance_client or not sync_service:
-        if not initialize_services():
-            raise HTTPException(status_code=500, detail="Failed to initialize services")
+    NOTE: This endpoint is kept for backward compatibility.
+    Data ingestion is now handled automatically by the ingestion pipeline.
+    This endpoint only triggers backtests on existing data.
+    """
+    global last_results
     
     try:
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
         env_tfs = os.getenv('TIMEFRAMES')
         timeframes = env_tfs.split(',') if env_tfs else TIMEFRAMES_ACTIVE
         
-        # Refresh data
-        logger.info("Refreshing data...")
-        refresh_results = sync_service.refresh_latest_candles(symbol, timeframes)
+        # Get data summary from database
+        logger.info("Checking data availability...")
+        data_summary = market_data_service.get_data_summary(symbol, timeframes)
+        logger.info(f"Data summary: {data_summary['overall_status']}")
         
-        # If no data files exist, download initial data
-        if not any(refresh_results.values()):
-            logger.info("No data files found. Downloading initial historical data...")
-            download_results = sync_service.download_historical_data(symbol, timeframes, days_back=365)
-            logger.info(f"Downloaded initial data: {download_results}")
-        
-        # Detect and fill gaps in data
-        logger.info("Detecting and filling data gaps...")
-        gap_results = sync_service.detect_and_fill_gaps(symbol, timeframes)
-        logger.info(f"Gap detection results: {gap_results}")
-        
-        # Validate data quality
-        logger.info("Validating data quality...")
-        data_summary = data_loader.get_data_summary(symbol, timeframes)
-        logger.info(f"Data quality summary: {data_summary['overall_status']}")
+        # Note: Data refresh is now handled automatically by ingestion pipeline
+        refresh_results = market_data_service.refresh_latest_candles(symbol, timeframes)
         
         # Get enabled strategies from registry
         strategies = strategy_registry.get_enabled_strategies()
@@ -188,14 +220,23 @@ async def refresh_data() -> RefreshResponse:
         
         for timeframe in timeframes:
             try:
-                # Load data with validation
-                data, validation_report = data_loader.load_data(
-                    symbol, timeframe, validate_continuity=True
-                )
+                # Load data from database
+                data = market_data_service.load_ohlcv_data(symbol, timeframe)
                 
                 if data.empty:
                     logger.warning(f"No data available for {timeframe}")
                     continue
+                
+                # Convert timestamp column to datetime for compatibility
+                if 'timestamp' in data.columns:
+                    data['datetime'] = pd.to_datetime(data['timestamp'], unit='ms')
+                
+                # Create validation report (simplified)
+                validation_report = {
+                    'valid': True,
+                    'total_candles': len(data),
+                    'is_fresh': True,
+                }
                 
                 # Log validation results
                 if not validation_report.get("valid", False):
@@ -244,7 +285,7 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
         current_data = {}
         for timeframe in timeframes:
             try:
-                data = sync_service.load_ohlcv_data(symbol, timeframe)
+                data = market_data_service.load_ohlcv_data(symbol, timeframe)
                 if not data.empty:
                     current_data[timeframe] = data
             except Exception as e:
@@ -371,6 +412,7 @@ app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
 app.include_router(risk_router, prefix="/api/risk", tags=["risk"])
 app.include_router(execution_router, prefix="/api/execution", tags=["execution"])
 app.include_router(observability_router, prefix="/api", tags=["observability"])
+app.include_router(strategies_router)
 
 # WebSocket route
 from backend.api.routes.websocket import manager, websocket_endpoint

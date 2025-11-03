@@ -11,16 +11,14 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from data.sync_service import SyncService
-from data.binance_client import BinanceClient
+from backend.services.market_data_service import MarketDataService
 from backend.services.strategy_registry import strategy_registry
 from backend.services.recommendation_service import recommendation_service
 
 router = APIRouter()
 
-# Initialize services
-binance_client = BinanceClient()
-sync_service = SyncService(binance_client)
+# Initialize market data service (uses SQL repository)
+market_data_service = MarketDataService()
 
 
 class CandleData(BaseModel):
@@ -84,14 +82,8 @@ async def get_chart_data(
                 detail=f"Invalid timeframe. Must be one of: {valid_timeframes}"
             )
         
-        # Load OHLCV data
-        try:
-            df = sync_service.load_ohlcv_data(symbol, timeframe)
-        except FileNotFoundError:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No data available for {symbol} {timeframe}. Please call /refresh first."
-            )
+        # Load OHLCV data from database
+        df = market_data_service.load_ohlcv_data(symbol, timeframe, limit=limit)
         
         if df.empty:
             raise HTTPException(
@@ -132,7 +124,7 @@ async def get_chart_data(
                 current_data = {}
                 for tf in timeframes:
                     try:
-                        tf_data = sync_service.load_ohlcv_data(symbol, tf)
+                        tf_data = market_data_service.load_ohlcv_data(symbol, tf)
                         if not tf_data.empty:
                             current_data[tf] = tf_data
                     except Exception:
@@ -297,6 +289,17 @@ def _calculate_freshness(df: pd.DataFrame) -> float:
     return (current_time - latest_datetime).total_seconds() / 3600
 
 
+def _calculate_freshness_from_timestamp(timestamp: Optional[int]) -> float:
+    """Calculate data freshness in hours from timestamp."""
+    if timestamp is None:
+        return float('inf')
+    
+    latest_datetime = datetime.fromtimestamp(timestamp / 1000)
+    current_time = datetime.now()
+    
+    return (current_time - latest_datetime).total_seconds() / 3600
+
+
 @router.get("/chart/symbols")
 async def get_available_symbols() -> Dict[str, List[str]]:
     """Get available trading symbols and timeframes."""
@@ -319,26 +322,26 @@ async def get_chart_status() -> Dict[str, Any]:
             "last_updated": None
         }
         
-        for timeframe in timeframes:
-            try:
-                df = sync_service.load_ohlcv_data(symbol, timeframe)
-                if not df.empty:
-                    latest_timestamp = df['timestamp'].iloc[-1]
-                    latest_datetime = datetime.fromtimestamp(latest_timestamp / 1000)
-                    
-                    status["available_data"][timeframe] = {
-                        "candles": len(df),
-                        "last_update": latest_datetime.isoformat(),
-                        "freshness_hours": _calculate_freshness(df)
-                    }
-                    
-                    if status["last_updated"] is None or latest_datetime > datetime.fromisoformat(status["last_updated"]):
-                        status["last_updated"] = latest_datetime.isoformat()
-            except Exception:
+        summary = market_data_service.get_data_summary(symbol, timeframes)
+        status["available_data"] = {}
+        
+        for timeframe, data in summary.get("timeframes", {}).items():
+            if "error" in data:
                 status["available_data"][timeframe] = {
                     "candles": 0,
-                    "error": "No data available"
+                    "error": data["error"]
                 }
+            else:
+                status["available_data"][timeframe] = {
+                    "candles": data.get("candles", 0),
+                    "last_update": data.get("latest_datetime"),
+                    "freshness_hours": _calculate_freshness_from_timestamp(data.get("latest_timestamp"))
+                }
+                
+                if data.get("latest_datetime"):
+                    latest_dt = datetime.fromisoformat(data["latest_datetime"])
+                    if status["last_updated"] is None or latest_dt > datetime.fromisoformat(status["last_updated"]):
+                        status["last_updated"] = data["latest_datetime"]
         
         return status
         

@@ -58,3 +58,4 @@ Ejecución: Tamaño ≈ 52.4 unidades (1% riesgo capital)
 
 
 
+

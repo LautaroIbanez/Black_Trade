@@ -23,14 +23,18 @@ class JournalEntryType(str, Enum):
     SYSTEM_EVENT = "system_event"
 
 
+from backend.repositories.journal_repository import JournalRepository
+
+
 class TransactionJournal:
     """Transaction journal for audit trail."""
     
     def __init__(self):
         """Initialize journal."""
-        # In production, use persistent storage (database)
+        # In-memory cache for quick reads; DB is source of truth
         self.entries: List[Dict[str, Any]] = []
         self.logger = logging.getLogger(__name__)
+        self.repo = JournalRepository()
     
     def log(
         self,
@@ -61,6 +65,11 @@ class TransactionJournal:
         }
         
         self.entries.append(entry)
+        # Persist to DB (best-effort)
+        try:
+            self.repo.add_entry(entry_type.value, order_id, entry['user'], entry['details'])
+        except Exception as e:
+            self.logger.error(f"Failed to persist journal entry: {e}")
         
         # Log to logger
         self.logger.info(f"Journal: {entry_type.value} - Order: {order_id or 'N/A'}")
@@ -88,7 +97,14 @@ class TransactionJournal:
         Returns:
             List of journal entries
         """
-        filtered = self.entries
+        # Prefer DB entries; fall back to memory if DB fails
+        try:
+            from_date = start_time
+            to_date = end_time
+            db_entries = self.repo.get_entries(order_id=order_id, entry_type=entry_type.value if entry_type else None, start_time=from_date, end_time=to_date, limit=limit)
+            return db_entries
+        except Exception:
+            filtered = self.entries
         
         if order_id:
             filtered = [e for e in filtered if e.get('order_id') == order_id]
