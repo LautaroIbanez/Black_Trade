@@ -9,6 +9,7 @@ from backend.auth.permissions import AuthService, Permission
 from backend.repositories.kyc_repository import KYCRepository
 from backend.observability.metrics import get_metrics_collector
 from backend.observability.alerts import ObservabilityAlertManager, AlertType, AlertSeverity
+from backend.schemas.validators import sanitize_text
 
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
@@ -52,7 +53,14 @@ async def get_live_recommendations(profile: str = "balanced", user=Depends(lambd
 @router.post("/feedback")
 async def submit_feedback(req: FeedbackRequest) -> Dict[str, Any]:
     if req.recommendation_id:
-        updated = repo.update_status(req.recommendation_id, req.status, checklist=req.checklist or {}, notes=req.notes, outcome=req.payload.get('outcome') if req.payload else None, realized_pnl=req.payload.get('realized_pnl') if req.payload else None)
+        safe_notes = sanitize_text(req.notes or '')
+        # Sanitize checklist text fields if any
+        cl = req.checklist or {}
+        if isinstance(cl, dict):
+            for k, v in list(cl.items()):
+                if isinstance(v, str):
+                    cl[k] = sanitize_text(v)
+        updated = repo.update_status(req.recommendation_id, req.status, checklist=cl, notes=safe_notes, outcome=req.payload.get('outcome') if req.payload else None, realized_pnl=req.payload.get('realized_pnl') if req.payload else None)
         if not updated:
             raise HTTPException(status_code=404, detail="Recommendation not found")
         try:

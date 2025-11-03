@@ -11,6 +11,7 @@ from backend.observability.metrics import get_metrics_collector
 from backend.observability.alerts import ObservabilityAlertManager, AlertType, AlertSeverity
 from backend.services.strategy_registry import strategy_registry
 from backend.services.recommendation_service import recommendation_service
+from backend.recommendation.live_recommendations_service import live_recommendations_service
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,12 @@ class SignalComputationService:
                         self.live_repo.save_snapshot(self.symbol, tf, payload)
                     except Exception as e:
                         logger.error(f"Failed to persist live recommendation for {tf}: {e}")
+
+                # Publish to shared cache for /recommendation endpoint
+                try:
+                    live_recommendations_service.publish(self.symbol, list(data.keys()), payload)
+                except Exception as e:
+                    logger.error(f"Failed to publish live recommendation: {e}")
 
                 # Metrics
                 try:

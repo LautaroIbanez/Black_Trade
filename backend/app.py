@@ -22,6 +22,7 @@ from backend.api.routes.observability import router as observability_router
 from backend.api.routes.websocket import router as websocket_router
 from backend.api.routes.recommendations import router as recommendations_router
 from backend.api.routes.auth import router as auth_router
+from backend.api.routes.recommendation_tracking import router as recommendation_tracking_router
 from backend.api.routes.strategies import router as strategies_router
 from recommendation.config import TIMEFRAMES_ACTIVE
 
@@ -50,8 +51,9 @@ app = FastAPI(title="Black Trade API", version="1.0.0")
 
 # Add security middleware
 from backend.config.middleware_security import SecurityMiddleware, InputSanitizationMiddleware
+from backend.middleware.sanitization import SanitizationMiddleware
 app.add_middleware(SecurityMiddleware)
-app.add_middleware(InputSanitizationMiddleware)
+app.add_middleware(SanitizationMiddleware)
 
 # Add observability middleware
 app.add_middleware(ObservabilityMiddleware)
@@ -143,6 +145,8 @@ def initialize_services():
         try:
             from backend.auth.permissions import init_auth_service
             init_auth_service()
+            # Ensure app-level auth wrapper is initialized
+            from backend.services.auth_service import app_auth_service  # noqa: F401
             logger.info("Auth service initialized")
         except Exception as e:
             logger.error(f"Error initializing auth service: {e}")
@@ -282,16 +286,40 @@ async def refresh_data() -> RefreshResponse:
 
 @app.get("/recommendation")
 async def get_recommendation(profile: str = "balanced") -> RecommendationResponse:
-    """Get current trading recommendation based on real-time signals."""
-    if not last_results:
-        raise HTTPException(status_code=404, detail="No results available. Please call /refresh first.")
-    
+    """Get current trading recommendation from live snapshots; no manual refresh required."""
     try:
-        # Load current data for all timeframes
+        from backend.recommendation.live_recommendations_service import live_recommendations_service
         symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
         env_tfs = os.getenv('TIMEFRAMES')
         timeframes = env_tfs.split(',') if env_tfs else TIMEFRAMES_ACTIVE
-        
+
+        # Prefer cached/live snapshot
+        snapshot = live_recommendations_service.get_latest_snapshot(symbol, timeframes)
+        if snapshot:
+            # Map snapshot dict to RecommendationResponse fields
+            return RecommendationResponse(
+                action=snapshot.get('action', 'HOLD'),
+                confidence=float(snapshot.get('confidence', 0.0)),
+                entry_range=snapshot.get('entry_range', {}),
+                stop_loss=float(snapshot.get('stop_loss', 0.0)),
+                take_profit=float(snapshot.get('take_profit', 0.0)),
+                current_price=float(snapshot.get('current_price', 0.0)),
+                primary_strategy=snapshot.get('primary_strategy', ''),
+                supporting_strategies=snapshot.get('supporting_strategies', []),
+                strategy_details=snapshot.get('strategy_details', []),
+                signal_consensus=float(snapshot.get('signal_consensus', 0.0)),
+                risk_level=snapshot.get('risk_level', 'LOW'),
+                contribution_breakdown=None,
+                risk_reward_ratio=float(snapshot.get('risk_reward_ratio', 0.0)),
+                entry_label=snapshot.get('entry_label', ''),
+                risk_percentage=float(snapshot.get('risk_percentage', 0.0)),
+                normalized_weights_sum=float(snapshot.get('normalized_weights_sum', 0.0)),
+                position_size_usd=float(snapshot.get('position_size_usd', 0.0)),
+                position_size_pct=float(snapshot.get('position_size_pct', 0.0)),
+            )
+
+        # Fallback: compute on the fly using current DB data
+        symbol = os.getenv('TRADING_PAIRS', 'BTCUSDT')
         current_data = {}
         for timeframe in timeframes:
             try:
@@ -301,32 +329,9 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
             except Exception as e:
                 logger.error(f"Error loading data for {timeframe}: {e}")
                 continue
-        
         if not current_data:
             raise HTTPException(status_code=404, detail="No current data available.")
-        
-        # Generate recommendation using real-time signals with profile-specific weights
-        recommendation = recommendation_service.generate_recommendation(current_data, last_results, profile)
-        
-        # Convert contribution breakdown to response format
-        contribution_breakdown = None
-        if recommendation.contribution_breakdown:
-            contribution_breakdown = [
-                ContributionBreakdownResponse(
-                    strategy_name=cb.strategy_name,
-                    timeframe=cb.timeframe,
-                    signal=cb.signal,
-                    confidence=cb.confidence,
-                    strength=cb.strength,
-                    score=cb.score,
-                    weight=cb.weight,
-                    entry_contribution=cb.entry_contribution,
-                    sl_contribution=cb.sl_contribution,
-                    tp_contribution=cb.tp_contribution,
-                    reason=cb.reason
-                ) for cb in recommendation.contribution_breakdown
-            ]
-
+        recommendation = recommendation_service.generate_recommendation(current_data, {}, profile)
         return RecommendationResponse(
             action=recommendation.action,
             confidence=recommendation.confidence,
@@ -339,7 +344,7 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
             strategy_details=recommendation.strategy_details,
             signal_consensus=recommendation.signal_consensus,
             risk_level=recommendation.risk_level,
-            contribution_breakdown=contribution_breakdown,
+            contribution_breakdown=None,
             risk_reward_ratio=recommendation.risk_reward_ratio,
             entry_label=recommendation.entry_label,
             risk_percentage=recommendation.risk_percentage,
@@ -347,7 +352,8 @@ async def get_recommendation(profile: str = "balanced") -> RecommendationRespons
             position_size_usd=recommendation.position_size_usd,
             position_size_pct=recommendation.position_size_pct
         )
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error generating recommendation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -424,6 +430,7 @@ app.include_router(execution_router, prefix="/api/execution", tags=["execution"]
 app.include_router(observability_router, prefix="/api", tags=["observability"])
 app.include_router(strategies_router)
 app.include_router(recommendations_router)
+app.include_router(recommendation_tracking_router)
 app.include_router(auth_router)
 
 # WebSocket route

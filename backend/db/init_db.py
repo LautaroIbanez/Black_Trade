@@ -36,6 +36,7 @@ _005_live_results = load_migration("005_live_results")
 _006_recommendations_log = load_migration("006_recommendations_log")
 _007_kyc_users = load_migration("007_kyc_users")
 _008_rec_outcomes = load_migration("008_recommendations_outcomes")
+_009_user_tokens = load_migration("009_user_tokens")
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ def run_migrations():
         ("006_recommendations_log", _006_recommendations_log),
         ("007_kyc_users", _007_kyc_users),
         ("008_recommendations_outcomes", _008_rec_outcomes),
+        ("009_user_tokens", _009_user_tokens),
     ]
     
     for name, migration_module in migrations:

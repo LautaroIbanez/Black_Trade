@@ -43,6 +43,42 @@ class RecommendationPrioritizer:
         rec = recommendation_service.generate_recommendation(data, historical_metrics=None, profile=profile)
 
         macro = self._macro_context()
+        # Pull full risk metrics/limits and compute suggested sizing under limits
+        risk_metrics = {}
+        risk_limits = {}
+        suggested_size_usd = rec.position_size_usd if hasattr(rec, 'position_size_usd') else 0.0
+        suggested_size_pct = rec.position_size_pct if hasattr(rec, 'position_size_pct') else 0.0
+        limit_checks = {}
+        try:
+            engine: RiskEngine = get_risk_engine()
+            metrics_obj = engine.get_risk_metrics()
+            risk_metrics = {
+                'total_capital': metrics_obj.total_capital,
+                'equity': metrics_obj.equity,
+                'exposure_pct': metrics_obj.exposure_pct,
+                'current_drawdown_pct': metrics_obj.current_drawdown_pct,
+                'var_1d_95': metrics_obj.var_1d_95,
+            }
+            risk_limits = {
+                'max_exposure_pct': engine.risk_limits.max_exposure_pct,
+                'max_position_pct': engine.risk_limits.max_position_pct,
+                'max_drawdown_pct': engine.risk_limits.max_drawdown_pct,
+                'var_limit_1d_95': engine.risk_limits.var_limit_1d_95,
+            }
+            # Recompute position size against risk engine
+            if rec.current_price and rec.stop_loss:
+                ps = engine.calculate_position_size(
+                    entry_price=rec.current_price,
+                    stop_loss=rec.stop_loss,
+                    risk_amount=float(metrics_obj.total_capital) * 0.01,  # 1% capital risk as baseline
+                    method='risk_based',
+                )
+                suggested_size_usd = ps.get('position_value_usd', suggested_size_usd)
+                suggested_size_pct = ps.get('position_pct', suggested_size_pct)
+            # Limit checks
+            limit_checks = engine.check_risk_limits(metrics_obj)
+        except Exception:
+            pass
         justification = self._build_justification(rec, macro)
         pre_trade = self._build_pre_trade_checklist(rec, macro)
         post_trade = self._build_post_trade_checklist(rec)
@@ -64,6 +100,12 @@ class RecommendationPrioritizer:
             'pre_trade_checklist': pre_trade,
             'post_trade_checklist': post_trade,
             'timestamp': datetime.now().isoformat(),
+            # Risk integration fields
+            'suggested_position_size_usd': suggested_size_usd,
+            'suggested_position_size_pct': suggested_size_pct,
+            'risk_metrics': risk_metrics,
+            'risk_limits': risk_limits,
+            'risk_limit_checks': limit_checks,
         }
         # For now single item list; can be extended to multiple symbols
         return [item]

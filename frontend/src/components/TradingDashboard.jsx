@@ -10,6 +10,8 @@ import './TradingDashboard.css'
 import RecommendationsList from './RecommendationsList'
 import AlertsCenter from './AlertsCenter'
 import LiveMetrics from './LiveMetrics'
+import AuthGate from './AuthGate'
+import RiskPanel from './RiskPanel'
 
 function TradingDashboard({ token }) {
   const [opportunities, setOpportunities] = useState([])
@@ -162,10 +164,12 @@ function TradingDashboard({ token }) {
         </div>
       )}
 
+      <AuthGate>
       <div className="dashboard-grid">
         {/* Left Column */}
         <div className="dashboard-column">
           <RiskOverview riskData={riskData} />
+          <RiskPanel />
           <LiveMetrics />
           
           <div className="opportunities-section">
@@ -198,6 +202,7 @@ function TradingDashboard({ token }) {
           />
         </div>
       </div>
+      </AuthGate>
 
       {/* Order Confirmation Modal */}
       {showOrderModal && selectedOpportunity && (

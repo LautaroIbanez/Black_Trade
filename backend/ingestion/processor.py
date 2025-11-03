@@ -126,6 +126,13 @@ class MessageProcessor:
                         get_metrics_collector().record_strategy_metric('system', 'generation_time', latency_ms)
                     except Exception:
                         pass
+                    # Record freshness timestamp via publisher cache
+                    if ok:
+                        try:
+                            from backend.recommendation.live_recommendations_service import live_recommendations_service
+                            _ = live_recommendations_service.get_freshness()
+                        except Exception:
+                            pass
                 asyncio.create_task(_run_signals())
             except Exception as e:
                 logger.error(f"Failed to trigger signal computation: {e}")

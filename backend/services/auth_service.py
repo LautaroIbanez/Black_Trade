@@ -1,0 +1,44 @@
+"""High-level authentication service issuing JWT access/refresh and persisting them."""
+import os
+from datetime import datetime, timedelta
+from typing import Tuple
+
+from backend.auth.permissions import AuthService, Role, get_auth_service
+from backend.repositories.user_tokens_repository import UserTokensRepository
+
+
+class TokenPair:
+    def __init__(self, access_token: str, refresh_token: str, user_id: str, role: str):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.user_id = user_id
+        self.role = role
+
+
+class AppAuthService:
+    def __init__(self):
+        self.auth = get_auth_service()
+        self.repo = UserTokensRepository()
+        try:
+            import jwt  # type: ignore
+            self._jwt = jwt
+        except Exception:
+            self._jwt = None
+        self.secret = os.getenv('JWT_SECRET', 'dev_secret')
+
+    def issue_tokens(self, username: str, role: Role) -> TokenPair:
+        token, user = self.auth.create_user(username, role)
+        # Create refresh token
+        if self._jwt:
+            refresh = self._jwt.encode({'sub': user.user_id, 'type': 'refresh', 'exp': datetime.utcnow() + timedelta(days=7)}, self.secret, algorithm='HS256')
+        else:
+            refresh = f"refresh_{user.user_id}_{datetime.utcnow().timestamp()}"
+        # Persist both
+        self.repo.save(user.user_id, token, 'access', expires_at=datetime.utcnow() + timedelta(hours=12))
+        self.repo.save(user.user_id, refresh, 'refresh', expires_at=datetime.utcnow() + timedelta(days=7))
+        return TokenPair(token, refresh, user.user_id, user.role.value)
+
+
+app_auth_service = AppAuthService()
+
+

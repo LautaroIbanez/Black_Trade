@@ -7,6 +7,7 @@ from datetime import datetime
 from backend.risk.engine import RiskEngine, RiskLimits, RiskMetrics
 from backend.integrations.base import ExchangeAdapter
 from backend.auth.permissions import AuthService, Permission
+from backend.repositories.kyc_repository import KYCRepository
 from backend.config.security import rate_limit
 
 router = APIRouter(tags=["risk"])  # Prefix is added in app.py
@@ -52,6 +53,8 @@ def set_risk_engine(engine: RiskEngine):
 @router.get("/status")
 @rate_limit(max_requests=120, window_seconds=60)
 async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+    if not KYCRepository().is_verified(user.user_id):
+        raise HTTPException(status_code=403, detail="KYC verification required")
     """Get current risk status."""
     try:
         metrics = engine.get_risk_metrics()
@@ -92,6 +95,8 @@ async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_ris
 @router.get("/exposure")
 @rate_limit(max_requests=120, window_seconds=60)
 async def get_exposure(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+    if not KYCRepository().is_verified(user.user_id):
+        raise HTTPException(status_code=403, detail="KYC verification required")
     """Get exposure breakdown by asset and strategy."""
     try:
         exposure_data = engine.calculate_exposure()
@@ -128,6 +133,8 @@ async def get_var(
 @router.get("/drawdown")
 @rate_limit(max_requests=120, window_seconds=60)
 async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+    if not KYCRepository().is_verified(user.user_id):
+        raise HTTPException(status_code=403, detail="KYC verification required")
     """Get drawdown metrics."""
     try:
         drawdown_data = engine.calculate_drawdown()
@@ -145,6 +152,8 @@ async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_e
 @router.get("/limits")
 @rate_limit(max_requests=60, window_seconds=60)
 async def get_limits(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+    if not KYCRepository().is_verified(user.user_id):
+        raise HTTPException(status_code=403, detail="KYC verification required")
     """Get current risk limits."""
     return {
         "global_limits": {
@@ -183,6 +192,32 @@ async def update_limits(
         if limits.var_limit_1w_95 is not None:
             engine.risk_limits.var_limit_1w_95 = limits.var_limit_1w_95
         
+        # Broadcast change via WebSocket
+        try:
+            from backend.api.routes.websocket import manager
+            import asyncio
+            async def _broadcast():
+                await manager.broadcast({
+                    "type": "risk_limits_changed",
+                    "payload": {
+                        "limits": {
+                            "max_exposure_pct": engine.risk_limits.max_exposure_pct,
+                            "max_position_pct": engine.risk_limits.max_position_pct,
+                            "max_drawdown_pct": engine.risk_limits.max_drawdown_pct,
+                            "daily_loss_limit_pct": engine.risk_limits.daily_loss_limit_pct,
+                            "var_limit_1d_95": engine.risk_limits.var_limit_1d_95,
+                            "var_limit_1w_95": engine.risk_limits.var_limit_1w_95,
+                        }
+                    }
+                })
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(_broadcast())
+            else:
+                loop.run_until_complete(_broadcast())
+        except Exception:
+            pass
+
         return {
             "message": "Limits updated successfully",
             "limits": {
