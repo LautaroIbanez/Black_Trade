@@ -40,6 +40,11 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def get_db_session() -> Session:
+    """Get a database session without context manager (for repositories)."""
+    return SessionLocal()
+
+
 @contextmanager
 def db_session() -> Generator[Session, None, None]:
     """Context manager for database session."""

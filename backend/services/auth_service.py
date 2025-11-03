@@ -17,7 +17,6 @@ class TokenPair:
 
 class AppAuthService:
     def __init__(self):
-        self.auth = get_auth_service()
         self.repo = UserTokensRepository()
         try:
             import jwt  # type: ignore
@@ -26,8 +25,14 @@ class AppAuthService:
             self._jwt = None
         self.secret = os.getenv('JWT_SECRET', 'dev_secret')
 
+    @property
+    def auth(self):
+        # Lazy load auth service to avoid circular dependency
+        return get_auth_service()
+
     def issue_tokens(self, username: str, role: Role) -> TokenPair:
-        token, user = self.auth.create_user(username, role)
+        auth_service = self.auth
+        token, user = auth_service.create_user(username, role)
         if self._jwt:
             refresh = self._jwt.encode({'sub': user.user_id, 'username': user.username, 'type': 'refresh', 'exp': datetime.utcnow() + timedelta(days=7)}, self.secret, algorithm='HS256')
         else:

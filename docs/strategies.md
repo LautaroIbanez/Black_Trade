@@ -32,7 +32,7 @@ parameter_space = config.get_parameter_space()
 #### Configuración
 
 ```python
-from backtest.engine.walk_forward import WalkForwardEngine
+from backtest.walkforward.walk_forward import WalkForwardEngine
 
 wf_engine = WalkForwardEngine(
     train_size=0.7,      # 70% training
@@ -229,7 +229,7 @@ Si degradación detectada:
 ```python
 from strategies.ema_rsi_strategy import EMARSIStrategy
 from strategies.strategy_config import EMARSIConfig
-from backtest.engine.walk_forward import WalkForwardEngine
+from backtest.walkforward.walk_forward import WalkForwardEngine
 from backtest.evaluation.evaluator import StrategyEvaluator
 from backtest.evaluation.reporter import StrategyReporter
 from backend.repositories.strategy_results_repository import StrategyResultsRepository

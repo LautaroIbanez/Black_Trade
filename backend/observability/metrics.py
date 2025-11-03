@@ -89,6 +89,9 @@ class MetricsCollector:
             'pnl': 0.0,
         })
         
+        # Recommendation tracking metrics
+        self.recommendation_metrics: Dict[str, int] = defaultdict(int)
+        
         # Register OpenTelemetry metrics
         if self.meter:
             self._register_ot_metrics()
@@ -177,6 +180,10 @@ class MetricsCollector:
             self.strategy_metrics[strategy_name]['generation_count'] += 1
         elif metric_type == 'pnl':
             self.strategy_metrics[strategy_name]['pnl'] += value
+        else:
+            # Handle custom metrics like recommendation_accepted, recommendation_win, etc.
+            metric_key = f"{strategy_name}_{metric_type}"
+            self.recommendation_metrics[metric_key] += int(value)
     
     def calculate_percentile(self, values: List[float], percentile: float) -> float:
         """Calculate percentile from list of values."""
@@ -251,6 +258,10 @@ class MetricsCollector:
             cpu_usage_percent=cpu_usage_percent,
             timestamp=datetime.now(),
         )
+    
+    def get_recommendation_metrics(self) -> Dict[str, int]:
+        """Get recommendation tracking metrics."""
+        return dict(self.recommendation_metrics)
 
 
 # Global metrics collector instance

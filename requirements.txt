@@ -5,6 +5,7 @@ numpy==1.26.2
 fastapi==0.109.0
 uvicorn==0.27.0
 pydantic==2.5.3
+email-validator==2.3.0
 python-dotenv==1.0.0
 
 # Data processing
@@ -15,6 +16,7 @@ ta-lib==0.4.28
 httpx==0.26.0
 pytest==7.4.4
 pytest-asyncio==0.23.3
+pyjwt==2.10.1
 
 # Database
 sqlalchemy==2.0.25
@@ -34,7 +36,6 @@ structlog==24.1.0
 prometheus-client==0.19.0
 
 # Strategy validation
-pydantic==2.5.3
 
 # Risk management
 httpx==0.26.0  # Already included but needed for Slack alerts

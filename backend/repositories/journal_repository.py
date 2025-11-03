@@ -3,7 +3,7 @@ from typing import Optional, List, Dict
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.db.session import db_session
+from backend.db.session import get_db_session
 from backend.models.journal import JournalEntry
 
 
@@ -11,7 +11,7 @@ class JournalRepository:
     def add_entry(self, entry_type: str, order_id: Optional[str], user: str, details: Dict, db: Session = None) -> int:
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         try:
             entry = JournalEntry(type=entry_type, order_id=order_id, user=user or 'system', details=details or {})
             db.add(entry)
@@ -28,7 +28,7 @@ class JournalRepository:
     def get_entries(self, order_id: Optional[str] = None, entry_type: Optional[str] = None, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None, limit: int = 100, db: Session = None) -> List[Dict]:
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         try:
             q = db.query(JournalEntry)
             if order_id:
@@ -44,5 +44,6 @@ class JournalRepository:
         finally:
             if should_close:
                 db.close()
+
 
 

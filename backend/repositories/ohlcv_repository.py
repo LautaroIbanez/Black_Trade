@@ -7,7 +7,7 @@ from sqlalchemy import and_, desc
 from sqlalchemy.dialects.postgresql import insert
 
 from backend.models.ohlcv import OHLCVCandle
-from backend.db.session import db_session
+from backend.db.session import get_db_session
 
 
 class OHLCVRepository:
@@ -17,7 +17,7 @@ class OHLCVRepository:
         """Save a single candle (upsert based on unique constraint)."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             stmt = insert(OHLCVCandle).values(**candle)
@@ -54,7 +54,7 @@ class OHLCVRepository:
         
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             # Prepare data for bulk insert
@@ -107,7 +107,7 @@ class OHLCVRepository:
         """Get the latest candle for a symbol/timeframe."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             candle = db.query(OHLCVCandle).filter(
@@ -127,7 +127,7 @@ class OHLCVRepository:
         """Get candles in a timestamp range."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             candles = db.query(OHLCVCandle).filter(
@@ -150,7 +150,7 @@ class OHLCVRepository:
         """Convert OHLCV data to pandas DataFrame."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             query = db.query(OHLCVCandle).filter(
@@ -201,7 +201,7 @@ class OHLCVRepository:
         """Count candles for a symbol/timeframe."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             count = db.query(OHLCVCandle).filter(
@@ -214,4 +214,5 @@ class OHLCVRepository:
         finally:
             if should_close:
                 db.close()
+
 

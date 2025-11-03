@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.db.session import db_session
+from backend.db.session import get_db_session
 from backend.models.risk_metrics import RiskMetric
 
 
@@ -17,7 +17,7 @@ class RiskRepository:
         """
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
 
         try:
             record = RiskMetric(
@@ -49,12 +49,13 @@ class RiskRepository:
         """Fetch the latest N risk metric records as dicts."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         try:
             q = db.query(RiskMetric).order_by(RiskMetric.timestamp.desc()).limit(limit).all()
             return [r.to_dict() for r in q]
         finally:
             if should_close:
                 db.close()
+
 
 

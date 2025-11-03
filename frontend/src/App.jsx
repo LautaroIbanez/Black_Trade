@@ -35,7 +35,7 @@ function App() {
         </nav>
       </header>
       <main className="main-content">
-        {activeTab === 'trading' && <TradingDashboard token={token} />}
+        {activeTab === 'trading' && <TradingDashboard />}
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'strategies' && <Strategies />}
       </main>

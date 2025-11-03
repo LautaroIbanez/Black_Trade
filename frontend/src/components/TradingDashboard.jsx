@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { getRecommendation, getRiskStatus, getMetrics, getExecutionOrders, createOrder, getStrategiesConfig } from '../services/api'
+import { getMetrics, getExecutionOrders, createOrder, getStrategiesConfig } from '../services/api'
+import { useRecommendations } from '../hooks/useRecommendations'
+import { useRiskData } from '../hooks/useRiskData'
+import { useAuth } from '../context/AuthContext'
 import { wsService } from '../services/websocket'
 import OpportunityCard from './OpportunityCard'
 import RiskOverview from './RiskOverview'
@@ -13,13 +16,12 @@ import LiveMetrics from './LiveMetrics'
 import AuthGate from './AuthGate'
 import RiskPanel from './RiskPanel'
 
-function TradingDashboard({ token }) {
-  const [opportunities, setOpportunities] = useState([])
-  const [riskData, setRiskData] = useState(null)
+function TradingDashboard() {
+  const { token, retryProtectedCall } = useAuth()
+  const { items: recommendations, loading: recLoading, error: recError, kycBlocked: recKycBlocked } = useRecommendations('balanced')
+  const { data: riskDataResp, loading: riskLoading, error: riskError } = useRiskData()
   const [metrics, setMetrics] = useState(null)
   const [strategies, setStrategies] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [wsStatus, setWsStatus] = useState('connecting')
   const [selectedOpportunity, setSelectedOpportunity] = useState(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
@@ -27,77 +29,26 @@ function TradingDashboard({ token }) {
   useEffect(() => {
     loadDashboardData()
 
-    // Subscribe to WebSocket updates
     const unsubscribeConn = wsService.subscribe('connection', (data) => {
       setWsStatus(data?.status || 'disconnected')
     })
-    const unsubscribeOrder = wsService.subscribe('order_update', (data) => {
-      // Refresh orders when update received
-      loadExecutionData()
-    })
-
-    const unsubscribeRisk = wsService.subscribe('risk_update', (data) => {
-      loadRiskData()
-    })
-
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadDashboardData, 30000)
 
     return () => {
       unsubscribeConn()
-      unsubscribeOrder()
-      unsubscribeRisk()
-      clearInterval(interval)
     }
   }, [])
 
   const loadDashboardData = async () => {
-    try {
-      setError(null)
-      await Promise.all([
-        loadOpportunities(),
-        loadRiskData(),
-        loadMetrics(),
-        loadStrategies(),
-        loadExecutionData(),
-      ])
-    } catch (error) {
-      console.error('Error loading dashboard:', error)
-      setError(error?.message || 'Error al cargar el dashboard')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadOpportunities = async () => {
-    try {
-      const data = await getRecommendation('balanced')
-      if (data && data.action !== 'HOLD') {
-        setOpportunities([{
-          ...data,
-          symbol: 'BTCUSDT', // Would come from actual data
-          status: 'available',
-        }])
-      } else {
-        setOpportunities([])
-      }
-    } catch (error) {
-      console.error('Error loading opportunities:', error)
-    }
-  }
-
-  const loadRiskData = async () => {
-    try {
-      const data = await getRiskStatus(token)
-      setRiskData(data)
-    } catch (error) {
-      console.error('Error loading risk data:', error)
-    }
+    await Promise.all([
+      loadMetrics(),
+      loadStrategies(),
+    ])
   }
 
   const loadMetrics = async () => {
+    if (!token) return
     try {
-      const data = await getMetrics(token)
+      const data = await retryProtectedCall(() => getMetrics(token))
       setMetrics(data)
     } catch (error) {
       console.error('Error loading metrics:', error)
@@ -107,16 +58,11 @@ function TradingDashboard({ token }) {
   const loadStrategies = async () => {
     try {
       const config = await getStrategiesConfig()
-      // Normalize into { name, enabled } items; metrics may come from separate endpoints
       const list = (config || []).map((c) => ({ name: c.name, enabled: !!c.enabled, metrics: null }))
       setStrategies(list)
     } catch (error) {
       console.error('Error loading strategies:', error)
     }
-  }
-
-  const loadExecutionData = async () => {
-    // ExecutionTracker handles its own loading
   }
 
   const handleExecuteOpportunity = (opportunity) => {
@@ -136,11 +82,13 @@ function TradingDashboard({ token }) {
   }
 
   const handleViewDetails = (opportunity) => {
-    // Open detail modal or navigate
     console.log('View details:', opportunity)
   }
 
-  if (loading) {
+  const loading = recLoading || riskLoading
+  const error = recError || riskError
+
+  if (loading && !riskDataResp && recommendations.length === 0) {
     return <div className="trading-dashboard loading">Cargando dashboard...</div>
   }
 
@@ -149,7 +97,6 @@ function TradingDashboard({ token }) {
       <NotificationSystem />
       <AlertsCenter />
 
-      {/* Connection status & global error */}
       <div className={`connection-banner ${wsStatus === 'connected' ? 'ok' : 'warn'}`}>
         WS: {wsStatus}
       </div>
@@ -157,29 +104,29 @@ function TradingDashboard({ token }) {
         <div className="alert-banner error">{error}</div>
       )}
 
-      {/* Alert Banner */}
-      {riskData?.metrics && riskData.metrics.current_drawdown_pct > 18 && (
+      {riskDataResp?.metrics && riskDataResp.metrics.current_drawdown_pct > 18 && (
         <div className="alert-banner warning">
-          ⚠️ Drawdown cercano al límite: {riskData.metrics.current_drawdown_pct.toFixed(2)}%
+          ⚠️ Drawdown cercano al límite: {riskDataResp.metrics.current_drawdown_pct.toFixed(2)}%
         </div>
       )}
 
       <AuthGate>
       <div className="dashboard-grid">
-        {/* Left Column */}
         <div className="dashboard-column">
-          <RiskOverview riskData={riskData} />
+          <RiskOverview riskData={riskDataResp} />
           <RiskPanel />
           <LiveMetrics />
           
           <div className="opportunities-section">
-            <h2>Oportunidades Priorizadas</h2>
-            {opportunities.length === 0 ? (
+            <h2>Recomendaciones Priorizadas</h2>
+            {recLoading ? (
+              <div className="no-opportunities">Cargando recomendaciones...</div>
+            ) : recommendations.length === 0 ? (
               <div className="no-opportunities">
-                No hay oportunidades disponibles en este momento
+                No hay recomendaciones disponibles en este momento
               </div>
             ) : (
-              opportunities.map((opp, idx) => (
+              recommendations.map((opp, idx) => (
                 <OpportunityCard
                   key={idx}
                   opportunity={opp}
@@ -191,7 +138,6 @@ function TradingDashboard({ token }) {
           </div>
         </div>
 
-        {/* Right Column */}
         <div className="dashboard-column">
           <ExecutionTracker token={token} />
           <RecommendationsList />

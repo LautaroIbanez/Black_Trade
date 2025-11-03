@@ -1,0 +1,17 @@
+2025-11-03 14:23:15,846 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-03 14:23:15,865 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-03 14:23:15,869 - backend.app - INFO - Auth and KYC services initialized
+2025-11-03 14:23:39,277 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-03 14:23:39,307 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-03 14:23:39,307 - backend.app - INFO - Auth and KYC services initialized
+2025-11-03 14:23:39,470 - backend.observability.middleware - ERROR - Request error: POST /api/auth/register - '_GeneratorContextManager' object is not an iterator
+2025-11-03 14:23:40,766 - backend.observability.middleware - ERROR - Request error: POST /api/auth/register - '_GeneratorContextManager' object is not an iterator
+2025-11-03 14:25:31,877 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-03 14:25:31,877 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-03 14:25:31,877 - backend.app - INFO - Auth and KYC services initialized
+2025-11-03 14:25:36,159 - backend.observability.middleware - ERROR - Request error: POST /api/auth/register - (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

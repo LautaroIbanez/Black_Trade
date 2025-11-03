@@ -3,7 +3,7 @@ from typing import Optional, Dict
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.db.session import db_session
+from backend.db.session import get_db_session
 from backend.models.kyc import KYCUser
 
 
@@ -11,7 +11,7 @@ class KYCRepository:
     def upsert(self, user_id: str, name: str, email: str, country: str, verified: bool = False, verified_at: Optional[datetime] = None, db: Session = None) -> bool:
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         try:
             rec = db.query(KYCUser).filter(KYCUser.user_id == user_id).first()
             if rec is None:
@@ -36,12 +36,13 @@ class KYCRepository:
     def is_verified(self, user_id: str, db: Session = None) -> bool:
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         try:
             rec = db.query(KYCUser).filter(KYCUser.user_id == user_id).first()
             return bool(rec and rec.verified)
         finally:
             if should_close:
                 db.close()
+
 
 

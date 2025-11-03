@@ -99,3 +99,10 @@ async def history(limit: int = 50, user=Depends(lambda: AuthService().require_pe
     return {"items": repo.history(limit=limit)}
 
 
+@router.get("/metrics")
+async def metrics(days: int = 30, user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+    if not KYCRepository().is_verified(user.user_id):
+        raise HTTPException(status_code=403, detail="KYC verification required")
+    return repo.get_metrics(days=days)
+
+

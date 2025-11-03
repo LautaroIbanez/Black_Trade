@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from backend.models.ohlcv import IngestionStatus, IngestionMetric
-from backend.db.session import db_session
+from backend.db.session import get_db_session
 
 
 class IngestionRepository:
@@ -15,7 +15,7 @@ class IngestionRepository:
         """Update or create ingestion status."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             status = db.query(IngestionStatus).filter(
@@ -53,7 +53,7 @@ class IngestionRepository:
         """Get ingestion status for a symbol/timeframe."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             status = db.query(IngestionStatus).filter(
@@ -72,7 +72,7 @@ class IngestionRepository:
         """Get all ingestion statuses."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             statuses = db.query(IngestionStatus).all()
@@ -86,7 +86,7 @@ class IngestionRepository:
         """Record an ingestion metric."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             metric = IngestionMetric(
@@ -105,4 +105,5 @@ class IngestionRepository:
         finally:
             if should_close:
                 db.close()
+
 

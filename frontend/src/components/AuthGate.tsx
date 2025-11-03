@@ -1,47 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { loginUser, registerUser, checkKYCStatus, verifyKYC } from '../services/api'
-import { setSession, getUserId, getUsername, getToken } from '../services/auth'
+import { setSession, getUserId, getUsername } from '../services/auth'
+import { useAuth } from '../context/AuthContext'
 
 type Props = { children: React.ReactNode }
 
 function AuthGate({ children }: Props) {
+  const { isAuthenticated, isKYCVerified, userId, refreshAuthState } = useAuth()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [country, setCountry] = useState('AR')
   const [loading, setLoading] = useState(false)
-  const [needsKYC, setNeedsKYC] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
   const [kycDocs, setKycDocs] = useState({ document_type: 'passport', document_number: '' })
-  const token = typeof window !== 'undefined' ? getToken() : null
-
-  useEffect(() => {
-    const check = async () => {
-      const uid = getUserId()
-      if (uid) {
-        setUserId(uid)
-        try {
-          const status = await checkKYCStatus(uid)
-          if (!status.verified) {
-            setNeedsKYC(true)
-          }
-        } catch {}
-      }
-    }
-    if (token) check()
-  }, [token])
 
   const onLogin = async () => {
     setLoading(true)
     try {
       const res = await loginUser({ username, role: 'viewer' })
       setSession(res.access_token, res.user_id, res.role, res.refresh_token, username)
-      setUserId(res.user_id)
-      try {
-        const kycStatus = await checkKYCStatus(res.user_id)
-        if (!kycStatus.verified) {
-          setNeedsKYC(true)
-        }
-      } catch {}
+      await refreshAuthState()
     } catch (e: any) {
       alert(e.message)
     } finally {
@@ -54,9 +31,8 @@ function AuthGate({ children }: Props) {
     try {
       const res = await registerUser({ username, email, country, role: 'viewer' })
       setSession(res.access_token, res.user_id, res.role, res.refresh_token, username)
-      setUserId(res.user_id)
       alert('Registro exitoso. Verifique KYC para acceder a datos protegidos.')
-      setNeedsKYC(true)
+      await refreshAuthState()
     } catch (e: any) {
       alert(e.message)
     } finally {
@@ -70,7 +46,7 @@ function AuthGate({ children }: Props) {
     try {
       await verifyKYC({ user_id: userId, ...kycDocs })
       alert('KYC verificado exitosamente')
-      setNeedsKYC(false)
+      await refreshAuthState()
     } catch (e: any) {
       alert(e.message || 'Error verificando KYC')
     } finally {
@@ -78,7 +54,7 @@ function AuthGate({ children }: Props) {
     }
   }
 
-  if (!token) {
+  if (!isAuthenticated) {
     return (
       <div className="auth-gate">
         <h3>Inicie sesión para ver datos protegidos</h3>
@@ -95,7 +71,7 @@ function AuthGate({ children }: Props) {
     )
   }
 
-  if (needsKYC) {
+  if (!isKYCVerified) {
     return (
       <div className="auth-gate">
         <h3>Verificación KYC requerida</h3>

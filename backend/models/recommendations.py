@@ -1,5 +1,5 @@
 """Models for human-in-the-loop recommendations tracking."""
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from sqlalchemy import Column, Integer, String, DateTime, JSON, Numeric
 from sqlalchemy.sql import func
 
 from backend.models.base import Base
@@ -18,6 +18,9 @@ class RecommendationLog(Base):
     payload = Column(JSON)  # full recommendation snapshot
     checklist = Column(JSON)  # pre/post trade checklist state
     notes = Column(String(1000))
+    outcome = Column(String(20), nullable=True)  # win|loss|breakeven
+    realized_pnl = Column(Numeric(20, 8), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
 
@@ -33,6 +36,9 @@ class RecommendationLog(Base):
             'payload': self.payload,
             'checklist': self.checklist,
             'notes': self.notes,
+            'outcome': self.outcome,
+            'realized_pnl': float(self.realized_pnl) if self.realized_pnl is not None else None,
+            'decided_at': self.decided_at.isoformat() if self.decided_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

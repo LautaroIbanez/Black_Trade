@@ -1,6 +1,7 @@
 """Alert system for system health and performance issues."""
 import logging
 import os
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Callable
 from datetime import datetime, timedelta
 from enum import Enum

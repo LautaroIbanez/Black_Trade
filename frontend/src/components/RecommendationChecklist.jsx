@@ -25,6 +25,23 @@ function RecommendationChecklist({ item, onSubmitted }) {
 
   return (
     <div className="recommendation-checklist">
+      {item.suggested_position_size_usd && (
+        <div className="sizing-info">
+          <strong>Tamaño sugerido:</strong> ${Number(item.suggested_position_size_usd).toFixed(2)} ({Math.round((item.suggested_position_size_pct || 0) * 100)}%)
+        </div>
+      )}
+      {item.risk_limit_checks && Object.keys(item.risk_limit_checks).length > 0 && (
+        <div className="risk-checks">
+          <strong>Verificaciones de riesgo:</strong>
+          <ul>
+            {Object.entries(item.risk_limit_checks).map(([key, check]: [string, any]) => (
+              <li key={key} className={check.violated ? 'violated' : 'ok'}>
+                {key}: {check.violated ? '⚠️' : '✓'} {check.message || ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <h3>Checklist pre-trade</h3>
       <ul>
         {(item.pre_trade_checklist || []).map(ch => (

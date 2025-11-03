@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 
 from backend.models.strategy_results import BacktestResult, OptimalParameters
-from backend.db.session import db_session
+from backend.db.session import get_db_session
 
 
 class StrategyResultsRepository:
@@ -25,7 +25,7 @@ class StrategyResultsRepository:
         """Save a backtest result."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             result = BacktestResult(
@@ -59,7 +59,7 @@ class StrategyResultsRepository:
         """Get latest backtest results."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             query = db.query(BacktestResult)
@@ -89,7 +89,7 @@ class StrategyResultsRepository:
         """Save optimal parameters from walk-forward optimization."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             optimal = OptimalParameters(
@@ -121,7 +121,7 @@ class StrategyResultsRepository:
         """Get latest optimal parameters for a strategy."""
         should_close = db is None
         if db is None:
-            db = next(db_session())
+            db = get_db_session()
         
         try:
             query = db.query(OptimalParameters).filter(
@@ -136,4 +136,5 @@ class StrategyResultsRepository:
         finally:
             if should_close:
                 db.close()
+
 

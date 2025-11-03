@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional, Type
 import pandas as pd
 
 from strategies.strategy_base import StrategyBase
-from backtest.engine.walk_forward import WalkForwardEngine
+from backtest.walkforward.walk_forward import WalkForwardEngine
 from backtest.evaluation.synthetic_data import SyntheticDataGenerator
 
 logger = logging.getLogger(__name__)

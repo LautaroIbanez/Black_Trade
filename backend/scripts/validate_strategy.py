@@ -12,7 +12,7 @@ sys.path.insert(0, str(project_root))
 
 from strategies.ema_rsi_strategy import EMARSIStrategy
 from strategies.strategy_config import EMARSIConfig
-from backtest.engine.walk_forward import WalkForwardEngine
+from backtest.walkforward.walk_forward import WalkForwardEngine
 from backtest.evaluation.evaluator import StrategyEvaluator
 from backtest.evaluation.reporter import StrategyReporter
 from backend.repositories.strategy_results_repository import StrategyResultsRepository
