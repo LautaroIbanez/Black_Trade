@@ -32,6 +32,10 @@ _001_initial_schema = load_migration("001_initial_schema")
 _002_strategy_results = load_migration("002_strategy_results")
 _003_risk_metrics = load_migration("003_risk_metrics")
 _004_journal = load_migration("004_journal")
+_005_live_results = load_migration("005_live_results")
+_006_recommendations_log = load_migration("006_recommendations_log")
+_007_kyc_users = load_migration("007_kyc_users")
+_008_rec_outcomes = load_migration("008_recommendations_outcomes")
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +49,10 @@ def run_migrations():
         ("002_strategy_results", _002_strategy_results),
         ("003_risk_metrics", _003_risk_metrics),
         ("004_journal", _004_journal),
+        ("005_live_results", _005_live_results),
+        ("006_recommendations_log", _006_recommendations_log),
+        ("007_kyc_users", _007_kyc_users),
+        ("008_recommendations_outcomes", _008_rec_outcomes),
     ]
     
     for name, migration_module in migrations:

@@ -18,6 +18,8 @@ from backend.tasks.data_ingestion_task import DataIngestionTask
 from backend.risk.update_task import RiskUpdateTask
 from backend.api.routes.execution import get_execution_coordinator
 from backend.execution.recommendation_task import RecommendationExecutionTask
+from backend.tasks.walkforward_task import WalkforwardOptimizationTask
+from backend.tasks.observability_task import ObservabilityMonitorTask
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,8 @@ class IngestionScheduler:
         self.ingestion_task: Optional[DataIngestionTask] = None
         self.risk_task: Optional[RiskUpdateTask] = None
         self.reco_task: Optional[RecommendationExecutionTask] = None
+        self.wf_task: Optional[WalkforwardOptimizationTask] = None
+        self.obs_task: Optional[ObservabilityMonitorTask] = None
         self.execution_job_scheduled: bool = False
         self.running = False
     
@@ -121,6 +125,10 @@ class IngestionScheduler:
         self.schedule_execution_processing()
         # Schedule auto-recommendation to orders if enabled
         self.schedule_recommendation_execution()
+        # Schedule walk-forward optimization
+        self.schedule_walkforward_optimization()
+        # Schedule observability monitor
+        self.schedule_observability_monitor()
         
         # Ensure ingestion task is running
         if self.ingestion_task:
@@ -199,6 +207,52 @@ class IngestionScheduler:
             await self.reco_task.run_once()
         except Exception as e:
             logger.error(f"Recommendation job error: {e}")
+
+    def schedule_walkforward_optimization(self):
+        """Schedule periodic walk-forward optimization runs."""
+        if not APSCHEDULER_AVAILABLE or not self.scheduler:
+            return
+        try:
+            if self.wf_task is None:
+                self.wf_task = WalkforwardOptimizationTask()
+            if self.scheduler.get_job("walkforward_job"):
+                self.scheduler.remove_job("walkforward_job")
+            # Default: run every 6 hours
+            interval = int(os.getenv('WF_INTERVAL_SEC', str(6 * 3600)))
+            self.scheduler.add_job(self._run_walkforward_once, IntervalTrigger(seconds=interval), id="walkforward_job", max_instances=1, coalesce=True)
+            logger.info("Walk-forward optimization job scheduled")
+        except Exception as e:
+            logger.error(f"Failed to schedule walk-forward job: {e}")
+
+    async def _run_walkforward_once(self):
+        try:
+            if self.wf_task is None:
+                self.wf_task = WalkforwardOptimizationTask()
+            await self.wf_task.run_once()
+        except Exception as e:
+            logger.error(f"Walk-forward job error: {e}")
+
+    def schedule_observability_monitor(self):
+        if not APSCHEDULER_AVAILABLE or not self.scheduler:
+            return
+        try:
+            if self.obs_task is None:
+                self.obs_task = ObservabilityMonitorTask()
+            if self.scheduler.get_job("observability_monitor_job"):
+                self.scheduler.remove_job("observability_monitor_job")
+            interval = int(os.getenv('OBS_MONITOR_INTERVAL_SEC', '300'))
+            self.scheduler.add_job(self._run_obs_once, IntervalTrigger(seconds=interval), id="observability_monitor_job", max_instances=1, coalesce=True)
+            logger.info("Observability monitor job scheduled")
+        except Exception as e:
+            logger.error(f"Failed to schedule observability monitor: {e}")
+
+    async def _run_obs_once(self):
+        try:
+            if self.obs_task is None:
+                self.obs_task = ObservabilityMonitorTask()
+            await self.obs_task.run_once()
+        except Exception as e:
+            logger.error(f"Observability monitor error: {e}")
     
     def shutdown(self):
         """Shutdown the scheduler."""

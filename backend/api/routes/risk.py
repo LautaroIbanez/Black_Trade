@@ -51,7 +51,7 @@ def set_risk_engine(engine: RiskEngine):
 
 @router.get("/status")
 @rate_limit(max_requests=120, window_seconds=60)
-async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
     """Get current risk status."""
     try:
         metrics = engine.get_risk_metrics()
@@ -91,7 +91,7 @@ async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_ris
 
 @router.get("/exposure")
 @rate_limit(max_requests=120, window_seconds=60)
-async def get_exposure(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+async def get_exposure(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
     """Get exposure breakdown by asset and strategy."""
     try:
         exposure_data = engine.calculate_exposure()
@@ -127,7 +127,7 @@ async def get_var(
 
 @router.get("/drawdown")
 @rate_limit(max_requests=120, window_seconds=60)
-async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
     """Get drawdown metrics."""
     try:
         drawdown_data = engine.calculate_drawdown()
@@ -144,7 +144,7 @@ async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_e
 
 @router.get("/limits")
 @rate_limit(max_requests=60, window_seconds=60)
-async def get_limits(request: Request, engine: RiskEngine = Depends(get_risk_engine)) -> Dict[str, Any]:
+async def get_limits(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
     """Get current risk limits."""
     return {
         "global_limits": {

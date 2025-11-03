@@ -7,6 +7,8 @@ import time
 
 from backend.repositories.ohlcv_repository import OHLCVRepository
 from backend.repositories.ingestion_repository import IngestionRepository
+from backend.services.signal_computation import SignalComputationService
+from backend.observability.metrics import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class MessageProcessor:
         self.ingestion_repo = IngestionRepository()
         self.batch_size = batch_size
         self.batch_timeout = batch_timeout
+        self.signal_service = SignalComputationService()
         
         # Batch buffer
         self.batch_buffer: List[Dict] = []
@@ -111,6 +114,21 @@ class MessageProcessor:
                 )
             
             logger.info(f"Processed batch: {saved_count} candles across {len(processed_groups)} symbol/timeframe groups")
+
+            # Trigger signal computation asynchronously for impacted timeframes
+            try:
+                impacted_timeframes = [g['timeframe'] for g in processed_groups.values() if g.get('timeframe')]
+                async def _run_signals():
+                    t0 = time.time()
+                    ok = await self.signal_service.compute_and_store(impacted_timeframes)
+                    try:
+                        latency_ms = int((time.time() - t0) * 1000)
+                        get_metrics_collector().record_strategy_metric('system', 'generation_time', latency_ms)
+                    except Exception:
+                        pass
+                asyncio.create_task(_run_signals())
+            except Exception as e:
+                logger.error(f"Failed to trigger signal computation: {e}")
             
         except Exception as e:
             logger.error(f"Error flushing batch: {e}")

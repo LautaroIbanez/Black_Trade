@@ -1,5 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+import { authHeader } from './auth'
+
 async function handleResponse(response) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Network error' }))
@@ -30,14 +32,14 @@ export async function getStrategies() {
 
 export async function getRiskStatus(token) {
   const response = await fetch(`${API_BASE_URL}/api/risk/status`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
 
 export async function getMetrics(token) {
   const response = await fetch(`${API_BASE_URL}/api/metrics`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
@@ -46,7 +48,7 @@ export async function getExecutionOrders(status, token) {
   const url = new URL(`${API_BASE_URL}/api/execution/orders`)
   if (status) url.searchParams.set('status', status)
   const response = await fetch(url, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
@@ -56,7 +58,7 @@ export async function createOrder(orderData, token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      ...(token ? { 'Authorization': `Bearer ${token}` } : authHeader())
     },
     body: JSON.stringify(orderData)
   })
@@ -68,7 +70,7 @@ export async function cancelOrder(orderId, reason, token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      ...(token ? { 'Authorization': `Bearer ${token}` } : authHeader())
     },
     body: JSON.stringify({ reason })
   })
@@ -80,7 +82,7 @@ export async function updateRiskLimits(limits, token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      ...(token ? { 'Authorization': `Bearer ${token}` } : authHeader())
     },
     body: JSON.stringify(limits)
   })
@@ -111,7 +113,7 @@ export async function disableStrategy(strategyName, token) {
 
 export async function getStrategyOptimalParameters(strategyName, token) {
   const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/optimal-parameters`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
@@ -121,27 +123,66 @@ export async function getStrategyResults(strategyName, limit = 10, splitType = n
   url.searchParams.set('limit', limit)
   if (splitType) url.searchParams.set('split_type', splitType)
   const response = await fetch(url, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
 
 export async function getStrategyMetrics(strategyName, token) {
   const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/metrics`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
 
 export async function getStrategyPerformance(strategyName, token) {
   const response = await fetch(`${API_BASE_URL}/strategies/${strategyName}/performance`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: token ? { 'Authorization': `Bearer ${token}` } : authHeader()
   })
   return handleResponse(response)
 }
 
 export async function getStrategiesConfig() {
-  const response = await fetch(`${API_BASE_URL}/strategies/config`)
+  const response = await fetch(`${API_BASE_URL}/strategies/config`, { headers: authHeader() })
+  return handleResponse(response)
+}
+
+// Human-oriented recommendations
+export async function getLiveRecommendations(profile = 'balanced') {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations/live?profile=${profile}`, { headers: authHeader() })
+  return handleResponse(response)
+}
+
+export async function submitRecommendationFeedback({ status, recommendation_id, checklist, notes, user_id, payload }) {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ status, recommendation_id, checklist, notes, user_id, payload })
+  })
+  return handleResponse(response)
+}
+
+export async function listRecommendationHistory(limit = 20) {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations/history?limit=${limit}`, { headers: authHeader() })
+  return handleResponse(response)
+}
+
+// Auth endpoints
+export async function registerUser({ username, email, country, role }) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, country, role })
+  })
+  return handleResponse(response)
+}
+
+export async function loginUser({ username, role }) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, role })
+  })
   return handleResponse(response)
 }
 

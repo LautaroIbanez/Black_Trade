@@ -20,6 +20,8 @@ from backend.api.routes.risk import router as risk_router
 from backend.api.routes.execution import router as execution_router
 from backend.api.routes.observability import router as observability_router
 from backend.api.routes.websocket import router as websocket_router
+from backend.api.routes.recommendations import router as recommendations_router
+from backend.api.routes.auth import router as auth_router
 from backend.api.routes.strategies import router as strategies_router
 from recommendation.config import TIMEFRAMES_ACTIVE
 
@@ -136,6 +138,14 @@ def initialize_services():
         if not initialize_database():
             logger.error("Failed to initialize database")
             return False
+        
+        # Initialize auth service and default users
+        try:
+            from backend.auth.permissions import init_auth_service
+            init_auth_service()
+            logger.info("Auth service initialized")
+        except Exception as e:
+            logger.error(f"Error initializing auth service: {e}")
         
         # Initialize risk system (engine + adapter) and set global API instance
         try:
@@ -413,6 +423,8 @@ app.include_router(risk_router, prefix="/api/risk", tags=["risk"])
 app.include_router(execution_router, prefix="/api/execution", tags=["execution"])
 app.include_router(observability_router, prefix="/api", tags=["observability"])
 app.include_router(strategies_router)
+app.include_router(recommendations_router)
+app.include_router(auth_router)
 
 # WebSocket route
 from backend.api.routes.websocket import manager, websocket_endpoint

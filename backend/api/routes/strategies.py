@@ -61,12 +61,23 @@ async def list_strategies() -> Dict[str, Any]:
     enabled_names = {s.name for s in strategies}
     disabled_configs = [c for c in all_configs if c['name'] not in enabled_names]
     
+    # Attach latest optimization timestamp per strategy
+    latest_opt = {}
+    try:
+        for cfg in all_configs:
+            opt = results_repo.get_latest_optimal_parameters(cfg['name'])
+            if opt:
+                latest_opt[cfg['name']] = opt.get('created_at')
+    except Exception:
+        pass
+
     result = {
         "enabled": [
             {
                 "name": s.name,
                 "class_name": s.__class__.__name__,
                 "parameters": strategy_registry.get_strategy_config(s.name, use_optimal=False).parameters if strategy_registry.get_strategy_config(s.name) else {},
+                "last_optimized_at": latest_opt.get(s.name),
             }
             for s in strategies
         ],
@@ -74,6 +85,7 @@ async def list_strategies() -> Dict[str, Any]:
             {
                 "name": c['name'],
                 "class_name": c.get('class_name', ''),
+                "last_optimized_at": latest_opt.get(c['name']),
             }
             for c in disabled_configs
         ],

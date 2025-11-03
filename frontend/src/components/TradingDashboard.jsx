@@ -7,6 +7,9 @@ import ExecutionTracker from './ExecutionTracker'
 import StrategyControls from './StrategyControls'
 import NotificationSystem from './NotificationSystem'
 import './TradingDashboard.css'
+import RecommendationsList from './RecommendationsList'
+import AlertsCenter from './AlertsCenter'
+import LiveMetrics from './LiveMetrics'
 
 function TradingDashboard({ token }) {
   const [opportunities, setOpportunities] = useState([])
@@ -142,6 +145,7 @@ function TradingDashboard({ token }) {
   return (
     <div className="trading-dashboard">
       <NotificationSystem />
+      <AlertsCenter />
 
       {/* Connection status & global error */}
       <div className={`connection-banner ${wsStatus === 'connected' ? 'ok' : 'warn'}`}>
@@ -162,6 +166,7 @@ function TradingDashboard({ token }) {
         {/* Left Column */}
         <div className="dashboard-column">
           <RiskOverview riskData={riskData} />
+          <LiveMetrics />
           
           <div className="opportunities-section">
             <h2>Oportunidades Priorizadas</h2>
@@ -185,6 +190,7 @@ function TradingDashboard({ token }) {
         {/* Right Column */}
         <div className="dashboard-column">
           <ExecutionTracker token={token} />
+          <RecommendationsList />
           <StrategyControls 
             strategies={strategies} 
             token={token}

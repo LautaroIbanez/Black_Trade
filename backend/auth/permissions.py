@@ -1,6 +1,7 @@
 """Permission and role-based access control."""
 import logging
 from typing import List, Optional, Dict, Set
+import os
 from enum import Enum
 from functools import wraps
 from fastapi import HTTPException, Depends, Security
@@ -101,9 +102,15 @@ class AuthService:
     def __init__(self):
         """Initialize auth service."""
         # In production, use proper authentication (JWT, OAuth, etc.)
-        # For now, use simple token-based auth
         self.tokens: Dict[str, User] = {}
         self.logger = logging.getLogger(__name__)
+        # Optional JWT support
+        self.jwt_secret = os.getenv('JWT_SECRET')
+        try:
+            import jwt  # type: ignore
+            self._jwt = jwt
+        except Exception:
+            self._jwt = None
     
     def create_user(self, username: str, role: Role) -> tuple[str, User]:
         """
@@ -118,9 +125,20 @@ class AuthService:
         """
         user_id = f"user_{len(self.tokens)}"
         user = User(user_id, username, role)
-        token = f"token_{user_id}"
-        self.tokens[token] = user
-        return token, user
+        # Prefer JWT if available
+        if self._jwt and self.jwt_secret:
+            token = self._jwt.encode({
+                'sub': user_id,
+                'username': username,
+                'role': role.value,
+            }, self.jwt_secret, algorithm='HS256')
+            # Also map for fast lookup
+            self.tokens[token] = user
+            return token, user
+        else:
+            token = f"token_{user_id}"
+            self.tokens[token] = user
+            return token, user
     
     def authenticate(self, token: str) -> Optional[User]:
         """
@@ -132,7 +150,23 @@ class AuthService:
         Returns:
             User if authenticated, None otherwise
         """
-        return self.tokens.get(token)
+        user = self.tokens.get(token)
+        if user:
+            return user
+        # Try decode JWT
+        if self._jwt and self.jwt_secret:
+            try:
+                payload = self._jwt.decode(token, self.jwt_secret, algorithms=['HS256'])
+                uid = payload.get('sub')
+                username = payload.get('username')
+                role = Role(payload.get('role', 'viewer'))
+                # Cache mapping
+                u = User(uid, username, role)
+                self.tokens[token] = u
+                return u
+            except Exception:
+                return None
+        return None
     
     def require_permission(self, permission: Permission):
         """
