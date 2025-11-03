@@ -78,6 +78,13 @@ app.add_middleware(
 market_data_service = MarketDataService()
 backtest_engine = BacktestEngine()
 
+# Initialize auth and KYC services on startup
+from backend.auth.permissions import init_auth_service
+from backend.compliance.kyc_aml import get_kyc_service
+init_auth_service()
+get_kyc_service()
+logger.info("Auth and KYC services initialized")
+
 # Cache for results
 last_results = {}
 

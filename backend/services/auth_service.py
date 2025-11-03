@@ -28,12 +28,10 @@ class AppAuthService:
 
     def issue_tokens(self, username: str, role: Role) -> TokenPair:
         token, user = self.auth.create_user(username, role)
-        # Create refresh token
         if self._jwt:
-            refresh = self._jwt.encode({'sub': user.user_id, 'type': 'refresh', 'exp': datetime.utcnow() + timedelta(days=7)}, self.secret, algorithm='HS256')
+            refresh = self._jwt.encode({'sub': user.user_id, 'username': user.username, 'type': 'refresh', 'exp': datetime.utcnow() + timedelta(days=7)}, self.secret, algorithm='HS256')
         else:
             refresh = f"refresh_{user.user_id}_{datetime.utcnow().timestamp()}"
-        # Persist both
         self.repo.save(user.user_id, token, 'access', expires_at=datetime.utcnow() + timedelta(hours=12))
         self.repo.save(user.user_id, refresh, 'refresh', expires_at=datetime.utcnow() + timedelta(days=7))
         return TokenPair(token, refresh, user.user_id, user.role.value)

@@ -32,13 +32,21 @@ class LoginRequest(BaseModel):
     role: Role = Role.VIEWER
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class KYCStatusRequest(BaseModel):
+    user_id: str
+
+
 @router.post("/register")
 async def register(req: RegisterRequest) -> Dict[str, Any]:
-    # Create auth user token (not verified yet)
     auth = get_auth_service() or init_auth_service()
     pair = app_auth_service.issue_tokens(req.username, req.role)
-    # Create pending KYC in DB
     KYCRepository().upsert(pair.user_id, req.username, req.email, req.country, verified=False)
+    kyc = get_kyc_service()
+    kyc.register_user(pair.user_id, req.username, req.email, req.country)
     transaction_journal.log(JournalEntryType.SYSTEM_EVENT, details={"event": "register", "user": req.username, "role": req.role.value})
     return {"access_token": pair.access_token, "refresh_token": pair.refresh_token, "user_id": pair.user_id, "role": pair.role}
 
@@ -59,5 +67,38 @@ async def login(req: LoginRequest) -> Dict[str, Any]:
     pair = app_auth_service.issue_tokens(req.username, req.role)
     transaction_journal.log(JournalEntryType.SYSTEM_EVENT, details={"event": "login", "user": req.username, "role": req.role.value})
     return {"access_token": pair.access_token, "refresh_token": pair.refresh_token, "user_id": pair.user_id, "role": pair.role}
+
+
+@router.post("/refresh")
+async def refresh(req: RefreshRequest) -> Dict[str, Any]:
+    from backend.services.auth_service import AppAuthService
+    from backend.repositories.user_tokens_repository import UserTokensRepository
+    from datetime import datetime, timedelta
+    import jwt
+    repo = UserTokensRepository()
+    token_rec = repo.get(req.refresh_token)
+    if not token_rec or token_rec.token_type != 'refresh':
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    if token_rec.expires_at and datetime.utcnow() > token_rec.expires_at:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+    try:
+        payload = jwt.decode(req.refresh_token, app_auth_service.secret, algorithms=['HS256'])
+        user_id = payload.get('sub')
+        username = payload.get('username', user_id)
+        new_pair = app_auth_service.issue_tokens(username, Role.VIEWER)
+        transaction_journal.log(JournalEntryType.SYSTEM_EVENT, details={"event": "token_refresh", "user_id": user_id})
+        return {"access_token": new_pair.access_token, "refresh_token": new_pair.refresh_token, "user_id": new_pair.user_id, "role": new_pair.role}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+
+@router.post("/kyc-status")
+async def kyc_status(req: KYCStatusRequest) -> Dict[str, Any]:
+    kyc = get_kyc_service()
+    rec = kyc.get_verification_status(req.user_id)
+    if not rec:
+        return {"verified": False, "status": "not_found"}
+    db_verified = KYCRepository().is_verified(req.user_id)
+    return {"verified": db_verified, "status": "verified" if db_verified else "pending", "verification_date": rec.verification_date.isoformat() if rec.verification_date else None}
 
 

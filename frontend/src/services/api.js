@@ -5,7 +5,10 @@ import { authHeader } from './auth'
 async function handleResponse(response) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Network error' }))
-    throw new Error(error.detail || 'Request failed')
+    const err = new Error(error.detail || 'Request failed')
+    err.status = response.status
+    err.code = error.code
+    throw err
   }
   return response.json()
 }
@@ -182,6 +185,33 @@ export async function loginUser({ username, role }) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, role })
+  })
+  return handleResponse(response)
+}
+
+export async function refreshToken(refresh_token) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token })
+  })
+  return handleResponse(response)
+}
+
+export async function checkKYCStatus(user_id) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/kyc-status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id })
+  })
+  return handleResponse(response)
+}
+
+export async function verifyKYC({ user_id, document_type, document_number }) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id, document_type, document_number })
   })
   return handleResponse(response)
 }

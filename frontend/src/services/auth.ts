@@ -51,10 +51,24 @@ export function authHeader(): Record<string, string> {
   return t ? { 'Authorization': `Bearer ${t}` } : {}
 }
 
-// Optional: naive refresh placeholder (no backend refresh endpoint provided)
+export async function refreshAccessToken(): Promise<boolean> {
+  const refresh_token = getRefresh()
+  if (!refresh_token) return false
+  try {
+    const mod = await import('./api')
+    const res = await mod.refreshToken(refresh_token)
+    if (res?.access_token) {
+      setSession(res.access_token, res.user_id, res.role, res.refresh_token, res.user_id)
+      return true
+    }
+  } catch {}
+  return false
+}
+
 export async function ensureSession(): Promise<boolean> {
   if (getToken()) return true
-  // Attempt naive renewal via login using stored username/role (since backend lacks /refresh endpoint)
+  const refreshed = await refreshAccessToken()
+  if (refreshed) return true
   try {
     const username = getUsername()
     const role = getRole() || 'viewer'
