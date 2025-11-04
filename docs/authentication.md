@@ -10,8 +10,40 @@ Black Trade uses JWT-based authentication with KYC verification, persistent toke
 
 1. **AuthService** (`backend/auth/permissions.py`): Core authentication and authorization service
 2. **AppAuthService** (`backend/services/auth_service.py`): High-level wrapper that issues JWT tokens and persists them
-3. **KYCService** (`backend/compliance/kyc_aml.py`): Know Your Customer verification service
-4. **UserTokensRepository**: Persists access and refresh tokens with expiration
+3. **UserRepository** (`backend/repositories/user_repository.py`): Manages persistent user identity in database
+4. **KYCService** (`backend/compliance/kyc_aml.py`): Know Your Customer verification service
+5. **UserTokensRepository**: Persists access and refresh tokens with expiration
+
+### User Identity Persistence
+
+**Critical**: All users are persisted in the `users` database table with a stable `user_id` that **never changes** throughout the user's lifecycle. This ensures:
+
+1. **Stable Identity**: The `user_id` remains constant across login sessions, token refreshes, and API calls
+2. **KYC Persistence**: KYC verification status is tied to the persistent `user_id`, so it persists across token refreshes
+3. **Email-based Deduplication**: When registering with an existing email, the system reuses the existing user record and `user_id`
+
+#### User Creation and Lookup
+
+- **Registration** (`/api/auth/register`): 
+  - If email is provided and exists in database → returns existing user's `user_id`
+  - If email is new → creates new persistent user with unique `user_id`
+  - The `user_id` format is `user_<12-char-hex>` (e.g., `user_a1b2c3d4e5f6`)
+
+- **Login** (`/api/auth/login`):
+  - Creates a new persistent user if username doesn't exist
+  - **Note**: For proper identity consolidation, use registration with email
+
+- **Token Refresh** (`/api/auth/refresh`):
+  - **Always maintains the same `user_id`** from the refresh token
+  - Generates new access and refresh tokens but preserves user identity
+  - KYC verification and all user data remain accessible
+
+#### Why This Matters
+
+The authentication and permission services depend on an **immutable `user_id`**. Without persistence:
+- Token refresh would create new `user_id`, breaking KYC verification
+- User data (recommendations, risk metrics) would be lost between sessions
+- Permission checks would fail due to missing user context
 
 ### Flow
 
@@ -36,7 +68,11 @@ Black Trade uses JWT-based authentication with KYC verification, persistent toke
    
 4. Token Refresh
    POST /api/auth/refresh
-   → Uses refresh token to get new access token
+   → Validates refresh token from database
+   → Maintains same user_id from token record
+   → Generates new access + refresh tokens
+   → Old refresh token is revoked
+   → KYC status and user data remain accessible
    → Refresh tokens expire after 7 days
 ```
 
@@ -163,7 +199,7 @@ Checks current KYC verification status.
 
 ### `/api/auth/refresh`
 
-Refreshes access token using refresh token.
+Refreshes access token using refresh token. **Maintains the same `user_id`** from the original token.
 
 **Request**:
 ```json
@@ -177,19 +213,43 @@ Refreshes access token using refresh token.
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
   "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "user_id": "user_0",
+  "user_id": "user_a1b2c3d4e5f6",
   "role": "viewer"
 }
 ```
 
-## Token Storage
+**Important**: 
+- The `user_id` in the response is **always the same** as the `user_id` from the original registration/login
+- The old refresh token is invalidated after refresh
+- KYC verification status persists and remains accessible with the new tokens
+
+## User and Token Storage
+
+### User Persistence
+
+Users are stored in the `users` table with the following schema:
+- **user_id** (VARCHAR, UNIQUE): Immutable identifier (format: `user_<12-char-hex>`)
+- **username** (VARCHAR): Display name
+- **email** (VARCHAR, UNIQUE): Email address (used for identity consolidation)
+- **role** (VARCHAR): User role (viewer/trader/risk_manager/admin)
+- **created_at**, **updated_at**: Timestamps
+
+The `user_id` is **never changed** after creation, ensuring:
+- Stable identity across all authentication flows
+- KYC verification persistence
+- Data integrity for recommendations, risk metrics, and user tracking
+
+### Token Storage
 
 Tokens are persisted in `user_tokens` table:
 
+- **user_id** (VARCHAR): References the persistent user
+- **token** (VARCHAR, UNIQUE): The JWT or token string
+- **token_type** (VARCHAR): 'access' or 'refresh'
 - **access_token**: Expires after 12 hours
 - **refresh_token**: Expires after 7 days
 
-Both tokens include expiration timestamps for validation.
+Both tokens include expiration timestamps for validation. When a refresh token is used, the old refresh token is revoked and a new pair is issued, maintaining the same `user_id`.
 
 ### Token Revocation
 
@@ -269,10 +329,14 @@ KYC_PROVIDER_API_KEY=...
 ## Testing
 
 See `tests/api/test_auth_flow.py` for integration tests covering:
-- Registration flow
-- KYC verification
-- Token refresh
-- Protected endpoint access
+- Registration flow with persistent user creation
+- User identity consolidation by email
+- KYC verification persistence
+- Token refresh maintaining same `user_id`
+- KYC status persistence across token refresh
+- Complete flow: login → refresh → access protected endpoints
+- Multiple token refreshes maintaining identity
+- Refresh token invalidation after use
 
 ## Dependency Injection for Permissions
 

@@ -4,6 +4,9 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 
+from backend.repositories.user_repository import UserRepository
+from backend.repositories.kyc_repository import KYCRepository
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,12 +46,12 @@ class AMLAlert:
 
 
 class KYCService:
-    """KYC (Know Your Customer) service."""
+    """KYC (Know Your Customer) service - operates on persisted users."""
     
     def __init__(self):
         """Initialize KYC service."""
-        # In production, integrate with KYC provider (Onfido, Jumio, etc.)
-        self.records: Dict[str, KYCRecord] = {}
+        self.user_repo = UserRepository()
+        self.kyc_repo = KYCRepository()
         self.logger = logging.getLogger(__name__)
     
     def register_user(
@@ -61,10 +64,10 @@ class KYCService:
         document_number: str = None,
     ) -> KYCRecord:
         """
-        Register a new user for KYC.
+        Register a new user for KYC. Operates on persisted users.
         
         Args:
-            user_id: Unique user ID
+            user_id: Unique user ID (must exist in users table)
             name: Full name
             email: Email address
             country: Country of residence
@@ -72,58 +75,120 @@ class KYCService:
             document_number: Document number
             
         Returns:
-            KYC record
+            KYC record persisted in database
         """
-        record = KYCRecord(
+        # Verify user exists in persistent store
+        db_user = self.user_repo.find_by_user_id(user_id)
+        if not db_user:
+            self.logger.error(f"User {user_id} not found in persistent store")
+            raise ValueError(f"User {user_id} not found. User must be persisted before KYC registration.")
+        
+        # Ensure email matches if user has email
+        if db_user.email and db_user.email != email:
+            self.logger.warning(f"Email mismatch for user {user_id}: provided {email}, stored {db_user.email}")
+        
+        # Upsert KYC record in database
+        self.kyc_repo.upsert(
             user_id=user_id,
             name=name,
             email=email,
             country=country,
-            document_type=document_type,
-            document_number=document_number,
-            verified=False,
+            verified=False
         )
         
-        self.records[user_id] = record
+        self.logger.info(f"KYC record created for persisted user {user_id}")
         
-        self.logger.info(f"KYC record created for user {user_id}")
-        
-        return record
+        # Return record from database
+        return self._get_kyc_record_from_db(user_id)
     
     def verify_user(self, user_id: str, document_data: dict = None) -> bool:
         """
-        Verify a user's identity.
+        Verify a user's identity. Operates on persisted users.
         
         Args:
-            user_id: User ID to verify
+            user_id: User ID to verify (must exist in users table)
             document_data: Document verification data
             
         Returns:
             True if verified successfully
         """
-        if user_id not in self.records:
+        # Verify user exists in persistent store
+        db_user = self.user_repo.find_by_user_id(user_id)
+        if not db_user:
+            self.logger.error(f"User {user_id} not found in persistent store")
             return False
         
-        record = self.records[user_id]
-        record.verified = True
-        record.verification_date = datetime.now()
-        record.updated_at = datetime.now()
+        # Get existing KYC record or create minimal one
+        kyc_record = self._get_kyc_record_from_db(user_id)
+        if not kyc_record:
+            # Create minimal KYC record if doesn't exist
+            self.kyc_repo.upsert(
+                user_id=user_id,
+                name=db_user.username,
+                email=db_user.email or "",
+                country="",
+                verified=False
+            )
+        
+        # Update verification in database
+        verified_at = datetime.utcnow()
+        self.kyc_repo.upsert(
+            user_id=user_id,
+            name=kyc_record.name if kyc_record else db_user.username,
+            email=kyc_record.email if kyc_record else (db_user.email or ""),
+            country=kyc_record.country if kyc_record else "",
+            verified=True,
+            verified_at=verified_at
+        )
         
         # In production, integrate with verification provider
-        # For now, just mark as verified
+        # For now, just mark as verified in database
         
-        self.logger.info(f"User {user_id} verified for KYC")
+        self.logger.info(f"Persisted user {user_id} verified for KYC at {verified_at}")
         
         return True
     
     def get_verification_status(self, user_id: str) -> Optional[KYCRecord]:
-        """Get KYC verification status for user."""
-        return self.records.get(user_id)
+        """Get KYC verification status for persisted user."""
+        # Verify user exists
+        db_user = self.user_repo.find_by_user_id(user_id)
+        if not db_user:
+            return None
+        
+        return self._get_kyc_record_from_db(user_id)
     
     def is_verified(self, user_id: str) -> bool:
-        """Check if user is KYC verified."""
-        record = self.records.get(user_id)
-        return record.verified if record else False
+        """Check if persisted user is KYC verified by querying database."""
+        # Verify user exists in persistent store
+        db_user = self.user_repo.find_by_user_id(user_id)
+        if not db_user:
+            self.logger.warning(f"User {user_id} not found in persistent store")
+            return False
+        
+        # Query verification status from database
+        return self.kyc_repo.is_verified(user_id)
+    
+    def _get_kyc_record_from_db(self, user_id: str) -> Optional[KYCRecord]:
+        """Get KYC record from database and convert to KYCRecord."""
+        # This is a helper to get KYC data from KYCRepository
+        # KYCRepository doesn't return full record, so we check is_verified
+        # and get user data from UserRepository
+        db_user = self.user_repo.find_by_user_id(user_id)
+        if not db_user:
+            return None
+        
+        is_verified = self.kyc_repo.is_verified(user_id)
+        
+        # We can't get all KYC fields from current KYCRepository
+        # Return minimal record with verified status
+        return KYCRecord(
+            user_id=user_id,
+            name=db_user.username,
+            email=db_user.email or "",
+            verified=is_verified,
+            verification_date=None,  # KYCRepository doesn't expose this yet
+            country="",  # Would need to extend KYCRepository
+        )
 
 
 class AMLService:
