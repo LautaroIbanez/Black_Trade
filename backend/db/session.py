@@ -134,12 +134,13 @@ if isinstance(_db_url, bytes):
 else:
     _db_url = str(_db_url)
 
-# Modify DSN to suppress notices that might have encoding issues
+# Modify DSN to suppress notices and set correct encoding/locale
 # This is done before creating the engine to avoid encoding errors during connection
 if sys.platform == 'win32' and 'postgresql' in _db_url.lower():
-    # Add options to suppress notices/warnings that might have encoding issues
-    # URL encode the options parameter: = becomes %3D
-    options_param = "options=-c client_min_messages%3Derror"
+    # Add options to suppress notices/warnings and set locale to C (ASCII-safe)
+    # URL encode: = becomes %3D, space becomes %20
+    # Critical: lc_messages=C prevents encoding errors from PostgreSQL messages
+    options_param = "options=-c%20client_min_messages%3Derror%20-c%20lc_messages%3DC%20-c%20client_encoding%3DUTF8"
     if '?' in _db_url:
         if 'options=' not in _db_url:
             DATABASE_URL = f"{_db_url}&{options_param}"
@@ -158,18 +159,22 @@ connect_args = {
     "client_encoding": "UTF8",  # Explicitly set UTF-8 encoding
 }
 
-# On Windows, suppress notices that might have encoding issues
+# On Windows, suppress notices and set locale to prevent encoding errors
 # This MUST be set to prevent encoding errors during connection
 if sys.platform == 'win32':
-    # Add options to suppress warnings/notices during connection
-    # This is critical - it prevents PostgreSQL from sending messages with wrong encoding
+    # Add options to suppress warnings/notices and set locale to C (ASCII-safe)
+    # Critical: lc_messages=C prevents encoding errors from PostgreSQL messages
     if 'options' not in connect_args:
-        connect_args["options"] = "-c client_min_messages=error"
+        connect_args["options"] = "-c client_min_messages=error -c lc_messages=C -c client_encoding=UTF8"
     else:
         # Append to existing options
         existing = connect_args["options"]
+        if 'lc_messages' not in existing:
+            connect_args["options"] = f"{existing} -c lc_messages=C"
         if 'client_min_messages' not in existing:
-            connect_args["options"] = f"{existing} -c client_min_messages=error"
+            connect_args["options"] = f"{connect_args['options']} -c client_min_messages=error"
+        if 'client_encoding' not in existing:
+            connect_args["options"] = f"{connect_args['options']} -c client_encoding=UTF8"
 
 # Create engine with custom connection creator for safe encoding handling
 try:
@@ -242,9 +247,11 @@ def set_utf8_encoding(dbapi_conn, connection_record):
         except (ImportError, AttributeError):
             pass
         
-        # Ensure UTF-8 encoding is set on connection before any queries
+        # Ensure UTF-8 encoding and locale are set on connection before any queries
         cursor = dbapi_conn.cursor()
         try:
+            # Set locale to C (ASCII-safe) FIRST - this prevents encoding errors in messages
+            cursor.execute("SET lc_messages TO 'C'")
             # Set client encoding to UTF8
             cursor.execute("SET client_encoding TO 'UTF8'")
             # Disable notices that might contain encoding issues

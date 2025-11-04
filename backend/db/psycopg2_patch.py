@@ -55,22 +55,32 @@ def patch_psycopg2():
                 
                 # If dsn is a string (connection string), always add options
                 if isinstance(dsn, str) and 'postgresql' in dsn.lower():
-                    # Check if options already include client_min_messages
-                    if 'client_min_messages' not in dsn:
-                        # URL encode: = becomes %3D
+                    # Check if options already include lc_messages (most critical)
+                    if 'lc_messages' not in dsn:
+                        # URL encode: = becomes %3D, space becomes %20
+                        # Critical: lc_messages=C prevents encoding errors from PostgreSQL messages
+                        options_str = "-c%20lc_messages%3DC%20-c%20client_min_messages%3Derror%20-c%20client_encoding%3DUTF8"
                         if '?' in dsn:
-                            dsn_modified = f"{dsn}&options=-c client_min_messages%3Derror"
+                            dsn_modified = f"{dsn}&options={options_str}"
                         else:
-                            dsn_modified = f"{dsn}?options=-c client_min_messages%3Derror"
+                            dsn_modified = f"{dsn}?options={options_str}"
                 
-                # Also ensure kwargs has the option if not in DSN
-                if 'options' not in kwargs:
+                # Also ensure kwargs has the options if not in DSN
+                if 'options' not in kwargs or 'lc_messages' not in kwargs.get('options', ''):
                     existing_opts = kwargs.get('options', '')
+                    # Build options ensuring lc_messages=C is included (most critical)
+                    new_opts = []
+                    if 'lc_messages' not in existing_opts:
+                        new_opts.append("-c lc_messages=C")
                     if 'client_min_messages' not in existing_opts:
+                        new_opts.append("-c client_min_messages=error")
+                    if 'client_encoding' not in existing_opts:
+                        new_opts.append("-c client_encoding=UTF8")
+                    if new_opts:
                         if existing_opts:
-                            kwargs['options'] = f"{existing_opts} -c client_min_messages=error"
+                            kwargs['options'] = f"{existing_opts} {' '.join(new_opts)}"
                         else:
-                            kwargs['options'] = "-c client_min_messages=error"
+                            kwargs['options'] = " ".join(new_opts)
                 
                 # Update args if we modified DSN
                 if dsn_modified:
