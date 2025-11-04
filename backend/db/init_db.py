@@ -56,7 +56,9 @@ _009_user_tokens = load_migration("009_user_tokens")
 
 def run_migrations():
     """Run all database migrations in order."""
+    logger.info("=" * 70)
     logger.info("Running database migrations...")
+    logger.info("=" * 70)
     
     migrations = [
         ("001_initial_schema", _001_initial_schema),
@@ -70,9 +72,14 @@ def run_migrations():
         ("009_user_tokens", _009_user_tokens),
     ]
     
+    successful = 0
+    failed = 0
+    skipped = 0
+    
     for name, migration_module in migrations:
         if migration_module is None:
             logger.warning(f"Migration {name} could not be loaded, skipping")
+            skipped += 1
             continue
         try:
             logger.info(f"Running migration: {name}")
@@ -80,26 +87,42 @@ def run_migrations():
             if hasattr(migration_module, 'upgrade'):
                 try:
                     migration_module.upgrade()
-                    logger.info(f"Migration {name} completed successfully")
+                    logger.info(f"✓ Migration {name} completed successfully")
+                    successful += 1
                 except (UnicodeDecodeError, UnicodeError) as e:
-                    logger.warning(f"Encoding error in migration {name}: {e}. This may be safe to ignore if tables already exist.")
+                    logger.warning(f"⚠ Encoding error in migration {name}: {e}. This may be safe to ignore if tables already exist.")
+                    skipped += 1
                     # Continue - tables may already exist
                 except Exception as e:
                     # Check if error message contains encoding error
                     error_str = str(e)
                     if 'utf-8' in error_str.lower() or 'decode' in error_str.lower():
-                        logger.warning(f"Encoding issue in migration {name}: {e}. Tables may already exist, continuing...")
+                        logger.warning(f"⚠ Encoding issue in migration {name}: {e}. Tables may already exist, continuing...")
+                        skipped += 1
                     else:
-                        logger.error(f"Error running migration {name}: {e}")
+                        logger.error(f"✗ Error running migration {name}: {e}")
+                        failed += 1
                         # Don't raise - migrations may fail if already applied
             else:
-                logger.warning(f"Migration {name} has no upgrade() function, skipping")
+                logger.warning(f"⚠ Migration {name} has no upgrade() function, skipping")
+                skipped += 1
         except (UnicodeDecodeError, UnicodeError) as e:
-            logger.warning(f"Encoding error loading/running migration {name}: {e}")
+            logger.warning(f"⚠ Encoding error loading/running migration {name}: {e}")
+            skipped += 1
         except Exception as e:
-            logger.error(f"Unexpected error with migration {name}: {e}")
+            logger.error(f"✗ Unexpected error with migration {name}: {e}")
             import traceback
             logger.debug(traceback.format_exc())
+            failed += 1
+    
+    logger.info("=" * 70)
+    logger.info(f"Migration summary: {successful} successful, {failed} failed, {skipped} skipped")
+    logger.info("=" * 70)
+    
+    if failed > 0:
+        logger.warning(f"Some migrations failed. Please review the logs above.")
+    
+    return successful, failed, skipped
 
 
 def initialize_database():
@@ -130,19 +153,25 @@ def initialize_database():
             # Don't fail completely - tables might already exist
         
         # Run migrations
-        run_migrations()
+        successful, failed, skipped = run_migrations()
+        if successful > 0:
+            logger.info(f"Migrations completed: {successful} successful")
+        if failed > 0:
+            logger.warning(f"Migrations had {failed} failure(s) - review logs above")
+        if skipped > 0:
+            logger.debug(f"Migrations skipped: {skipped} (may be expected if already applied)")
         
-            # Enable TimescaleDB hypertables if available (optional)
-    try:
-        from backend.db.session import enable_timescaledb_hypertable
-        enable_timescaledb_hypertable()
-        logger.info("TimescaleDB hypertables enabled")
-    except RuntimeError as e:
-        # TimescaleDB not available - this is expected in many environments
-        logger.debug(f"TimescaleDB not available (using standard PostgreSQL): {e}")
-    except Exception as e:
-        # Other errors are still worth warning about
-        logger.warning(f"Could not enable TimescaleDB: {e}")
+        # Enable TimescaleDB hypertables if available (optional)
+        try:
+            from backend.db.session import enable_timescaledb_hypertable
+            enable_timescaledb_hypertable()
+            logger.info("TimescaleDB hypertables enabled")
+        except RuntimeError as e:
+            # TimescaleDB not available - this is expected in many environments
+            logger.debug(f"TimescaleDB not available (using standard PostgreSQL): {e}")
+        except Exception as e:
+            # Other errors are still worth warning about
+            logger.warning(f"Could not enable TimescaleDB: {e}")
         
         logger.info("Database initialization completed successfully")
         return True

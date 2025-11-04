@@ -24,6 +24,7 @@ from backend.api.routes.recommendations import router as recommendations_router
 from backend.api.routes.auth import router as auth_router
 from backend.api.routes.recommendation_tracking import router as recommendation_tracking_router
 from backend.api.routes.strategies import router as strategies_router
+from backend.api.routes.ingestion import router as ingestion_router
 from recommendation.config import TIMEFRAMES_ACTIVE
 
 load_dotenv()
@@ -457,6 +458,7 @@ app.include_router(monitoring_router, prefix="/api", tags=["monitoring"])
 app.include_router(risk_router, prefix="/api/risk", tags=["risk"])
 app.include_router(execution_router, prefix="/api/execution", tags=["execution"])
 app.include_router(observability_router, prefix="/api", tags=["observability"])
+app.include_router(ingestion_router, prefix="/api", tags=["ingestion"])
 app.include_router(strategies_router)
 app.include_router(recommendations_router)
 app.include_router(recommendation_tracking_router)

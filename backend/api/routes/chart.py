@@ -6,6 +6,7 @@ Provides candle data with trading signals and levels for visualization.
 
 import os
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query
@@ -19,6 +20,57 @@ router = APIRouter()
 
 # Initialize market data service (uses SQL repository)
 market_data_service = MarketDataService()
+
+
+def _convert_timestamp_to_ms(value: Any) -> int:
+    """
+    Convert timestamp to milliseconds (int).
+    
+    Handles multiple input types:
+    - pandas.Timestamp / datetime64
+    - numpy datetime64
+    - datetime objects
+    - int (already in ms or seconds)
+    - numpy int64/int32
+    - float
+    
+    Returns:
+        int: Timestamp in milliseconds
+    """
+    # Check for NaN first
+    if pd.isna(value) or value is None:
+        raise ValueError(f"Cannot convert NaN/None timestamp to int")
+    
+    # Handle pandas Timestamp
+    if isinstance(value, pd.Timestamp):
+        return int(value.value / 1_000_000)  # Convert nanoseconds to milliseconds
+    
+    # Handle numpy datetime64
+    if isinstance(value, np.datetime64):
+        # Convert to pandas Timestamp first, then to ms
+        return int(pd.Timestamp(value).value / 1_000_000)
+    
+    # Handle datetime objects
+    if isinstance(value, datetime):
+        return int(value.timestamp() * 1000)
+    
+    # Handle numpy integer types (int64, int32, etc.)
+    if isinstance(value, (np.integer, np.int64, np.int32)):
+        ts_int = int(value)
+        # If it looks like seconds (smaller than year 2000 in ms), convert to ms
+        if ts_int < 946684800000:  # Year 2000 in milliseconds
+            return ts_int * 1000
+        return ts_int
+    
+    # Handle int or float (assume already in milliseconds if > year 2000 in ms)
+    try:
+        ts_int = int(value)
+        # If it looks like seconds (smaller than year 2000 in ms), convert to ms
+        if ts_int < 946684800000:  # Year 2000 in milliseconds
+            return ts_int * 1000
+        return ts_int
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Cannot convert timestamp value {value} (type: {type(value)}) to int: {e}")
 
 
 class CandleData(BaseModel):
@@ -97,14 +149,17 @@ async def get_chart_data(
         # Convert to chart format
         candles = []
         for _, row in df.iterrows():
+            # Safely convert timestamp to milliseconds
+            timestamp_ms = _convert_timestamp_to_ms(row['timestamp'])
+            
             candles.append(CandleData(
-                timestamp=int(row['timestamp']),
+                timestamp=timestamp_ms,
                 open=float(row['open']),
                 high=float(row['high']),
                 low=float(row['low']),
                 close=float(row['close']),
                 volume=float(row['volume']),
-                datetime=datetime.fromtimestamp(row['timestamp'] / 1000).isoformat()
+                datetime=datetime.fromtimestamp(timestamp_ms / 1000).isoformat()
             ))
         
         # Get current price
@@ -282,11 +337,17 @@ def _calculate_freshness(df: pd.DataFrame) -> float:
     if df.empty:
         return float('inf')
     
-    latest_timestamp = df['timestamp'].iloc[-1]
-    latest_datetime = datetime.fromtimestamp(latest_timestamp / 1000)
-    current_time = datetime.now()
-    
-    return (current_time - latest_datetime).total_seconds() / 3600
+    try:
+        latest_timestamp = df['timestamp'].iloc[-1]
+        # Convert to milliseconds if needed
+        timestamp_ms = _convert_timestamp_to_ms(latest_timestamp)
+        latest_datetime = datetime.fromtimestamp(timestamp_ms / 1000)
+        current_time = datetime.now()
+        
+        return (current_time - latest_datetime).total_seconds() / 3600
+    except Exception:
+        # Return infinity if we can't calculate freshness
+        return float('inf')
 
 
 def _calculate_freshness_from_timestamp(timestamp: Optional[int]) -> float:

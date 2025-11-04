@@ -234,11 +234,17 @@ class OHLCVRepository:
                 
                 df = pd.DataFrame(data)
                 
-                # Ensure timestamp column exists and convert to datetime if needed
-                if 'datetime' in df.columns:
+                # Ensure timestamp column exists and is int (milliseconds)
+                # Keep timestamp as int in milliseconds for consistency
+                if 'timestamp' in df.columns:
+                    # Convert to int if it's not already
+                    df['timestamp'] = df['timestamp'].astype('Int64', errors='ignore')
+                    # Fill any NaN values (shouldn't happen, but be safe)
+                    df['timestamp'] = df['timestamp'].fillna(0).astype(int)
+                elif 'datetime' in df.columns:
+                    # If only datetime column exists, convert to timestamp in ms
                     df['timestamp'] = pd.to_datetime(df['datetime'], errors='coerce')
-                elif 'timestamp' in df.columns:
-                    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms', errors='coerce')
+                    df['timestamp'] = (df['timestamp'].astype('int64') / 1_000_000).fillna(0).astype(int)
                 
                 # Select and order columns
                 required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']

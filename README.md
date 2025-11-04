@@ -108,9 +108,17 @@ cd frontend
 npm install
 ```
 
-5. **Ejecutar aplicación**
+5. **Inicializar base de datos y migraciones**
+```bash
+# Las migraciones se ejecutan automáticamente al iniciar el backend
+# También puedes ejecutarlas manualmente si es necesario:
+python -m backend.db.init_db
+```
+
+6. **Ejecutar aplicación**
 ```bash
 # Terminal 1: Backend
+# Las migraciones se ejecutan automáticamente en el startup_event
 uvicorn backend.app:app --reload --port 8000
 
 # Terminal 2: Frontend
@@ -119,6 +127,8 @@ npm run dev
 ```
 
 La aplicación frontend estará disponible en: http://localhost:5173
+
+**⚠️ IMPORTANTE**: Las migraciones de base de datos se ejecutan automáticamente en cada despliegue/arranque del backend. El sistema ejecuta todas las migraciones disponibles en orden secuencial, asegurando que el esquema de la base de datos esté siempre actualizado y coherente. Revisa los logs del backend para confirmar que todas las migraciones se ejecutaron correctamente.
 
 ### Setup con Docker
 
