@@ -8,7 +8,8 @@ from recommendation.orchestrator import Order, OrderSide, OrderType
 from backend.execution.engine import ExecutionEngine, OrderStatus
 from backend.execution.coordinator import ExecutionCoordinator
 from backend.logging.journal import transaction_journal, JournalEntryType
-from backend.auth.permissions import AuthService, Permission
+from backend.auth.permissions import Permission
+from backend.api.dependencies import require_create_orders_access, require_cancel_orders_access
 from backend.config.security import rate_limit
 from backend.compliance.kyc_aml import get_kyc_service, get_aml_service
 from backend.repositories.journal_repository import JournalRepository
@@ -58,7 +59,7 @@ async def create_order(
     req: Request,
     request: OrderRequest,
     coordinator: ExecutionCoordinator = Depends(get_execution_coordinator),
-    user=Depends(lambda: AuthService().require_permission(Permission.CREATE_ORDERS)),
+    user=Depends(require_create_orders_access),
 ) -> Dict[str, Any]:
     """Create and submit an order."""
     try:
@@ -158,7 +159,7 @@ async def cancel_order(
     order_id: str,
     request: CancelOrderRequest,
     coordinator: ExecutionCoordinator = Depends(get_execution_coordinator),
-    user=Depends(lambda: AuthService().require_permission(Permission.CANCEL_ORDERS)),
+    user=Depends(require_cancel_orders_access),
 ) -> Dict[str, Any]:
     """Cancel an order."""
     success = coordinator.execution_engine.cancel_order(order_id, request.reason)

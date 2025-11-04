@@ -6,7 +6,8 @@ from datetime import datetime
 
 from backend.risk.engine import RiskEngine, RiskLimits, RiskMetrics
 from backend.integrations.base import ExchangeAdapter
-from backend.auth.permissions import AuthService, Permission
+from backend.auth.permissions import Permission
+from backend.api.dependencies import require_risk_metrics_access, require_write_risk_limits_access
 from backend.repositories.kyc_repository import KYCRepository
 from backend.config.security import rate_limit
 
@@ -52,7 +53,7 @@ def set_risk_engine(engine: RiskEngine):
 
 @router.get("/status")
 @rate_limit(max_requests=120, window_seconds=60)
-async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(require_risk_metrics_access)) -> Dict[str, Any]:
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     """Get current risk status."""
@@ -94,7 +95,7 @@ async def get_risk_status(request: Request, engine: RiskEngine = Depends(get_ris
 
 @router.get("/exposure")
 @rate_limit(max_requests=120, window_seconds=60)
-async def get_exposure(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+async def get_exposure(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(require_risk_metrics_access)) -> Dict[str, Any]:
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     """Get exposure breakdown by asset and strategy."""
@@ -132,7 +133,7 @@ async def get_var(
 
 @router.get("/drawdown")
 @rate_limit(max_requests=120, window_seconds=60)
-async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(require_risk_metrics_access)) -> Dict[str, Any]:
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     """Get drawdown metrics."""
@@ -151,7 +152,7 @@ async def get_drawdown(request: Request, engine: RiskEngine = Depends(get_risk_e
 
 @router.get("/limits")
 @rate_limit(max_requests=60, window_seconds=60)
-async def get_limits(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(lambda: AuthService().require_permission(Permission.READ_RISK_METRICS))) -> Dict[str, Any]:
+async def get_limits(request: Request, engine: RiskEngine = Depends(get_risk_engine), user=Depends(require_risk_metrics_access)) -> Dict[str, Any]:
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     """Get current risk limits."""
@@ -174,7 +175,7 @@ async def update_limits(
     request: Request,
     limits: RiskLimitsRequest,
     engine: RiskEngine = Depends(get_risk_engine),
-    user=Depends(lambda: AuthService().require_permission(Permission.WRITE_RISK_LIMITS)),
+    user=Depends(require_write_risk_limits_access),
 ) -> Dict[str, Any]:
     """Update risk limits."""
     try:

@@ -5,7 +5,8 @@ from pydantic import BaseModel
 
 from recommendation.engine.prioritizer import RecommendationPrioritizer
 from backend.repositories.recommendations_repository import RecommendationsRepository
-from backend.auth.permissions import AuthService, Permission
+from backend.auth.permissions import Permission
+from backend.api.dependencies import require_recommendation_access
 from backend.repositories.kyc_repository import KYCRepository
 from backend.observability.metrics import get_metrics_collector
 from backend.observability.alerts import ObservabilityAlertManager, AlertType, AlertSeverity
@@ -28,7 +29,7 @@ class FeedbackRequest(BaseModel):
 
 
 @router.get("/live")
-async def get_live_recommendations(profile: str = "balanced", user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))) -> Dict[str, Any]:
+async def get_live_recommendations(profile: str = "balanced", user=Depends(require_recommendation_access)) -> Dict[str, Any]:
     # Enforce KYC verification
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")

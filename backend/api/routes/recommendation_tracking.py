@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
 from backend.repositories.recommendation_tracking_repository import RecommendationTrackingRepository
-from backend.auth.permissions import AuthService, Permission
+from backend.auth.permissions import Permission
+from backend.api.dependencies import require_recommendation_access
 from backend.repositories.kyc_repository import KYCRepository
 from backend.schemas.validators import sanitize_text
 from backend.observability.metrics import get_metrics_collector
@@ -24,7 +25,7 @@ class TrackingRequest(BaseModel):
 
 
 @router.post("/accept")
-async def accept(req: TrackingRequest, user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+async def accept(req: TrackingRequest, user=Depends(require_recommendation_access)):
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     if req.recommendation_id:
@@ -47,7 +48,7 @@ async def accept(req: TrackingRequest, user=Depends(lambda: AuthService().requir
 
 
 @router.post("/reject")
-async def reject(req: TrackingRequest, user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+async def reject(req: TrackingRequest, user=Depends(require_recommendation_access)):
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     if req.recommendation_id:
@@ -77,7 +78,7 @@ class OutcomeRequest(BaseModel):
 
 
 @router.post("/outcome")
-async def outcome(req: OutcomeRequest, user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+async def outcome(req: OutcomeRequest, user=Depends(require_recommendation_access)):
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     ok = repo.update(req.recommendation_id, outcome=req.outcome, realized_pnl=req.realized_pnl, notes=sanitize_text(req.notes or ''))
@@ -93,14 +94,14 @@ async def outcome(req: OutcomeRequest, user=Depends(lambda: AuthService().requir
 
 
 @router.get("/history")
-async def history(limit: int = 50, user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+async def history(limit: int = 50, user=Depends(require_recommendation_access)):
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     return {"items": repo.history(limit=limit)}
 
 
 @router.get("/metrics")
-async def metrics(days: int = 30, user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+async def metrics(days: int = 30, user=Depends(require_recommendation_access)):
     if not KYCRepository().is_verified(user.user_id):
         raise HTTPException(status_code=403, detail="KYC verification required")
     return repo.get_metrics(days=days)

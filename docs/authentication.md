@@ -274,3 +274,89 @@ See `tests/api/test_auth_flow.py` for integration tests covering:
 - Token refresh
 - Protected endpoint access
 
+## Dependency Injection for Permissions
+
+### Correct Usage Pattern
+
+When adding authentication to FastAPI endpoints, **always use the dependency functions** from `backend/api/dependencies.py` instead of creating new `AuthService()` instances.
+
+#### ✅ CORRECT: Using Pre-built Dependencies
+
+```python
+from fastapi import Depends
+from backend.api.dependencies import require_recommendation_access, require_risk_metrics_access
+from backend.auth.permissions import User
+
+@router.get("/recommendations")
+async def get_recommendations(user: User = Depends(require_recommendation_access)):
+    # user is a User object with user_id, username, role, etc.
+    return {"user_id": user.user_id, "items": [...]}
+```
+
+#### ❌ INCORRECT: Creating New AuthService Instances
+
+```python
+# DON'T DO THIS - Creates new instance and returns function instead of User
+from backend.auth.permissions import AuthService, Permission
+
+@router.get("/recommendations")
+async def get_recommendations(user=Depends(lambda: AuthService().require_permission(Permission.READ_RECOMMENDATIONS))):
+    # This will fail with AttributeError - user is a function, not User object
+    return {"user_id": user.user_id}  # ❌ AttributeError!
+```
+
+### Available Dependencies
+
+The following pre-built dependencies are available in `backend/api/dependencies.py`:
+
+- `require_recommendation_access`: Requires `READ_RECOMMENDATIONS` permission
+- `require_risk_metrics_access`: Requires `READ_RISK_METRICS` permission
+- `require_create_orders_access`: Requires `CREATE_ORDERS` permission
+- `require_cancel_orders_access`: Requires `CANCEL_ORDERS` permission
+- `require_write_risk_limits_access`: Requires `WRITE_RISK_LIMITS` permission
+- `get_current_user`: Returns authenticated user without permission check
+
+### Creating New Permission Dependencies
+
+If you need a dependency for a permission not yet covered, use the factory pattern:
+
+```python
+from backend.api.dependencies import _make_permission_dependency
+from backend.auth.permissions import Permission
+
+# Create a new dependency
+require_my_custom_permission = _make_permission_dependency(Permission.MY_CUSTOM_PERMISSION)
+
+# Use it in your endpoint
+@router.get("/my-endpoint")
+async def my_endpoint(user: User = Depends(require_my_custom_permission)):
+    return {"user_id": user.user_id}
+```
+
+### Why This Matters
+
+1. **Singleton Pattern**: `AuthService` must be a singleton across the application to ensure consistent token storage and user management.
+
+2. **Type Safety**: Using the proper dependencies ensures FastAPI correctly injects the `User` object, enabling type checking and IDE autocomplete.
+
+3. **Consistency**: All endpoints use the same `AuthService` instance initialized at startup via `init_auth_service()`.
+
+4. **Testing**: The dependency injection pattern makes it easy to mock `AuthService` in tests.
+
+### Internal Implementation
+
+The dependencies use `get_auth_service()` to obtain the singleton instance:
+
+```python
+async def require_permission(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    auth_service: AuthService = Depends(get_auth_service),  # ← Singleton getter
+) -> User:
+    user = auth_service.authenticate(credentials.credentials)
+    if not user or not user.has_permission(permission):
+        raise HTTPException(...)
+    return user
+```
+
+This ensures that all authentication logic uses the same `AuthService` instance initialized during application startup.
+
