@@ -2486,3 +2486,73 @@ LINE 7:                 user VARCHAR(100) DEFAULT 'system',
 2025-11-04 14:45:45,772 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
 2025-11-04 14:45:45,915 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
 2025-11-04 14:45:46,058 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 14:45:46,065 - backend.observability.middleware - INFO - GET /recommendation - 404 - 2707.16ms
+2025-11-04 14:46:53,061 - backend.api.routes.websocket - INFO - WebSocket disconnected. Total connections: 0
+2025-11-04 15:09:36,316 - backend.observability.telemetry - INFO - Tracing initialized with OTLP endpoint: http://localhost:4317
+2025-11-04 15:09:36,326 - backend.observability.telemetry - INFO - Metrics initialized with OTLP endpoint: http://localhost:4317
+2025-11-04 15:09:36,333 - backend.observability.telemetry - INFO - FastAPI instrumented with OpenTelemetry
+2025-11-04 15:09:36,338 - backend.observability.telemetry - INFO - Requests library instrumented with OpenTelemetry
+2025-11-04 15:09:36,471 - backend.observability.telemetry - INFO - SQLAlchemy instrumented with OpenTelemetry
+2025-11-04 15:09:36,471 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 15:09:36,471 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 15:09:36,640 - backend.db.init_db - INFO - Initializing database...
+2025-11-04 15:09:36,641 - backend.db.init_db - INFO - Importing database models...
+2025-11-04 15:09:36,660 - backend.db.init_db - INFO - Models imported successfully
+2025-11-04 15:09:36,660 - backend.db.init_db - INFO - Creating database tables from models...
+2025-11-04 15:09:36,796 - backend.db.init_db - INFO - Tables created successfully
+2025-11-04 15:09:36,801 - backend.db.init_db - INFO - Running database migrations...
+2025-11-04 15:09:36,801 - backend.db.init_db - INFO - Running migration: 001_initial_schema
+2025-11-04 15:09:36,996 - backend.db.init_db - INFO - Migration 001_initial_schema completed successfully
+2025-11-04 15:09:36,996 - backend.db.init_db - INFO - Running migration: 002_strategy_results
+2025-11-04 15:09:37,100 - backend.db.init_db - INFO - Migration 002_strategy_results completed successfully
+2025-11-04 15:09:37,101 - backend.db.init_db - INFO - Running migration: 003_risk_metrics
+2025-11-04 15:09:37,207 - backend.db.init_db - INFO - Migration 003_risk_metrics completed successfully
+2025-11-04 15:09:37,207 - backend.db.init_db - INFO - Running migration: 004_journal
+2025-11-04 15:09:37,326 - backend.db.init_db - INFO - Migration 004_journal completed successfully
+2025-11-04 15:09:37,326 - backend.db.init_db - INFO - Running migration: 005_live_results
+2025-11-04 15:09:37,638 - backend.db.init_db - INFO - Migration 005_live_results completed successfully
+2025-11-04 15:09:37,644 - backend.db.init_db - INFO - Running migration: 006_recommendations_log
+2025-11-04 15:09:38,120 - backend.db.init_db - INFO - Migration 006_recommendations_log completed successfully
+2025-11-04 15:09:38,145 - backend.db.init_db - INFO - Running migration: 007_kyc_users
+2025-11-04 15:09:38,375 - backend.db.init_db - INFO - Migration 007_kyc_users completed successfully
+2025-11-04 15:09:38,381 - backend.db.init_db - INFO - Running migration: 008_recommendations_outcomes
+2025-11-04 15:09:39,172 - backend.db.init_db - INFO - Migration 008_recommendations_outcomes completed successfully
+2025-11-04 15:09:39,182 - backend.db.init_db - INFO - Running migration: 009_user_tokens
+2025-11-04 15:09:39,749 - backend.db.init_db - INFO - Migration 009_user_tokens completed successfully
+2025-11-04 15:09:39,988 - backend.db.init_db - WARNING - Could not enable TimescaleDB: TimescaleDB extension not found. Install TimescaleDB first.
+2025-11-04 15:09:40,004 - backend.db.init_db - INFO - Database initialization completed successfully
+2025-11-04 15:09:40,008 - backend.app - INFO - Auth service initialized
+2025-11-04 15:09:40,044 - backend.scripts.init_risk_system - INFO - Using simulated adapter for risk management
+2025-11-04 15:09:40,055 - backend.scripts.init_risk_system - INFO - Risk management system initialized
+2025-11-04 15:09:40,060 - backend.scripts.init_risk_system - INFO - Limits: max_exposure=80.0%, max_drawdown=20.0%
+2025-11-04 15:09:40,064 - backend.app - INFO - Risk system initialized
+2025-11-04 15:09:40,832 - backend.app - INFO - Scheduler initialized (will start asynchronously)
+2025-11-04 15:09:40,835 - backend.scripts.init_execution_system - INFO - Using simulated adapter for execution
+2025-11-04 15:09:40,835 - backend.scripts.init_execution_system - INFO - Signal orchestrator initialized
+2025-11-04 15:09:40,837 - backend.scripts.init_execution_system - INFO - Execution engine initialized
+2025-11-04 15:09:40,838 - backend.scripts.init_execution_system - INFO - Execution coordinator initialized
+2025-11-04 15:09:40,839 - backend.scripts.init_execution_system - INFO - Execution system fully initialized
+2025-11-04 15:09:40,840 - backend.app - INFO - Execution system initialized
+2025-11-04 15:09:40,841 - backend.app - INFO - Services initialized successfully
+2025-11-04 15:09:40,842 - backend.tasks.scheduler - INFO - Starting data ingestion task...
+2025-11-04 15:09:40,843 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 15:09:40,844 - backend.tasks.scheduler - INFO - Data ingestion task prepared (will start with scheduler)
+2025-11-04 15:09:40,846 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-04 15:09:40,847 - backend.tasks.scheduler - INFO - Risk update job scheduled
+2025-11-04 15:09:40,848 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-04 15:09:40,849 - backend.tasks.scheduler - INFO - Execution processing job scheduled
+2025-11-04 15:09:40,850 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 15:09:40,851 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-04 15:09:40,852 - backend.tasks.scheduler - INFO - Walk-forward optimization job scheduled
+2025-11-04 15:09:40,854 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-04 15:09:40,855 - backend.tasks.scheduler - INFO - Observability monitor job scheduled
+2025-11-04 15:09:41,354 - backend.tasks.data_ingestion_task - INFO - Starting WebSocket ingestion for ['BTCUSDT'] on ['15m', '1h', '4h', '1d']
+2025-11-04 15:09:41,354 - backend.ingestion.websocket_consumer - INFO - Connecting to Binance WebSocket: wss://stream.binance.com:9443/stream?streams=btcusdt@kline_15m/btcusdt@kline_1h/btcusdt@kline_4h/btcusdt@kline_1d
+2025-11-04 15:09:41,869 - backend.tasks.data_ingestion_task - INFO - Starting WebSocket ingestion for ['BTCUSDT'] on ['15m', '1h', '4h', '1d']
+2025-11-04 15:09:41,870 - backend.ingestion.websocket_consumer - INFO - Connecting to Binance WebSocket: wss://stream.binance.com:9443/stream?streams=btcusdt@kline_15m/btcusdt@kline_1h/btcusdt@kline_4h/btcusdt@kline_1d
+2025-11-04 15:09:43,275 - backend.ingestion.websocket_consumer - INFO - WebSocket connected successfully
+2025-11-04 15:09:43,304 - backend.ingestion.websocket_consumer - INFO - WebSocket connected successfully
+2025-11-04 15:09:43,654 - opentelemetry.exporter.otlp.proto.grpc.exporter - WARNING - Transient error StatusCode.UNAVAILABLE encountered while exporting traces to localhost:4317, retrying in 0.99s.
+2025-11-04 15:09:46,994 - opentelemetry.exporter.otlp.proto.grpc.exporter - ERROR - Failed to export traces to localhost:4317, error code: StatusCode.UNAVAILABLE
+2025-11-04 15:09:52,006 - opentelemetry.exporter.otlp.proto.grpc.exporter - WARNING - Transient error StatusCode.UNAVAILABLE encountered while exporting traces to localhost:4317, retrying in 0.95s.
+2025-11-04 15:09:59,208 - opentelemetry.exporter.otlp.proto.grpc.exporter - ERROR - Failed to export traces to localhost:4317, error code: StatusCode.UNAVAILABLE
