@@ -2556,3 +2556,414 @@ LINE 7:                 user VARCHAR(100) DEFAULT 'system',
 2025-11-04 15:09:46,994 - opentelemetry.exporter.otlp.proto.grpc.exporter - ERROR - Failed to export traces to localhost:4317, error code: StatusCode.UNAVAILABLE
 2025-11-04 15:09:52,006 - opentelemetry.exporter.otlp.proto.grpc.exporter - WARNING - Transient error StatusCode.UNAVAILABLE encountered while exporting traces to localhost:4317, retrying in 0.95s.
 2025-11-04 15:09:59,208 - opentelemetry.exporter.otlp.proto.grpc.exporter - ERROR - Failed to export traces to localhost:4317, error code: StatusCode.UNAVAILABLE
+2025-11-04 15:37:21,258 - backend.observability.telemetry - INFO - FastAPI instrumented with OpenTelemetry
+2025-11-04 15:37:21,265 - backend.observability.telemetry - INFO - Requests library instrumented with OpenTelemetry
+2025-11-04 15:37:21,285 - backend.observability.telemetry - INFO - SQLAlchemy instrumented with OpenTelemetry
+2025-11-04 15:37:21,287 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 15:37:21,288 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 15:37:21,441 - backend.app - ERROR - Error initializing services: expected 'except' or 'finally' block (init_db.py, line 136)
+2025-11-04 15:37:55,026 - backend.api.routes.websocket - INFO - WebSocket connected. Total connections: 1
+2025-11-04 15:37:55,646 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 14.62ms
+2025-11-04 15:37:55,671 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 13.11ms
+2025-11-04 15:38:05,854 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 500 - 295.91ms
+2025-11-04 15:38:06,099 - backend.app - INFO - Checking data availability...
+2025-11-04 15:38:07,951 - backend.app - INFO - Data summary: incomplete
+2025-11-04 15:38:07,952 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 15:38:07,953 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 15:38:11,047 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 15:38:12,271 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=22 win_rate=0.364 max_dd=0.006 total_return=-0.001
+2025-11-04 15:38:13,002 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=23 win_rate=0.304 max_dd=0.005 total_return=-0.000
+2025-11-04 15:38:13,726 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=33 win_rate=0.273 max_dd=0.003 total_return=0.002
+2025-11-04 15:38:13,805 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=46 win_rate=0.304 max_dd=0.014 total_return=-0.008
+2025-11-04 15:38:13,882 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=20 win_rate=0.450 max_dd=0.004 total_return=0.003
+2025-11-04 15:38:13,961 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=18 win_rate=0.500 max_dd=0.003 total_return=0.005
+2025-11-04 15:38:14,043 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=12 win_rate=0.417 max_dd=0.004 total_return=-0.001
+2025-11-04 15:38:14,104 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=10 win_rate=0.500 max_dd=0.004 total_return=-0.001
+2025-11-04 15:38:14,176 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=8 win_rate=0.500 max_dd=0.002 total_return=0.001
+2025-11-04 15:38:14,235 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=28 win_rate=0.786 max_dd=0.003 total_return=0.001
+2025-11-04 15:38:14,306 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=8 win_rate=0.375 max_dd=0.003 total_return=-0.003
+2025-11-04 15:38:14,366 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=3 win_rate=0.667 max_dd=0.003 total_return=-0.003
+2025-11-04 15:38:14,461 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=274 win_rate=0.321 max_dd=0.022 total_return=-0.018
+2025-11-04 15:38:14,526 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=197 win_rate=0.299 max_dd=0.013 total_return=-0.010
+2025-11-04 15:38:14,606 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=128 win_rate=0.328 max_dd=0.004 total_return=0.001
+2025-11-04 15:38:15,571 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=15m trades=21 win_rate=0.286 max_dd=0.010 total_return=-0.009
+2025-11-04 15:38:16,534 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=15m trades=18 win_rate=0.333 max_dd=0.004 total_return=0.001
+2025-11-04 15:38:17,606 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=15m trades=19 win_rate=0.737 max_dd=0.003 total_return=0.000
+2025-11-04 15:38:17,685 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=15m trades=28 win_rate=0.286 max_dd=0.008 total_return=-0.003
+2025-11-04 15:38:17,758 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=15m trades=105 win_rate=0.410 max_dd=0.006 total_return=-0.002
+2025-11-04 15:38:18,349 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=8 win_rate=0.375 max_dd=0.005 total_return=0.004
+2025-11-04 15:38:19,069 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=18 win_rate=0.278 max_dd=0.007 total_return=-0.002
+2025-11-04 15:38:19,746 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=35 win_rate=0.543 max_dd=0.006 total_return=0.008
+2025-11-04 15:38:19,819 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=38 win_rate=0.395 max_dd=0.004 total_return=0.006
+2025-11-04 15:38:19,881 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=21 win_rate=0.524 max_dd=0.007 total_return=0.004
+2025-11-04 15:38:19,981 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=14 win_rate=0.500 max_dd=0.009 total_return=0.005
+2025-11-04 15:38:20,080 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=20 win_rate=0.550 max_dd=0.002 total_return=0.004
+2025-11-04 15:38:20,186 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.381 max_dd=0.005 total_return=-0.001
+2025-11-04 15:38:20,288 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.333 max_dd=0.006 total_return=0.004
+2025-11-04 15:38:20,385 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=27 win_rate=0.630 max_dd=0.002 total_return=0.004
+2025-11-04 15:38:20,464 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=10 win_rate=0.600 max_dd=0.003 total_return=0.000
+2025-11-04 15:38:20,530 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=5 win_rate=0.400 max_dd=0.007 total_return=-0.004
+2025-11-04 15:38:20,624 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=282 win_rate=0.440 max_dd=0.016 total_return=-0.006
+2025-11-04 15:38:20,705 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=254 win_rate=0.429 max_dd=0.024 total_return=-0.017
+2025-11-04 15:38:20,781 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=161 win_rate=0.460 max_dd=0.017 total_return=-0.005
+2025-11-04 15:38:21,287 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1h trades=27 win_rate=0.481 max_dd=0.006 total_return=0.012
+2025-11-04 15:38:21,821 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1h trades=138 win_rate=0.435 max_dd=0.018 total_return=-0.011
+2025-11-04 15:38:22,615 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1h trades=14 win_rate=0.500 max_dd=0.005 total_return=0.002
+2025-11-04 15:38:22,680 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1h trades=27 win_rate=0.407 max_dd=0.012 total_return=-0.007
+2025-11-04 15:38:22,748 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1h trades=86 win_rate=0.360 max_dd=0.019 total_return=-0.011
+2025-11-04 15:38:22,842 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:38:22,845 - backend.app - WARNING - No data available for 2h
+2025-11-04 15:38:23,829 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=10 win_rate=0.500 max_dd=0.003 total_return=0.007
+2025-11-04 15:38:24,441 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=9 win_rate=0.778 max_dd=0.001 total_return=0.013
+2025-11-04 15:38:25,031 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=35 win_rate=0.343 max_dd=0.007 total_return=0.002
+2025-11-04 15:38:25,106 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=33 win_rate=0.394 max_dd=0.018 total_return=-0.002
+2025-11-04 15:38:25,174 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=15 win_rate=0.467 max_dd=0.031 total_return=-0.019
+2025-11-04 15:38:25,244 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=12 win_rate=0.333 max_dd=0.024 total_return=-0.017
+2025-11-04 15:38:25,308 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=28 win_rate=0.393 max_dd=0.007 total_return=0.004
+2025-11-04 15:38:25,373 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=25 win_rate=0.480 max_dd=0.005 total_return=0.016
+2025-11-04 15:38:25,418 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=35 win_rate=0.371 max_dd=0.006 total_return=0.012
+2025-11-04 15:38:25,466 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=25 win_rate=0.440 max_dd=0.028 total_return=-0.027
+2025-11-04 15:38:25,529 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=12 win_rate=0.667 max_dd=0.010 total_return=-0.004
+2025-11-04 15:38:25,584 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=4 win_rate=0.000 max_dd=0.006 total_return=-0.006
+2025-11-04 15:38:25,649 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=271 win_rate=0.469 max_dd=0.014 total_return=-0.002
+2025-11-04 15:38:25,717 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=236 win_rate=0.445 max_dd=0.032 total_return=-0.024
+2025-11-04 15:38:25,840 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=169 win_rate=0.444 max_dd=0.034 total_return=-0.027
+2025-11-04 15:38:26,428 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=4h trades=46 win_rate=0.370 max_dd=0.027 total_return=-0.015
+2025-11-04 15:38:27,013 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=4h trades=147 win_rate=0.483 max_dd=0.020 total_return=-0.012
+2025-11-04 15:38:27,786 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=4h trades=13 win_rate=0.692 max_dd=0.014 total_return=0.009
+2025-11-04 15:38:27,879 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=4h trades=25 win_rate=0.520 max_dd=0.008 total_return=0.017
+2025-11-04 15:38:27,986 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=4h trades=88 win_rate=0.523 max_dd=0.012 total_return=0.017
+2025-11-04 15:38:28,101 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:38:28,103 - backend.app - WARNING - No data available for 12h
+2025-11-04 15:38:28,909 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=12 win_rate=0.417 max_dd=0.006 total_return=0.005
+2025-11-04 15:38:29,480 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=18 win_rate=0.556 max_dd=0.005 total_return=0.011
+2025-11-04 15:38:30,076 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=50 win_rate=0.320 max_dd=0.027 total_return=-0.027
+2025-11-04 15:38:30,124 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=25 win_rate=0.720 max_dd=0.022 total_return=0.117
+2025-11-04 15:38:30,189 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=21 win_rate=0.429 max_dd=0.052 total_return=-0.002
+2025-11-04 15:38:30,245 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=13 win_rate=0.308 max_dd=0.065 total_return=-0.021
+2025-11-04 15:38:30,301 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=46 win_rate=0.152 max_dd=0.022 total_return=-0.018
+2025-11-04 15:38:30,364 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=42 win_rate=0.214 max_dd=0.008 total_return=0.008
+2025-11-04 15:38:30,429 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=57 win_rate=0.193 max_dd=0.016 total_return=-0.004
+2025-11-04 15:38:30,493 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=30 win_rate=0.700 max_dd=0.016 total_return=0.031
+2025-11-04 15:38:30,555 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=13 win_rate=0.769 max_dd=0.028 total_return=0.025
+2025-11-04 15:38:30,621 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=4 win_rate=0.500 max_dd=0.030 total_return=-0.025
+2025-11-04 15:38:30,711 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=276 win_rate=0.471 max_dd=0.076 total_return=-0.046
+2025-11-04 15:38:30,814 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=225 win_rate=0.484 max_dd=0.049 total_return=0.012
+2025-11-04 15:38:30,901 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=82 win_rate=0.476 max_dd=0.041 total_return=-0.027
+2025-11-04 15:38:31,580 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1d trades=27 win_rate=0.444 max_dd=0.045 total_return=-0.041
+2025-11-04 15:38:32,166 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1d trades=180 win_rate=0.556 max_dd=0.045 total_return=0.014
+2025-11-04 15:38:33,111 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1d trades=11 win_rate=0.727 max_dd=0.081 total_return=-0.028
+2025-11-04 15:38:33,192 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1d trades=33 win_rate=0.333 max_dd=0.029 total_return=-0.016
+2025-11-04 15:38:33,259 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1d trades=90 win_rate=0.511 max_dd=0.051 total_return=0.049
+2025-11-04 15:38:33,357 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 15:38:33,358 - backend.app - WARNING - No data available for 1w
+2025-11-04 15:38:33,398 - backend.app - INFO - Checking data availability...
+2025-11-04 15:38:35,027 - backend.app - INFO - Data summary: incomplete
+2025-11-04 15:38:35,028 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 15:38:35,028 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 15:38:38,585 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 15:38:39,509 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=22 win_rate=0.364 max_dd=0.006 total_return=-0.001
+2025-11-04 15:38:40,261 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=23 win_rate=0.304 max_dd=0.005 total_return=-0.000
+2025-11-04 15:38:41,348 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=33 win_rate=0.273 max_dd=0.003 total_return=0.002
+2025-11-04 15:38:41,456 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=46 win_rate=0.304 max_dd=0.014 total_return=-0.008
+2025-11-04 15:38:41,528 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=20 win_rate=0.450 max_dd=0.004 total_return=0.003
+2025-11-04 15:38:41,609 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=18 win_rate=0.500 max_dd=0.003 total_return=0.005
+2025-11-04 15:38:41,682 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=12 win_rate=0.417 max_dd=0.004 total_return=-0.001
+2025-11-04 15:38:41,741 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=10 win_rate=0.500 max_dd=0.004 total_return=-0.001
+2025-11-04 15:38:41,810 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=8 win_rate=0.500 max_dd=0.002 total_return=0.001
+2025-11-04 15:38:41,875 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=28 win_rate=0.786 max_dd=0.003 total_return=0.001
+2025-11-04 15:38:41,929 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=8 win_rate=0.375 max_dd=0.003 total_return=-0.003
+2025-11-04 15:38:41,998 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=3 win_rate=0.667 max_dd=0.003 total_return=-0.003
+2025-11-04 15:38:42,077 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=274 win_rate=0.321 max_dd=0.022 total_return=-0.018
+2025-11-04 15:38:42,148 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=197 win_rate=0.299 max_dd=0.013 total_return=-0.010
+2025-11-04 15:38:42,248 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=128 win_rate=0.328 max_dd=0.004 total_return=0.001
+2025-11-04 15:38:43,011 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=15m trades=21 win_rate=0.286 max_dd=0.010 total_return=-0.009
+2025-11-04 15:38:43,770 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=15m trades=18 win_rate=0.333 max_dd=0.004 total_return=0.001
+2025-11-04 15:38:45,221 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=15m trades=19 win_rate=0.737 max_dd=0.003 total_return=0.000
+2025-11-04 15:38:45,336 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=15m trades=28 win_rate=0.286 max_dd=0.008 total_return=-0.003
+2025-11-04 15:38:45,443 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=15m trades=105 win_rate=0.410 max_dd=0.006 total_return=-0.002
+2025-11-04 15:38:46,330 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=8 win_rate=0.375 max_dd=0.005 total_return=0.004
+2025-11-04 15:38:46,978 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=18 win_rate=0.278 max_dd=0.007 total_return=-0.002
+2025-11-04 15:38:47,807 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=35 win_rate=0.543 max_dd=0.006 total_return=0.008
+2025-11-04 15:38:47,917 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=38 win_rate=0.395 max_dd=0.004 total_return=0.006
+2025-11-04 15:38:48,022 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=21 win_rate=0.524 max_dd=0.007 total_return=0.004
+2025-11-04 15:38:48,140 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=14 win_rate=0.500 max_dd=0.009 total_return=0.005
+2025-11-04 15:38:48,238 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=20 win_rate=0.550 max_dd=0.002 total_return=0.004
+2025-11-04 15:38:48,337 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.381 max_dd=0.005 total_return=-0.001
+2025-11-04 15:38:48,424 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.333 max_dd=0.006 total_return=0.004
+2025-11-04 15:38:48,522 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=27 win_rate=0.630 max_dd=0.002 total_return=0.004
+2025-11-04 15:38:48,620 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=10 win_rate=0.600 max_dd=0.003 total_return=0.000
+2025-11-04 15:38:48,697 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=5 win_rate=0.400 max_dd=0.007 total_return=-0.004
+2025-11-04 15:38:48,787 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=282 win_rate=0.440 max_dd=0.016 total_return=-0.006
+2025-11-04 15:38:48,860 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=254 win_rate=0.429 max_dd=0.024 total_return=-0.017
+2025-11-04 15:38:48,942 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=161 win_rate=0.460 max_dd=0.017 total_return=-0.005
+2025-11-04 15:38:49,693 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1h trades=27 win_rate=0.481 max_dd=0.006 total_return=0.012
+2025-11-04 15:38:50,206 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1h trades=138 win_rate=0.435 max_dd=0.018 total_return=-0.011
+2025-11-04 15:38:50,996 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1h trades=14 win_rate=0.500 max_dd=0.005 total_return=0.002
+2025-11-04 15:38:51,078 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1h trades=27 win_rate=0.407 max_dd=0.012 total_return=-0.007
+2025-11-04 15:38:51,165 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1h trades=86 win_rate=0.360 max_dd=0.019 total_return=-0.011
+2025-11-04 15:38:51,279 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:38:51,280 - backend.app - WARNING - No data available for 2h
+2025-11-04 15:38:52,111 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=10 win_rate=0.500 max_dd=0.003 total_return=0.007
+2025-11-04 15:38:53,629 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=9 win_rate=0.778 max_dd=0.001 total_return=0.013
+2025-11-04 15:38:54,404 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=35 win_rate=0.343 max_dd=0.007 total_return=0.002
+2025-11-04 15:38:54,496 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=33 win_rate=0.394 max_dd=0.018 total_return=-0.002
+2025-11-04 15:38:54,569 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=15 win_rate=0.467 max_dd=0.031 total_return=-0.019
+2025-11-04 15:38:54,662 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=12 win_rate=0.333 max_dd=0.024 total_return=-0.017
+2025-11-04 15:38:54,741 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=28 win_rate=0.393 max_dd=0.007 total_return=0.004
+2025-11-04 15:38:54,823 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=25 win_rate=0.480 max_dd=0.005 total_return=0.016
+2025-11-04 15:38:54,908 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=35 win_rate=0.371 max_dd=0.006 total_return=0.012
+2025-11-04 15:38:54,999 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=25 win_rate=0.440 max_dd=0.028 total_return=-0.027
+2025-11-04 15:38:55,065 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=12 win_rate=0.667 max_dd=0.010 total_return=-0.004
+2025-11-04 15:38:55,135 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=4 win_rate=0.000 max_dd=0.006 total_return=-0.006
+2025-11-04 15:38:55,202 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=271 win_rate=0.469 max_dd=0.014 total_return=-0.002
+2025-11-04 15:38:55,284 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=236 win_rate=0.445 max_dd=0.032 total_return=-0.024
+2025-11-04 15:38:55,351 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=169 win_rate=0.444 max_dd=0.034 total_return=-0.027
+2025-11-04 15:38:56,036 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=4h trades=46 win_rate=0.370 max_dd=0.027 total_return=-0.015
+2025-11-04 15:38:56,738 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=4h trades=147 win_rate=0.483 max_dd=0.020 total_return=-0.012
+2025-11-04 15:38:57,552 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=4h trades=13 win_rate=0.692 max_dd=0.014 total_return=0.009
+2025-11-04 15:38:57,656 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=4h trades=25 win_rate=0.520 max_dd=0.008 total_return=0.017
+2025-11-04 15:38:57,735 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=4h trades=88 win_rate=0.523 max_dd=0.012 total_return=0.017
+2025-11-04 15:38:57,831 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:38:57,833 - backend.app - WARNING - No data available for 12h
+2025-11-04 15:38:58,605 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=12 win_rate=0.417 max_dd=0.006 total_return=0.005
+2025-11-04 15:38:59,232 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=18 win_rate=0.556 max_dd=0.005 total_return=0.011
+2025-11-04 15:39:00,069 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=50 win_rate=0.320 max_dd=0.027 total_return=-0.027
+2025-11-04 15:39:00,151 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=25 win_rate=0.720 max_dd=0.022 total_return=0.117
+2025-11-04 15:39:00,242 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=21 win_rate=0.429 max_dd=0.052 total_return=-0.002
+2025-11-04 15:39:00,347 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=13 win_rate=0.308 max_dd=0.065 total_return=-0.021
+2025-11-04 15:39:00,454 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=46 win_rate=0.152 max_dd=0.022 total_return=-0.018
+2025-11-04 15:39:00,565 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=42 win_rate=0.214 max_dd=0.008 total_return=0.008
+2025-11-04 15:39:00,684 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=57 win_rate=0.193 max_dd=0.016 total_return=-0.004
+2025-11-04 15:39:00,799 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=30 win_rate=0.700 max_dd=0.016 total_return=0.031
+2025-11-04 15:39:00,909 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=13 win_rate=0.769 max_dd=0.028 total_return=0.025
+2025-11-04 15:39:01,160 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=4 win_rate=0.500 max_dd=0.030 total_return=-0.025
+2025-11-04 15:39:01,405 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=276 win_rate=0.471 max_dd=0.076 total_return=-0.046
+2025-11-04 15:39:01,554 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=225 win_rate=0.484 max_dd=0.049 total_return=0.012
+2025-11-04 15:39:01,635 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=82 win_rate=0.476 max_dd=0.041 total_return=-0.027
+2025-11-04 15:39:02,198 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1d trades=27 win_rate=0.444 max_dd=0.045 total_return=-0.041
+2025-11-04 15:39:02,793 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1d trades=180 win_rate=0.556 max_dd=0.045 total_return=0.014
+2025-11-04 15:39:03,551 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1d trades=11 win_rate=0.727 max_dd=0.081 total_return=-0.028
+2025-11-04 15:39:03,653 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1d trades=33 win_rate=0.333 max_dd=0.029 total_return=-0.016
+2025-11-04 15:39:03,731 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1d trades=90 win_rate=0.511 max_dd=0.051 total_return=0.049
+2025-11-04 15:39:03,936 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 15:39:03,938 - backend.app - WARNING - No data available for 1w
+2025-11-04 15:39:03,997 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 500 - 58126.94ms
+2025-11-04 15:39:04,005 - backend.observability.middleware - INFO - POST /refresh - 200 - 58133.46ms
+2025-11-04 15:39:04,006 - backend.observability.middleware - INFO - POST /refresh - 200 - 58133.95ms
+2025-11-04 15:39:04,163 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 500 - 160.49ms
+2025-11-04 15:39:05,369 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:39:05,600 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:39:05,849 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 15:39:25,820 - backend.services.recommendation_service - INFO - Live aggregation | action=SELL conf=0.150 consensus=0.052 primary=Breakout supporting=12
+2025-11-04 15:39:27,107 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:39:27,340 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:39:27,602 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 15:39:47,082 - backend.services.recommendation_service - INFO - Live aggregation | action=SELL conf=0.150 consensus=0.052 primary=Breakout supporting=12
+2025-11-04 15:39:47,085 - backend.observability.middleware - INFO - GET /recommendation - 200 - 42911.01ms
+2025-11-04 15:39:47,091 - backend.observability.middleware - INFO - GET /recommendation - 200 - 21266.42ms
+2025-11-04 15:39:47,096 - backend.api.routes.websocket - INFO - WebSocket disconnected. Total connections: 0
+2025-11-04 15:39:50,416 - backend.api.routes.websocket - INFO - WebSocket connected. Total connections: 1
+2025-11-04 15:45:51,553 - backend.api.routes.websocket - INFO - WebSocket disconnected. Total connections: 0
+2025-11-04 15:46:11,797 - backend.observability.telemetry - INFO - FastAPI instrumented with OpenTelemetry
+2025-11-04 15:46:11,801 - backend.observability.telemetry - INFO - Requests library instrumented with OpenTelemetry
+2025-11-04 15:46:11,823 - backend.observability.telemetry - INFO - SQLAlchemy instrumented with OpenTelemetry
+2025-11-04 15:46:11,824 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 15:46:11,826 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 15:46:12,005 - backend.app - ERROR - Error initializing services: expected 'except' or 'finally' block (init_db.py, line 136)
+2025-11-04 15:47:33,094 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-04 15:47:33,099 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 15:47:33,101 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 15:47:33,217 - backend.app - ERROR - Error initializing services: expected 'except' or 'finally' block (init_db.py, line 136)
+2025-11-04 15:48:14,130 - backend.api.routes.websocket - INFO - WebSocket connected. Total connections: 1
+2025-11-04 15:48:15,181 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 32.50ms
+2025-11-04 15:48:15,198 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 7.58ms
+2025-11-04 15:48:17,483 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 500 - 880.24ms
+2025-11-04 15:48:17,486 - backend.app - INFO - Checking data availability...
+2025-11-04 15:48:19,067 - backend.app - INFO - Data summary: incomplete
+2025-11-04 15:48:19,068 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 15:48:19,069 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 15:48:22,248 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 15:48:22,824 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=22 win_rate=0.364 max_dd=0.006 total_return=-0.001
+2025-11-04 15:48:23,161 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=23 win_rate=0.304 max_dd=0.005 total_return=-0.000
+2025-11-04 15:48:23,603 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=33 win_rate=0.273 max_dd=0.003 total_return=0.002
+2025-11-04 15:48:23,660 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=46 win_rate=0.304 max_dd=0.014 total_return=-0.008
+2025-11-04 15:48:23,722 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=20 win_rate=0.450 max_dd=0.004 total_return=0.003
+2025-11-04 15:48:23,775 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=18 win_rate=0.500 max_dd=0.003 total_return=0.005
+2025-11-04 15:48:23,821 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=12 win_rate=0.417 max_dd=0.004 total_return=-0.001
+2025-11-04 15:48:23,870 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=10 win_rate=0.500 max_dd=0.004 total_return=-0.001
+2025-11-04 15:48:23,916 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=8 win_rate=0.500 max_dd=0.002 total_return=0.001
+2025-11-04 15:48:23,963 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=28 win_rate=0.786 max_dd=0.003 total_return=0.001
+2025-11-04 15:48:24,023 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=8 win_rate=0.375 max_dd=0.003 total_return=-0.003
+2025-11-04 15:48:24,081 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=3 win_rate=0.667 max_dd=0.003 total_return=-0.003
+2025-11-04 15:48:24,159 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=274 win_rate=0.321 max_dd=0.022 total_return=-0.018
+2025-11-04 15:48:24,234 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=197 win_rate=0.299 max_dd=0.013 total_return=-0.010
+2025-11-04 15:48:24,306 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=128 win_rate=0.328 max_dd=0.004 total_return=0.001
+2025-11-04 15:48:24,810 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=15m trades=21 win_rate=0.286 max_dd=0.010 total_return=-0.009
+2025-11-04 15:48:25,319 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=15m trades=18 win_rate=0.333 max_dd=0.004 total_return=0.001
+2025-11-04 15:48:25,977 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=15m trades=19 win_rate=0.737 max_dd=0.003 total_return=0.000
+2025-11-04 15:48:26,034 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=15m trades=28 win_rate=0.286 max_dd=0.008 total_return=-0.003
+2025-11-04 15:48:26,106 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=15m trades=105 win_rate=0.410 max_dd=0.006 total_return=-0.002
+2025-11-04 15:48:26,745 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=8 win_rate=0.375 max_dd=0.005 total_return=0.004
+2025-11-04 15:48:27,156 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=18 win_rate=0.278 max_dd=0.007 total_return=-0.002
+2025-11-04 15:48:27,524 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=35 win_rate=0.543 max_dd=0.006 total_return=0.008
+2025-11-04 15:48:27,578 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=38 win_rate=0.395 max_dd=0.004 total_return=0.006
+2025-11-04 15:48:27,629 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=21 win_rate=0.524 max_dd=0.007 total_return=0.004
+2025-11-04 15:48:27,687 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=14 win_rate=0.500 max_dd=0.009 total_return=0.005
+2025-11-04 15:48:27,734 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=20 win_rate=0.550 max_dd=0.002 total_return=0.004
+2025-11-04 15:48:27,790 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.381 max_dd=0.005 total_return=-0.001
+2025-11-04 15:48:27,841 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.333 max_dd=0.006 total_return=0.004
+2025-11-04 15:48:27,897 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=27 win_rate=0.630 max_dd=0.002 total_return=0.004
+2025-11-04 15:48:27,950 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=10 win_rate=0.600 max_dd=0.003 total_return=0.000
+2025-11-04 15:48:28,005 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=5 win_rate=0.400 max_dd=0.007 total_return=-0.004
+2025-11-04 15:48:28,084 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=282 win_rate=0.440 max_dd=0.016 total_return=-0.006
+2025-11-04 15:48:28,145 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=254 win_rate=0.429 max_dd=0.024 total_return=-0.017
+2025-11-04 15:48:28,195 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=161 win_rate=0.460 max_dd=0.017 total_return=-0.005
+2025-11-04 15:48:28,512 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1h trades=27 win_rate=0.481 max_dd=0.006 total_return=0.012
+2025-11-04 15:48:28,803 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1h trades=138 win_rate=0.435 max_dd=0.018 total_return=-0.011
+2025-11-04 15:48:29,395 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1h trades=14 win_rate=0.500 max_dd=0.005 total_return=0.002
+2025-11-04 15:48:29,464 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1h trades=27 win_rate=0.407 max_dd=0.012 total_return=-0.007
+2025-11-04 15:48:29,532 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1h trades=86 win_rate=0.360 max_dd=0.019 total_return=-0.011
+2025-11-04 15:48:29,753 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:48:29,754 - backend.app - WARNING - No data available for 2h
+2025-11-04 15:48:30,282 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=10 win_rate=0.500 max_dd=0.003 total_return=0.007
+2025-11-04 15:48:31,015 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=9 win_rate=0.778 max_dd=0.001 total_return=0.013
+2025-11-04 15:48:31,575 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=35 win_rate=0.343 max_dd=0.007 total_return=0.002
+2025-11-04 15:48:31,634 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=33 win_rate=0.394 max_dd=0.018 total_return=-0.002
+2025-11-04 15:48:31,690 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=15 win_rate=0.467 max_dd=0.031 total_return=-0.019
+2025-11-04 15:48:31,741 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=12 win_rate=0.333 max_dd=0.024 total_return=-0.017
+2025-11-04 15:48:31,792 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=28 win_rate=0.393 max_dd=0.007 total_return=0.004
+2025-11-04 15:48:31,843 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=25 win_rate=0.480 max_dd=0.005 total_return=0.016
+2025-11-04 15:48:31,895 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=35 win_rate=0.371 max_dd=0.006 total_return=0.012
+2025-11-04 15:48:31,950 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=25 win_rate=0.440 max_dd=0.028 total_return=-0.027
+2025-11-04 15:48:32,004 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=12 win_rate=0.667 max_dd=0.010 total_return=-0.004
+2025-11-04 15:48:32,070 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=4 win_rate=0.000 max_dd=0.006 total_return=-0.006
+2025-11-04 15:48:32,161 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=271 win_rate=0.469 max_dd=0.014 total_return=-0.002
+2025-11-04 15:48:32,259 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=236 win_rate=0.445 max_dd=0.032 total_return=-0.024
+2025-11-04 15:48:32,351 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=169 win_rate=0.444 max_dd=0.034 total_return=-0.027
+2025-11-04 15:48:32,902 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=4h trades=46 win_rate=0.370 max_dd=0.027 total_return=-0.015
+2025-11-04 15:48:33,314 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=4h trades=147 win_rate=0.483 max_dd=0.020 total_return=-0.012
+2025-11-04 15:48:33,956 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=4h trades=13 win_rate=0.692 max_dd=0.014 total_return=0.009
+2025-11-04 15:48:34,018 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=4h trades=25 win_rate=0.520 max_dd=0.008 total_return=0.017
+2025-11-04 15:48:34,078 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=4h trades=88 win_rate=0.523 max_dd=0.012 total_return=0.017
+2025-11-04 15:48:34,319 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:48:34,321 - backend.app - WARNING - No data available for 12h
+2025-11-04 15:48:35,041 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=12 win_rate=0.417 max_dd=0.006 total_return=0.005
+2025-11-04 15:48:35,637 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=18 win_rate=0.556 max_dd=0.005 total_return=0.011
+2025-11-04 15:48:36,200 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=50 win_rate=0.320 max_dd=0.027 total_return=-0.027
+2025-11-04 15:48:36,259 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=25 win_rate=0.720 max_dd=0.022 total_return=0.117
+2025-11-04 15:48:36,329 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=21 win_rate=0.429 max_dd=0.052 total_return=-0.002
+2025-11-04 15:48:36,382 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=13 win_rate=0.308 max_dd=0.065 total_return=-0.021
+2025-11-04 15:48:36,441 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=46 win_rate=0.152 max_dd=0.022 total_return=-0.018
+2025-11-04 15:48:36,499 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=42 win_rate=0.214 max_dd=0.008 total_return=0.008
+2025-11-04 15:48:36,551 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=57 win_rate=0.193 max_dd=0.016 total_return=-0.004
+2025-11-04 15:48:36,608 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=30 win_rate=0.700 max_dd=0.016 total_return=0.031
+2025-11-04 15:48:36,667 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=13 win_rate=0.769 max_dd=0.028 total_return=0.025
+2025-11-04 15:48:36,735 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=4 win_rate=0.500 max_dd=0.030 total_return=-0.025
+2025-11-04 15:48:36,827 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=276 win_rate=0.471 max_dd=0.076 total_return=-0.046
+2025-11-04 15:48:36,936 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=225 win_rate=0.484 max_dd=0.049 total_return=0.012
+2025-11-04 15:48:37,013 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=82 win_rate=0.476 max_dd=0.041 total_return=-0.027
+2025-11-04 15:48:37,504 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1d trades=27 win_rate=0.444 max_dd=0.045 total_return=-0.041
+2025-11-04 15:48:37,856 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1d trades=180 win_rate=0.556 max_dd=0.045 total_return=0.014
+2025-11-04 15:48:38,508 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1d trades=11 win_rate=0.727 max_dd=0.081 total_return=-0.028
+2025-11-04 15:48:38,606 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1d trades=33 win_rate=0.333 max_dd=0.029 total_return=-0.016
+2025-11-04 15:48:38,684 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1d trades=90 win_rate=0.511 max_dd=0.051 total_return=0.049
+2025-11-04 15:48:38,801 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 15:48:38,803 - backend.app - WARNING - No data available for 1w
+2025-11-04 15:48:38,864 - backend.app - INFO - Checking data availability...
+2025-11-04 15:48:40,834 - backend.app - INFO - Data summary: incomplete
+2025-11-04 15:48:40,835 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 15:48:40,836 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 15:48:45,021 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 15:48:45,796 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=22 win_rate=0.364 max_dd=0.006 total_return=-0.001
+2025-11-04 15:48:46,302 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=23 win_rate=0.304 max_dd=0.005 total_return=-0.000
+2025-11-04 15:48:46,799 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=15m trades=33 win_rate=0.273 max_dd=0.003 total_return=0.002
+2025-11-04 15:48:46,851 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=46 win_rate=0.304 max_dd=0.014 total_return=-0.008
+2025-11-04 15:48:46,903 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=20 win_rate=0.450 max_dd=0.004 total_return=0.003
+2025-11-04 15:48:46,955 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=15m trades=18 win_rate=0.500 max_dd=0.003 total_return=0.005
+2025-11-04 15:48:47,008 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=12 win_rate=0.417 max_dd=0.004 total_return=-0.001
+2025-11-04 15:48:47,074 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=10 win_rate=0.500 max_dd=0.004 total_return=-0.001
+2025-11-04 15:48:47,134 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=15m trades=8 win_rate=0.500 max_dd=0.002 total_return=0.001
+2025-11-04 15:48:47,208 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=28 win_rate=0.786 max_dd=0.003 total_return=0.001
+2025-11-04 15:48:47,274 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=8 win_rate=0.375 max_dd=0.003 total_return=-0.003
+2025-11-04 15:48:47,364 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=15m trades=3 win_rate=0.667 max_dd=0.003 total_return=-0.003
+2025-11-04 15:48:47,477 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=274 win_rate=0.321 max_dd=0.022 total_return=-0.018
+2025-11-04 15:48:47,619 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=197 win_rate=0.299 max_dd=0.013 total_return=-0.010
+2025-11-04 15:48:47,750 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=15m trades=128 win_rate=0.328 max_dd=0.004 total_return=0.001
+2025-11-04 15:48:48,500 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=15m trades=21 win_rate=0.286 max_dd=0.010 total_return=-0.009
+2025-11-04 15:48:49,129 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=15m trades=18 win_rate=0.333 max_dd=0.004 total_return=0.001
+2025-11-04 15:48:49,861 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=15m trades=19 win_rate=0.737 max_dd=0.003 total_return=0.000
+2025-11-04 15:48:49,918 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=15m trades=28 win_rate=0.286 max_dd=0.008 total_return=-0.003
+2025-11-04 15:48:49,974 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=15m trades=105 win_rate=0.410 max_dd=0.006 total_return=-0.002
+2025-11-04 15:48:50,881 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=8 win_rate=0.375 max_dd=0.005 total_return=0.004
+2025-11-04 15:48:51,479 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=18 win_rate=0.278 max_dd=0.007 total_return=-0.002
+2025-11-04 15:48:51,984 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1h trades=35 win_rate=0.543 max_dd=0.006 total_return=0.008
+2025-11-04 15:48:52,057 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=38 win_rate=0.395 max_dd=0.004 total_return=0.006
+2025-11-04 15:48:52,112 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=21 win_rate=0.524 max_dd=0.007 total_return=0.004
+2025-11-04 15:48:52,171 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1h trades=14 win_rate=0.500 max_dd=0.009 total_return=0.005
+2025-11-04 15:48:52,229 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=20 win_rate=0.550 max_dd=0.002 total_return=0.004
+2025-11-04 15:48:52,283 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.381 max_dd=0.005 total_return=-0.001
+2025-11-04 15:48:52,336 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1h trades=21 win_rate=0.333 max_dd=0.006 total_return=0.004
+2025-11-04 15:48:52,394 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=27 win_rate=0.630 max_dd=0.002 total_return=0.004
+2025-11-04 15:48:52,464 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=10 win_rate=0.600 max_dd=0.003 total_return=0.000
+2025-11-04 15:48:52,527 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1h trades=5 win_rate=0.400 max_dd=0.007 total_return=-0.004
+2025-11-04 15:48:52,616 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=282 win_rate=0.440 max_dd=0.016 total_return=-0.006
+2025-11-04 15:48:52,705 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=254 win_rate=0.429 max_dd=0.024 total_return=-0.017
+2025-11-04 15:48:52,789 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1h trades=161 win_rate=0.460 max_dd=0.017 total_return=-0.005
+2025-11-04 15:48:53,782 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1h trades=27 win_rate=0.481 max_dd=0.006 total_return=0.012
+2025-11-04 15:48:54,276 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1h trades=138 win_rate=0.435 max_dd=0.018 total_return=-0.011
+2025-11-04 15:48:54,929 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1h trades=14 win_rate=0.500 max_dd=0.005 total_return=0.002
+2025-11-04 15:48:54,994 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1h trades=27 win_rate=0.407 max_dd=0.012 total_return=-0.007
+2025-11-04 15:48:55,056 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1h trades=86 win_rate=0.360 max_dd=0.019 total_return=-0.011
+2025-11-04 15:48:55,163 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:48:55,164 - backend.app - WARNING - No data available for 2h
+2025-11-04 15:48:55,817 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=10 win_rate=0.500 max_dd=0.003 total_return=0.007
+2025-11-04 15:48:56,203 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=9 win_rate=0.778 max_dd=0.001 total_return=0.013
+2025-11-04 15:48:56,589 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=4h trades=35 win_rate=0.343 max_dd=0.007 total_return=0.002
+2025-11-04 15:48:56,645 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=33 win_rate=0.394 max_dd=0.018 total_return=-0.002
+2025-11-04 15:48:56,686 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=15 win_rate=0.467 max_dd=0.031 total_return=-0.019
+2025-11-04 15:48:56,733 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=4h trades=12 win_rate=0.333 max_dd=0.024 total_return=-0.017
+2025-11-04 15:48:56,781 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=28 win_rate=0.393 max_dd=0.007 total_return=0.004
+2025-11-04 15:48:56,824 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=25 win_rate=0.480 max_dd=0.005 total_return=0.016
+2025-11-04 15:48:56,879 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=4h trades=35 win_rate=0.371 max_dd=0.006 total_return=0.012
+2025-11-04 15:48:56,929 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=25 win_rate=0.440 max_dd=0.028 total_return=-0.027
+2025-11-04 15:48:56,983 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=12 win_rate=0.667 max_dd=0.010 total_return=-0.004
+2025-11-04 15:48:57,030 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=4h trades=4 win_rate=0.000 max_dd=0.006 total_return=-0.006
+2025-11-04 15:48:57,085 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=271 win_rate=0.469 max_dd=0.014 total_return=-0.002
+2025-11-04 15:48:57,144 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=236 win_rate=0.445 max_dd=0.032 total_return=-0.024
+2025-11-04 15:48:57,196 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=4h trades=169 win_rate=0.444 max_dd=0.034 total_return=-0.027
+2025-11-04 15:48:57,542 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=4h trades=46 win_rate=0.370 max_dd=0.027 total_return=-0.015
+2025-11-04 15:48:57,894 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=4h trades=147 win_rate=0.483 max_dd=0.020 total_return=-0.012
+2025-11-04 15:48:58,559 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=4h trades=13 win_rate=0.692 max_dd=0.014 total_return=0.009
+2025-11-04 15:48:58,623 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=4h trades=25 win_rate=0.520 max_dd=0.008 total_return=0.017
+2025-11-04 15:48:58,682 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=4h trades=88 win_rate=0.523 max_dd=0.012 total_return=0.017
+2025-11-04 15:48:58,780 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:48:58,782 - backend.app - WARNING - No data available for 12h
+2025-11-04 15:48:59,309 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=12 win_rate=0.417 max_dd=0.006 total_return=0.005
+2025-11-04 15:48:59,765 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=18 win_rate=0.556 max_dd=0.005 total_return=0.011
+2025-11-04 15:49:00,219 - backtest.engine - INFO - Backtest metrics | strategy=EMA_RSI timeframe=1d trades=50 win_rate=0.320 max_dd=0.027 total_return=-0.027
+2025-11-04 15:49:00,265 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=25 win_rate=0.720 max_dd=0.022 total_return=0.117
+2025-11-04 15:49:00,311 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=21 win_rate=0.429 max_dd=0.052 total_return=-0.002
+2025-11-04 15:49:00,353 - backtest.engine - INFO - Backtest metrics | strategy=Momentum timeframe=1d trades=13 win_rate=0.308 max_dd=0.065 total_return=-0.021
+2025-11-04 15:49:00,412 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=46 win_rate=0.152 max_dd=0.022 total_return=-0.018
+2025-11-04 15:49:00,457 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=42 win_rate=0.214 max_dd=0.008 total_return=0.008
+2025-11-04 15:49:00,503 - backtest.engine - INFO - Backtest metrics | strategy=Breakout timeframe=1d trades=57 win_rate=0.193 max_dd=0.016 total_return=-0.004
+2025-11-04 15:49:00,556 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=30 win_rate=0.700 max_dd=0.016 total_return=0.031
+2025-11-04 15:49:00,600 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=13 win_rate=0.769 max_dd=0.028 total_return=0.025
+2025-11-04 15:49:00,642 - backtest.engine - INFO - Backtest metrics | strategy=Mean_Reversion timeframe=1d trades=4 win_rate=0.500 max_dd=0.030 total_return=-0.025
+2025-11-04 15:49:00,696 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=276 win_rate=0.471 max_dd=0.076 total_return=-0.046
+2025-11-04 15:49:00,771 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=225 win_rate=0.484 max_dd=0.049 total_return=0.012
+2025-11-04 15:49:00,863 - backtest.engine - INFO - Backtest metrics | strategy=Ichimoku_ADX timeframe=1d trades=82 win_rate=0.476 max_dd=0.041 total_return=-0.027
+2025-11-04 15:49:01,376 - backtest.engine - INFO - Backtest metrics | strategy=BollingerBreakout timeframe=1d trades=27 win_rate=0.444 max_dd=0.045 total_return=-0.041
+2025-11-04 15:49:01,881 - backtest.engine - INFO - Backtest metrics | strategy=IchimokuTrend timeframe=1d trades=180 win_rate=0.556 max_dd=0.045 total_return=0.014
+2025-11-04 15:49:02,531 - backtest.engine - INFO - Backtest metrics | strategy=RSIDivergence timeframe=1d trades=11 win_rate=0.727 max_dd=0.081 total_return=-0.028
+2025-11-04 15:49:02,609 - backtest.engine - INFO - Backtest metrics | strategy=MACDCrossover timeframe=1d trades=33 win_rate=0.333 max_dd=0.029 total_return=-0.016
+2025-11-04 15:49:02,693 - backtest.engine - INFO - Backtest metrics | strategy=Stochastic timeframe=1d trades=90 win_rate=0.511 max_dd=0.051 total_return=0.049
+2025-11-04 15:49:02,808 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 15:49:02,811 - backend.app - WARNING - No data available for 1w
+2025-11-04 15:49:03,002 - backend.observability.middleware - INFO - POST /refresh - 200 - 45521.19ms
+2025-11-04 15:49:03,007 - backend.observability.middleware - INFO - POST /refresh - 200 - 45525.26ms
+2025-11-04 15:49:03,011 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 500 - 141.70ms
+2025-11-04 15:49:04,162 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 15:49:04,459 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 15:49:04,729 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w

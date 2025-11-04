@@ -44,17 +44,24 @@ class TelemetryManager:
             enable_metrics: Enable metrics collection
         """
         self.service_name = service_name
-        self.otlp_endpoint = otlp_endpoint or os.getenv("OTLP_ENDPOINT", "http://localhost:4317")
-        self.enable_tracing = enable_tracing
-        self.enable_metrics = enable_metrics
+        # Default to None if not explicitly set - don't try to export if no endpoint
+        self.otlp_endpoint = otlp_endpoint or os.getenv("OTLP_ENDPOINT")
+        self.enable_tracing = enable_tracing and bool(self.otlp_endpoint)
+        self.enable_metrics = enable_metrics and bool(self.otlp_endpoint)
         self.initialized = False
         
         if not OPENTELEMETRY_AVAILABLE:
             logger.warning("OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk")
             return
         
-        if enable_tracing or enable_metrics:
+        # Only initialize if we have an endpoint AND at least one feature is enabled
+        if (self.enable_tracing or self.enable_metrics) and self.otlp_endpoint:
             self._initialize()
+        else:
+            if not self.otlp_endpoint:
+                logger.debug("OpenTelemetry disabled: No OTLP endpoint configured. Set OTLP_ENDPOINT to enable.")
+            else:
+                logger.debug("OpenTelemetry disabled: Both tracing and metrics are disabled.")
     
     def _initialize(self):
         """Initialize OpenTelemetry SDK."""

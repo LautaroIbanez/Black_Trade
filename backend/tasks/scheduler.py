@@ -44,7 +44,7 @@ class IngestionScheduler:
         self.running = False
     
     def start_ingestion_task(self):
-        """Start the data ingestion task."""
+        """Prepare the data ingestion task (does not start it - that's done in start_async)."""
         if not APSCHEDULER_AVAILABLE:
             logger.error("APScheduler not available. Cannot start ingestion.")
             return
@@ -53,9 +53,7 @@ class IngestionScheduler:
             logger.info("Ingestion task already running")
             return
         
-        logger.info("Starting data ingestion task...")
-        
-        # Create ingestion task
+        # Only create the task, don't start it yet
         ingestion_mode = os.getenv('INGESTION_MODE', 'websocket')
         symbols = os.getenv('TRADING_PAIRS', 'BTCUSDT').split(',')
         timeframes = os.getenv('TIMEFRAMES', '15m,1h,4h,1d').split(',')
@@ -66,16 +64,7 @@ class IngestionScheduler:
             ingestion_mode=ingestion_mode,
         )
         
-        # Start ingestion in background
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(self.ingestion_task.start())
-        else:
-            # If no event loop running, we'll start it when scheduler starts
-            pass
-        
-        self.running = True
-        logger.info("Data ingestion task prepared (will start with scheduler)")
+        logger.info("Data ingestion task prepared (will start in start_async)")
 
     def schedule_risk_updates(self):
         """Schedule recurring risk updates and alerts."""
@@ -117,8 +106,9 @@ class IngestionScheduler:
             logger.warning("Scheduler not available")
             return
         
-        # Start ingestion task
+        # Prepare ingestion task (creates it but doesn't start)
         self.start_ingestion_task()
+        
         # Ensure risk updates are scheduled
         self.schedule_risk_updates()
         # Ensure execution processing is scheduled
@@ -130,9 +120,14 @@ class IngestionScheduler:
         # Schedule observability monitor
         self.schedule_observability_monitor()
         
-        # Ensure ingestion task is running
-        if self.ingestion_task:
-            await self.ingestion_task.start()
+        # Start ingestion task only once - check if already running
+        if self.ingestion_task and not self.ingestion_task.running:
+            logger.info("Starting data ingestion task...")
+            self.running = True
+            # Start in background task (non-blocking)
+            asyncio.create_task(self.ingestion_task.start())
+        elif self.ingestion_task and self.ingestion_task.running:
+            logger.debug("Ingestion task already running, skipping start")
     
     def start(self):
         """Start the scheduler (synchronous wrapper)."""

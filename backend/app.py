@@ -39,12 +39,12 @@ from backend.observability.telemetry import init_telemetry
 from backend.observability.metrics import get_metrics_collector
 from backend.observability.middleware import ObservabilityMiddleware
 
-# Initialize telemetry (OpenTelemetry)
+# Initialize telemetry (OpenTelemetry) - only if endpoint is configured
 telemetry_manager = init_telemetry(
     service_name="black-trade",
-    otlp_endpoint=os.getenv("OTLP_ENDPOINT"),
-    enable_tracing=os.getenv("ENABLE_TRACING", "true").lower() == "true",
-    enable_metrics=os.getenv("ENABLE_METRICS", "true").lower() == "true",
+    otlp_endpoint=os.getenv("OTLP_ENDPOINT"),  # None if not set
+    enable_tracing=os.getenv("ENABLE_TRACING", "false").lower() == "true",  # Default to false
+    enable_metrics=os.getenv("ENABLE_METRICS", "false").lower() == "true",  # Default to false
 )
 
 app = FastAPI(title="Black Trade API", version="1.0.0")

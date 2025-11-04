@@ -132,13 +132,17 @@ def initialize_database():
         # Run migrations
         run_migrations()
         
-        # Enable TimescaleDB hypertables if available
-        try:
-            from backend.db.session import enable_timescaledb_hypertable
-            enable_timescaledb_hypertable()
-            logger.info("TimescaleDB hypertables enabled")
-        except Exception as e:
-            logger.warning(f"Could not enable TimescaleDB: {e}")
+            # Enable TimescaleDB hypertables if available (optional)
+    try:
+        from backend.db.session import enable_timescaledb_hypertable
+        enable_timescaledb_hypertable()
+        logger.info("TimescaleDB hypertables enabled")
+    except RuntimeError as e:
+        # TimescaleDB not available - this is expected in many environments
+        logger.debug(f"TimescaleDB not available (using standard PostgreSQL): {e}")
+    except Exception as e:
+        # Other errors are still worth warning about
+        logger.warning(f"Could not enable TimescaleDB: {e}")
         
         logger.info("Database initialization completed successfully")
         return True

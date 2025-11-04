@@ -362,10 +362,10 @@ def check_timescaledb_extension():
 
 
 def enable_timescaledb_hypertable():
-    """Enable TimescaleDB hypertable for ohlcv_candles."""
+    """Enable TimescaleDB hypertable for ohlcv_candles (optional optimization)."""
     try:
         if not check_timescaledb_extension():
-            raise RuntimeError("TimescaleDB extension not found. Install TimescaleDB first.")
+            raise RuntimeError("TimescaleDB extension not found. Install TimescaleDB first. Continuing with standard PostgreSQL.")
         
         from sqlalchemy import text
         with db_session() as db:
