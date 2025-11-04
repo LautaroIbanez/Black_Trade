@@ -110,14 +110,42 @@ class OHLCVRepository:
             db = get_db_session()
         
         try:
-            candle = db.query(OHLCVCandle).filter(
-                and_(
-                    OHLCVCandle.symbol == symbol,
-                    OHLCVCandle.timeframe == timeframe
-                )
-            ).order_by(desc(OHLCVCandle.timestamp)).first()
-            
-            return candle.to_dict() if candle else None
+            try:
+                candle = db.query(OHLCVCandle).filter(
+                    and_(
+                        OHLCVCandle.symbol == symbol,
+                        OHLCVCandle.timeframe == timeframe
+                    )
+                ).order_by(desc(OHLCVCandle.timestamp)).first()
+                
+                if not candle:
+                    return None
+                
+                try:
+                    candle_dict = candle.to_dict()
+                    # Ensure all string values are properly encoded
+                    safe_dict = {}
+                    for k, v in candle_dict.items():
+                        if isinstance(v, str):
+                            try:
+                                safe_dict[k] = v.encode('utf-8', errors='replace').decode('utf-8')
+                            except (UnicodeEncodeError, UnicodeDecodeError):
+                                safe_dict[k] = str(v).encode('utf-8', errors='replace').decode('utf-8')
+                        else:
+                            safe_dict[k] = v
+                    return safe_dict
+                except (UnicodeDecodeError, UnicodeError) as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Encoding error in get_latest to_dict: {e}")
+                    return None
+            except (UnicodeDecodeError, UnicodeError) as e:
+                import logging
+                logging.getLogger(__name__).error(f"Encoding error in get_latest query: {e}")
+                return None
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error in get_latest: {e}")
+            return None
         finally:
             if should_close:
                 db.close()
@@ -153,46 +181,80 @@ class OHLCVRepository:
             db = get_db_session()
         
         try:
-            query = db.query(OHLCVCandle).filter(
-                and_(
-                    OHLCVCandle.symbol == symbol,
-                    OHLCVCandle.timeframe == timeframe
+            # Wrap database operations to handle encoding errors
+            try:
+                query = db.query(OHLCVCandle).filter(
+                    and_(
+                        OHLCVCandle.symbol == symbol,
+                        OHLCVCandle.timeframe == timeframe
+                    )
                 )
-            )
-            
-            if start_timestamp:
-                query = query.filter(OHLCVCandle.timestamp >= start_timestamp)
-            if end_timestamp:
-                query = query.filter(OHLCVCandle.timestamp <= end_timestamp)
-            
-            query = query.order_by(desc(OHLCVCandle.timestamp))
-            
-            if limit:
-                query = query.limit(limit)
-            
-            candles = query.all()
-            
-            if not candles:
-                # Return empty DataFrame with expected columns
+                
+                if start_timestamp:
+                    query = query.filter(OHLCVCandle.timestamp >= start_timestamp)
+                if end_timestamp:
+                    query = query.filter(OHLCVCandle.timestamp <= end_timestamp)
+                
+                query = query.order_by(desc(OHLCVCandle.timestamp))
+                
+                if limit:
+                    query = query.limit(limit)
+                
+                candles = query.all()
+                
+                if not candles:
+                    # Return empty DataFrame with expected columns
+                    return pd.DataFrame(columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                
+                # Convert to list of dicts with encoding error handling
+                data = []
+                for candle in reversed(candles):  # Reverse to get chronological order
+                    try:
+                        candle_dict = candle.to_dict()
+                        # Ensure all string values are properly encoded
+                        safe_dict = {}
+                        for k, v in candle_dict.items():
+                            if isinstance(v, str):
+                                try:
+                                    # Try to ensure UTF-8 encoding
+                                    safe_dict[k] = v.encode('utf-8', errors='replace').decode('utf-8')
+                                except (UnicodeEncodeError, UnicodeDecodeError):
+                                    safe_dict[k] = str(v).encode('utf-8', errors='replace').decode('utf-8')
+                            else:
+                                safe_dict[k] = v
+                        data.append(safe_dict)
+                    except (UnicodeDecodeError, UnicodeError) as e:
+                        # Skip problematic candles
+                        import logging
+                        logging.getLogger(__name__).warning(f"Encoding error converting candle to dict: {e}")
+                        continue
+                
+                if not data:
+                    return pd.DataFrame(columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                
+                df = pd.DataFrame(data)
+                
+                # Ensure timestamp column exists and convert to datetime if needed
+                if 'datetime' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['datetime'], errors='coerce')
+                elif 'timestamp' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms', errors='coerce')
+                
+                # Select and order columns
+                required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+                available_cols = [col for col in required_cols if col in df.columns]
+                df = df[available_cols]
+                
+                return df
+            except (UnicodeDecodeError, UnicodeError) as e:
+                # Return empty DataFrame on encoding errors
+                import logging
+                logging.getLogger(__name__).error(f"Encoding error in query: {e}")
                 return pd.DataFrame(columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            
-            # Convert to list of dicts and then to DataFrame
-            data = [candle.to_dict() for candle in reversed(candles)]  # Reverse to get chronological order
-            
-            df = pd.DataFrame(data)
-            
-            # Ensure timestamp column exists and convert to datetime if needed
-            if 'datetime' in df.columns:
-                df['timestamp'] = pd.to_datetime(df['datetime'])
-            elif 'timestamp' in df.columns:
-                df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            
-            # Select and order columns
-            required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-            available_cols = [col for col in required_cols if col in df.columns]
-            df = df[available_cols]
-            
-            return df
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error in to_dataframe: {e}")
+            return pd.DataFrame(columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
         finally:
             if should_close:
                 db.close()
@@ -204,13 +266,22 @@ class OHLCVRepository:
             db = get_db_session()
         
         try:
-            count = db.query(OHLCVCandle).filter(
-                and_(
-                    OHLCVCandle.symbol == symbol,
-                    OHLCVCandle.timeframe == timeframe
-                )
-            ).count()
-            return count
+            try:
+                count = db.query(OHLCVCandle).filter(
+                    and_(
+                        OHLCVCandle.symbol == symbol,
+                        OHLCVCandle.timeframe == timeframe
+                    )
+                ).count()
+                return count
+            except (UnicodeDecodeError, UnicodeError) as e:
+                import logging
+                logging.getLogger(__name__).error(f"Encoding error in count query: {e}")
+                return 0
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error in count: {e}")
+            return 0
         finally:
             if should_close:
                 db.close()

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Human-oriented recommendation prioritizer combining signals, risk, and macro context."""
 import os
 from datetime import datetime

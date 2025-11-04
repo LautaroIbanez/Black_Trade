@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Real-time recommendation service with multiple strategy signals."""
 import pandas as pd
 from typing import List, Dict, Any, Optional, Tuple

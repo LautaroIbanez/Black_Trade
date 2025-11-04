@@ -167,12 +167,11 @@ def initialize_services():
         except Exception as e:
             logger.error(f"Error initializing risk system: {e}")
         
-        # Initialize ingestion scheduler
+        # Initialize ingestion scheduler (will be started asynchronously in startup_event)
         from backend.tasks.scheduler import init_scheduler
         scheduler = init_scheduler()
         if scheduler:
-            scheduler.start()
-            logger.info("Schedulers started")
+            logger.info("Scheduler initialized (will start asynchronously)")
 
         # Initialize execution system (engine + coordinator)
         try:
@@ -228,11 +227,19 @@ async def refresh_data() -> RefreshResponse:
         
         # Get data summary from database
         logger.info("Checking data availability...")
-        data_summary = market_data_service.get_data_summary(symbol, timeframes)
-        logger.info(f"Data summary: {data_summary['overall_status']}")
+        try:
+            data_summary = market_data_service.get_data_summary(symbol, timeframes)
+            logger.info(f"Data summary: {data_summary['overall_status']}")
+        except (UnicodeDecodeError, UnicodeError) as e:
+            logger.warning(f"Encoding issue getting data summary: {e}. Continuing anyway...")
+            data_summary = {"overall_status": "unknown"}
         
         # Note: Data refresh is now handled automatically by ingestion pipeline
-        refresh_results = market_data_service.refresh_latest_candles(symbol, timeframes)
+        try:
+            refresh_results = market_data_service.refresh_latest_candles(symbol, timeframes)
+        except (UnicodeDecodeError, UnicodeError) as e:
+            logger.warning(f"Encoding issue refreshing candles: {e}. Continuing anyway...")
+            refresh_results = {}
         
         # Get enabled strategies from registry
         strategies = strategy_registry.get_enabled_strategies()
@@ -287,8 +294,23 @@ async def refresh_data() -> RefreshResponse:
             results=safe_results
         )
         
+    except UnicodeDecodeError as e:
+        logger.error(f"Encoding error in refresh: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        # Return partial results if available, otherwise return error response
+        if all_results:
+            safe_results = jsonable_encoder(all_results)
+            return RefreshResponse(
+                success=True,
+                message="Data refreshed with some encoding warnings",
+                results=safe_results
+            )
+        raise HTTPException(status_code=500, detail="Encoding error: Some files may have incorrect encoding")
     except Exception as e:
         logger.error(f"Error in refresh: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/recommendation")

@@ -61,8 +61,13 @@ class MarketDataService:
             logger.debug(f"Loaded {len(df)} candles for {symbol} {timeframe}")
             return df
             
+        except (UnicodeDecodeError, UnicodeError) as e:
+            logger.error(f"Encoding error loading OHLCV data for {symbol} {timeframe}: {e}")
+            return pd.DataFrame()
         except Exception as e:
-            logger.error(f"Error loading OHLCV data: {e}")
+            logger.error(f"Error loading OHLCV data for {symbol} {timeframe}: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
             return pd.DataFrame()
     
     def get_latest_candle(self, symbol: str, timeframe: str) -> Optional[Dict]:
@@ -109,6 +114,12 @@ class MarketDataService:
                 if count == 0:
                     summary["overall_status"] = "incomplete"
                     
+            except (UnicodeDecodeError, UnicodeError) as e:
+                logger.error(f"Encoding error getting summary for {timeframe}: {e}")
+                summary["timeframes"][timeframe] = {
+                    "error": "encoding_error",
+                }
+                summary["overall_status"] = "error"
             except Exception as e:
                 logger.error(f"Error getting summary for {timeframe}: {e}")
                 summary["timeframes"][timeframe] = {
