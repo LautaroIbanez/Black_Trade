@@ -49,7 +49,7 @@ async def register(req: RegisterRequest) -> Dict[str, Any]:
     kyc = get_kyc_service()
     kyc.register_user(pair.user_id, req.username, req.email, req.country)
     transaction_journal.log(JournalEntryType.SYSTEM_EVENT, details={"event": "register", "user": req.username, "role": req.role.value})
-    return {"access_token": pair.access_token, "refresh_token": pair.refresh_token, "user_id": pair.user_id, "role": pair.role}
+    return {"access_token": pair.access_token, "refresh_token": pair.refresh_token, "user_id": pair.user_id, "role": pair.role, "username": pair.username}
 
 
 @router.post("/verify")
@@ -69,7 +69,7 @@ async def login(req: LoginRequest) -> Dict[str, Any]:
     # For proper login, email should be provided, but we maintain backward compatibility
     pair = app_auth_service.issue_tokens(req.username, req.role, email=None)
     transaction_journal.log(JournalEntryType.SYSTEM_EVENT, details={"event": "login", "user": req.username, "role": req.role.value})
-    return {"access_token": pair.access_token, "refresh_token": pair.refresh_token, "user_id": pair.user_id, "role": pair.role}
+    return {"access_token": pair.access_token, "refresh_token": pair.refresh_token, "user_id": pair.user_id, "role": pair.role, "username": pair.username}
 
 
 @router.post("/refresh")
@@ -78,7 +78,7 @@ async def refresh(req: RefreshRequest) -> Dict[str, Any]:
     try:
         new_pair = app_auth_service.refresh_tokens(req.refresh_token)
         transaction_journal.log(JournalEntryType.SYSTEM_EVENT, details={"event": "token_refresh", "user_id": new_pair.user_id})
-        return {"access_token": new_pair.access_token, "refresh_token": new_pair.refresh_token, "user_id": new_pair.user_id, "role": new_pair.role}
+        return {"access_token": new_pair.access_token, "refresh_token": new_pair.refresh_token, "user_id": new_pair.user_id, "role": new_pair.role, "username": new_pair.username}
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
     except Exception as e:

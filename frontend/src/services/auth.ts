@@ -55,10 +55,15 @@ export async function refreshAccessToken(): Promise<boolean> {
   const refresh_token = getRefresh()
   if (!refresh_token) return false
   try {
+    // Preserve original username before refresh
+    const originalUsername = getUsername()
     const mod = await import('./api')
     const res = await mod.refreshToken(refresh_token)
     if (res?.access_token) {
-      setSession(res.access_token, res.user_id, res.role, res.refresh_token, res.user_id)
+      // Preserve original username - never use user_id as username
+      // If backend returns username, use it; otherwise keep the original
+      const usernameToStore = res.username || originalUsername || res.user_id
+      setSession(res.access_token, res.user_id, res.role, res.refresh_token, usernameToStore)
       return true
     }
   } catch {}
@@ -73,10 +78,17 @@ export async function ensureSession(): Promise<boolean> {
     const username = getUsername()
     const role = getRole() || 'viewer'
     if (!username) return false
+    // Ensure we don't use user_id as username - if username looks like user_id, skip login
+    if (username.startsWith('user_') && username.length > 10) {
+      // This is likely a user_id stored incorrectly, cannot login without real username
+      return false
+    }
     const mod = await import('./api')
     const res = await mod.loginUser({ username, role })
     if (res?.access_token) {
-      setSession(res.access_token, res.user_id, res.role, res.refresh_token, username)
+      // Store the username used for login, not user_id
+      const usernameToStore = username // Use the username we used for login
+      setSession(res.access_token, res.user_id, res.role, res.refresh_token, usernameToStore)
       return true
     }
   } catch {}

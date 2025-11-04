@@ -150,13 +150,41 @@ function Dashboard() {
 
 ### Storage
 
-Tokens are stored in `localStorage`:
+Tokens and credentials are stored in `localStorage` with separate keys to preserve user identity:
 
 - `bt_auth_token`: Access token (expires after 12 hours)
 - `bt_refresh_token`: Refresh token (expires after 7 days)
-- `bt_user_id`: User identifier
+- `bt_user_id`: User identifier (persistent, immutable)
 - `bt_user_role`: User role (viewer/trader/risk_manager/admin)
-- `bt_username`: Username
+- `bt_username`: Username used for authentication (must be preserved separately from user_id)
+
+### Critical: Username vs User ID
+
+**Important**: `username` and `user_id` are stored **separately** and must never be confused:
+
+- **`username`**: The username used for login/authentication (e.g., "john_doe")
+- **`user_id`**: The persistent identifier (format: `user_abc123def456`)
+
+**Never use `user_id` as `username`** when authenticating, as this would create a new user without KYC verification.
+
+### Credential Preservation During Refresh
+
+When refreshing tokens, the original `username` is always preserved:
+
+```typescript
+// refreshAccessToken() preserves original username
+const originalUsername = getUsername()  // Get from localStorage
+const response = await refreshToken(refresh_token)
+
+// Store with preserved username (not user_id)
+setSession(
+  response.access_token,
+  response.user_id,        // New user_id (should be same)
+  response.role,
+  response.refresh_token,
+  response.username || originalUsername  // Preserve username, never use user_id
+)
+```
 
 ### Refresh Flow
 
@@ -167,13 +195,15 @@ Tokens are stored in `localStorage`:
    ↓
 3. Call refreshAccessToken()
    ↓
-4. Send refresh_token to backend
+4. Preserve original username from localStorage
    ↓
-5. Receive new access_token + refresh_token
+5. Send refresh_token to backend
    ↓
-6. Update localStorage
+6. Receive new access_token + refresh_token + username
    ↓
-7. Retry original request with new token
+7. Update localStorage with preserved username (not user_id)
+   ↓
+8. Retry original request with new token
 ```
 
 ### Manual Refresh
@@ -182,7 +212,30 @@ Tokens are stored in `localStorage`:
 import { refreshAccessToken } from '../services/auth'
 
 // Returns true if refresh successful, false otherwise
+// Automatically preserves username
 const refreshed = await refreshAccessToken()
+```
+
+### Session Restoration
+
+When `ensureSession()` is called after token expiration:
+
+1. First attempts token refresh
+2. If refresh fails, attempts login using stored `username`
+3. **Never attempts login with `user_id`** - if username looks like user_id (starts with "user_"), login is skipped
+4. Stores new tokens with correct `username` and `user_id`
+
+```typescript
+// ensureSession() handles session restoration
+const username = getUsername()
+if (!username || username.startsWith('user_')) {
+  // Cannot restore - username missing or corrupted
+  return false
+}
+
+// Use stored username for login
+const response = await loginUser({ username, role })
+setSession(..., response.user_id, ..., username)  // Preserve username
 ```
 
 ## KYC Verification Flow

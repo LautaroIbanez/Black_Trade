@@ -9,11 +9,12 @@ from backend.repositories.user_repository import UserRepository
 
 
 class TokenPair:
-    def __init__(self, access_token: str, refresh_token: str, user_id: str, role: str):
+    def __init__(self, access_token: str, refresh_token: str, user_id: str, role: str, username: Optional[str] = None):
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.user_id = user_id
         self.role = role
+        self.username = username
 
 
 class AppAuthService:
@@ -34,7 +35,19 @@ class AppAuthService:
 
     def issue_tokens(self, username: str, role: Role, email: Optional[str] = None) -> TokenPair:
         """Issue tokens for a user. Creates persistent user if email provided, reuses existing user."""
-        # Get or create persistent user
+        # Validate username is not a user_id format to prevent confusion
+        if username.startswith('user_') and len(username) > 10:
+            # This looks like a user_id, try to find user by user_id instead
+            db_user = self.user_repo.find_by_user_id(username)
+            if db_user:
+                # Found user by user_id, use their actual username
+                username = db_user.username
+                email = email or db_user.email
+            else:
+                # Not found, this is invalid - user_id should not be used as username
+                raise ValueError("Invalid username format. Cannot use user_id as username.")
+        
+        # Get or create persistent user - this will find existing by email or username
         db_user = self.user_repo.create_or_get(username, role.value, email=email)
         
         # Create in-memory user for AuthService compatibility
@@ -70,7 +83,7 @@ class AppAuthService:
         auth_service = self.auth
         auth_service.tokens[token] = auth_user
         
-        return TokenPair(token, refresh, db_user.user_id, db_user.role)
+        return TokenPair(token, refresh, db_user.user_id, db_user.role, db_user.username)
 
     def refresh_tokens(self, refresh_token: str) -> TokenPair:
         """Refresh access token using refresh token. Maintains same user_id."""
@@ -95,12 +108,12 @@ class AppAuthService:
             except Exception:
                 raise ValueError("Invalid refresh token format")
         
-        # Get persistent user
+        # Get persistent user - this ensures we use the same user record
         db_user = self.user_repo.find_by_user_id(user_id)
         if not db_user:
             raise ValueError("User not found")
         
-        # Generate new access token with same user_id
+        # Generate new access token with same user_id and attributes
         if self._jwt:
             new_access = self._jwt.encode({
                 'sub': db_user.user_id,
@@ -126,7 +139,7 @@ class AppAuthService:
         # Revoke old refresh token
         self.repo.revoke(refresh_token)
         
-        # Persist new tokens
+        # Persist new tokens with same user_id
         self.repo.save(db_user.user_id, new_access, 'access', expires_at=datetime.utcnow() + timedelta(hours=12))
         self.repo.save(db_user.user_id, new_refresh, 'refresh', expires_at=datetime.utcnow() + timedelta(days=7))
         
@@ -135,7 +148,8 @@ class AppAuthService:
         auth_user = AuthUser(db_user.user_id, db_user.username, Role(db_user.role))
         auth_service.tokens[new_access] = auth_user
         
-        return TokenPair(new_access, new_refresh, db_user.user_id, db_user.role)
+        # Return TokenPair with username for frontend
+        return TokenPair(new_access, new_refresh, db_user.user_id, db_user.role, db_user.username)
 
 
 app_auth_service = AppAuthService()

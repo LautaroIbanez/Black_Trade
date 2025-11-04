@@ -52,7 +52,7 @@ The authentication and permission services depend on an **immutable `user_id`**.
    POST /api/auth/register
    → Creates user account (not verified)
    → Issues access + refresh tokens
-   → Returns {access_token, refresh_token, user_id, role}
+   → Returns {access_token, refresh_token, user_id, role, username}
    
 2. KYC Verification
    POST /api/auth/verify
@@ -71,10 +71,82 @@ The authentication and permission services depend on an **immutable `user_id`**.
    → Validates refresh token from database
    → Maintains same user_id from token record
    → Generates new access + refresh tokens
+   → Returns {access_token, refresh_token, user_id, role, username}
    → Old refresh token is revoked
    → KYC status and user data remain accessible
    → Refresh tokens expire after 7 days
 ```
+
+## User Identity Reuse
+
+The system ensures that user identity is preserved across all authentication flows to prevent duplicate user creation and maintain KYC verification status.
+
+### Identity Consolidation
+
+**Registration** (`POST /api/auth/register`):
+1. Checks if user exists by `email` (primary key for consolidation)
+2. If found, returns existing user's `user_id` and updates username/role if changed
+3. If not found, creates new user with persistent `user_id`
+4. Always returns `username` in response for frontend storage
+
+**Login** (`POST /api/auth/login`):
+1. Checks if user exists by `username`
+2. If found, returns existing user's `user_id` (maintains identity)
+3. If not found, creates new user (for backward compatibility)
+4. Returns `username` in response
+5. **Never accepts `user_id` as `username`** - if detected, finds user by `user_id` and uses their actual username
+
+**Token Refresh** (`POST /api/auth/refresh`):
+1. Validates refresh token from database
+2. Retrieves `user_id` from token record (never creates new user)
+3. Loads persistent user from database by `user_id`
+4. Generates new tokens with same `user_id` and attributes
+5. Returns `username` in response for frontend to preserve
+
+### Backend Implementation
+
+The `AppAuthService` implements identity reuse:
+
+```python
+def issue_tokens(self, username: str, role: Role, email: Optional[str] = None):
+    # Detect and prevent user_id being used as username
+    if username.startswith('user_') and len(username) > 10:
+        db_user = self.user_repo.find_by_user_id(username)
+        if db_user:
+            username = db_user.username  # Use actual username
+    
+    # Get or create user - reuses existing by email/username
+    db_user = self.user_repo.create_or_get(username, role.value, email=email)
+    
+    # Generate tokens with persistent user_id
+    return TokenPair(..., user_id=db_user.user_id, username=db_user.username)
+
+def refresh_tokens(self, refresh_token: str):
+    # Get user_id from token record (never creates new user)
+    token_rec = self.repo.get(refresh_token)
+    user_id = token_rec.user_id
+    
+    # Load persistent user by user_id
+    db_user = self.user_repo.find_by_user_id(user_id)
+    
+    # Return with username for frontend
+    return TokenPair(..., user_id=db_user.user_id, username=db_user.username)
+```
+
+### Frontend Identity Preservation
+
+The frontend preserves credentials correctly:
+
+1. **Storage**: `username` and `user_id` stored separately in localStorage
+2. **Refresh**: `refreshAccessToken()` preserves original `username`, never uses `user_id`
+3. **Login**: `ensureSession()` uses stored `username` for login, never `user_id`
+4. **Validation**: Detects if `username` looks like `user_id` and prevents login
+
+This ensures:
+- Same `user_id` across all sessions
+- KYC verification persists
+- No duplicate users created
+- Correct username used for authentication
 
 ## User Roles & Permissions
 

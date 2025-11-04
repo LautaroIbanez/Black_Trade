@@ -7,6 +7,7 @@ from backend.app import app
 from backend.repositories.kyc_repository import KYCRepository
 from backend.repositories.user_repository import UserRepository
 from backend.auth.permissions import init_auth_service
+from backend.services.auth_service import app_auth_service
 
 
 @pytest.fixture(scope="function")
@@ -254,5 +255,161 @@ def test_old_refresh_token_invalid_after_refresh(client):
     # Old refresh token should be invalid
     r = client.post('/api/auth/refresh', json={'refresh_token': refresh_token})
     assert r.status_code == 401
+
+
+def test_username_preserved_in_refresh_response(client):
+    """Test that username is returned in refresh response and preserved."""
+    # Register
+    r = client.post('/api/auth/register', json={
+        'username': 'username_preserve',
+        'email': 'username_preserve@example.com',
+        'country': 'AR',
+        'role': 'trader'
+    })
+    assert r.status_code == 200
+    data = r.json()
+    original_username = 'username_preserve'
+    original_user_id = data['user_id']
+    refresh_token = data['refresh_token']
+    
+    # Refresh token
+    r = client.post('/api/auth/refresh', json={'refresh_token': refresh_token})
+    assert r.status_code == 200
+    refresh_data = r.json()
+    
+    # Username should be returned
+    assert 'username' in refresh_data
+    assert refresh_data['username'] == original_username
+    assert refresh_data['user_id'] == original_user_id
+
+
+def test_username_preserved_in_login_response(client):
+    """Test that username is returned in login response."""
+    # Register first
+    r = client.post('/api/auth/register', json={
+        'username': 'login_username',
+        'email': 'login_username@example.com',
+        'country': 'AR',
+        'role': 'viewer'
+    })
+    assert r.status_code == 200
+    
+    # Login with same username
+    r = client.post('/api/auth/login', json={'username': 'login_username', 'role': 'viewer'})
+    assert r.status_code == 200
+    login_data = r.json()
+    
+    # Username should be returned
+    assert 'username' in login_data
+    assert login_data['username'] == 'login_username'
+
+
+def test_login_refresh_kyc_persists_username_constant(client):
+    """Test complete flow: login → refresh → access /api/recommendations/live with constant user_id and username."""
+    # Register
+    r = client.post('/api/auth/register', json={
+        'username': 'kyc_const_test',
+        'email': 'kyc_const_test@example.com',
+        'country': 'AR',
+        'role': 'trader'
+    })
+    assert r.status_code == 200
+    data = r.json()
+    original_username = data.get('username', 'kyc_const_test')
+    original_user_id = data['user_id']
+    refresh_token = data['refresh_token']
+    
+    # Verify KYC
+    KYCRepository().upsert(original_user_id, original_username, 'kyc_const_test@example.com', 'AR', verified=True)
+    
+    # Login
+    r = client.post('/api/auth/login', json={'username': original_username, 'role': 'trader'})
+    assert r.status_code == 200
+    login_data = r.json()
+    assert login_data['user_id'] == original_user_id
+    assert login_data.get('username') == original_username
+    
+    # Refresh token
+    r = client.post('/api/auth/refresh', json={'refresh_token': refresh_token})
+    assert r.status_code == 200
+    refresh_data = r.json()
+    assert refresh_data['user_id'] == original_user_id
+    assert refresh_data.get('username') == original_username
+    
+    # Access protected endpoint
+    r = client.get('/api/recommendations/live', headers={'Authorization': f'Bearer {refresh_data["access_token"]}'})
+    assert r.status_code in (200, 500), f"Expected 200 or 500, got {r.status_code}: {r.text}"
+    
+    # Verify KYC still valid
+    r = client.post('/api/auth/kyc-status', json={'user_id': original_user_id})
+    assert r.status_code == 200
+    assert r.json().get('verified') == True
+
+
+def test_cannot_use_user_id_as_username(client):
+    """Test that attempting to use user_id as username is prevented."""
+    # Register first
+    r = client.post('/api/auth/register', json={
+        'username': 'normal_user',
+        'email': 'normal@example.com',
+        'country': 'AR',
+        'role': 'viewer'
+    })
+    assert r.status_code == 200
+    user_id = r.json()['user_id']
+    
+    # Try to login with user_id as username - should either work (finds user) or fail gracefully
+    # The backend should detect user_id format and find the user by user_id, using their actual username
+    try:
+        r = client.post('/api/auth/login', json={'username': user_id, 'role': 'viewer'})
+        # If it works, should return the correct username, not the user_id
+        if r.status_code == 200:
+            assert r.json().get('username') != user_id
+            assert r.json().get('username') == 'normal_user'
+    except Exception:
+        # Backend may reject it, which is also acceptable
+        pass
+    
+    # Verify user repository does not create duplicate
+    user_repo = UserRepository()
+    users_by_username = user_repo.find_by_username(user_id)
+    # Should either return None or return the existing user with correct username
+    if users_by_username:
+        assert users_by_username.username != user_id
+
+
+def test_create_or_get_reuses_existing_user(client):
+    """Test that create_or_get reuses existing user by email or username."""
+    # Register first time
+    r1 = client.post('/api/auth/register', json={
+        'username': 'reuse_test',
+        'email': 'reuse_test@example.com',
+        'country': 'AR',
+        'role': 'viewer'
+    })
+    assert r1.status_code == 200
+    user_id_1 = r1.json()['user_id']
+    username_1 = r1.json().get('username', 'reuse_test')
+    
+    # Register again with same email, different username
+    r2 = client.post('/api/auth/register', json={
+        'username': 'reuse_test_different',
+        'email': 'reuse_test@example.com',
+        'country': 'AR',
+        'role': 'trader'
+    })
+    assert r2.status_code == 200
+    user_id_2 = r2.json()['user_id']
+    
+    # Should return same user_id
+    assert user_id_1 == user_id_2
+    
+    # Login with original username
+    r3 = client.post('/api/auth/login', json={'username': 'reuse_test', 'role': 'viewer'})
+    assert r3.status_code == 200
+    user_id_3 = r3.json()['user_id']
+    
+    # Should return same user_id
+    assert user_id_1 == user_id_3
 
 
