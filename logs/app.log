@@ -15,3 +15,150 @@ connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection re
 	Is the server running on that host and accepting TCP/IP connections?
 
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:44:53,862 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-04 09:44:53,865 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 09:44:53,865 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 09:44:53,982 - backend.db.init_db - INFO - Initializing database...
+2025-11-04 09:44:53,982 - backend.db.init_db - INFO - Creating database tables from models...
+2025-11-04 09:44:58,072 - backend.db.init_db - ERROR - Database initialization failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:44:58,073 - backend.app - ERROR - Failed to initialize database
+2025-11-04 09:48:51,089 - backend.api.routes.websocket - INFO - WebSocket connected. Total connections: 1
+2025-11-04 09:48:51,595 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 17.08ms
+2025-11-04 09:48:51,602 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 4.04ms
+2025-11-04 09:49:11,984 - backend.observability.middleware - ERROR - Request error: POST /api/auth/register - (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:28,773 - backend.observability.middleware - ERROR - Request error: POST /api/auth/register - (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:38,681 - backend.services.market_data_service - ERROR - Error loading OHLCV data: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:38,682 - backend.app - INFO - Checking data availability...
+2025-11-04 09:49:42,746 - backend.services.market_data_service - ERROR - Error getting summary for 15m: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:46,812 - backend.services.market_data_service - ERROR - Error getting summary for 1h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:50,893 - backend.services.market_data_service - ERROR - Error getting summary for 2h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:54,941 - backend.services.market_data_service - ERROR - Error getting summary for 4h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:49:59,039 - backend.services.market_data_service - ERROR - Error getting summary for 12h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:03,092 - backend.services.market_data_service - ERROR - Error getting summary for 1d: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:07,186 - backend.services.market_data_service - ERROR - Error getting summary for 1w: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:07,187 - backend.app - INFO - Data summary: error
+2025-11-04 09:50:07,187 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 09:50:07,189 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 09:50:11,250 - backend.app - ERROR - Error in refresh: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:11,250 - backend.app - INFO - Checking data availability...
+2025-11-04 09:50:15,299 - backend.services.market_data_service - ERROR - Error getting summary for 15m: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:19,347 - backend.services.market_data_service - ERROR - Error getting summary for 1h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:23,443 - backend.services.market_data_service - ERROR - Error getting summary for 2h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:27,509 - backend.services.market_data_service - ERROR - Error getting summary for 4h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:31,574 - backend.services.market_data_service - ERROR - Error getting summary for 12h: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:35,638 - backend.services.market_data_service - ERROR - Error getting summary for 1d: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:39,720 - backend.services.market_data_service - ERROR - Error getting summary for 1w: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:39,721 - backend.app - INFO - Data summary: error
+2025-11-04 09:50:39,721 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 09:50:39,723 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 09:50:43,802 - backend.app - ERROR - Error in refresh: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:43,802 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 69199.03ms
+2025-11-04 09:50:47,887 - backend.services.market_data_service - ERROR - Error loading OHLCV data: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-04 09:50:47,890 - backend.observability.middleware - INFO - POST /refresh - 500 - 73284.33ms
+2025-11-04 09:50:47,890 - backend.observability.middleware - INFO - POST /refresh - 500 - 69207.65ms
+2025-11-04 09:50:47,896 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 4094.04ms

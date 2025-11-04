@@ -34,7 +34,7 @@ function RecommendationChecklist({ item, onSubmitted }) {
         <div className="risk-checks">
           <strong>Verificaciones de riesgo:</strong>
           <ul>
-            {Object.entries(item.risk_limit_checks).map(([key, check]: [string, any]) => (
+            {Object.entries(item.risk_limit_checks).map(([key, check]) => (
               <li key={key} className={check.violated ? 'violated' : 'ok'}>
                 {key}: {check.violated ? '⚠️' : '✓'} {check.message || ''}
               </li>
