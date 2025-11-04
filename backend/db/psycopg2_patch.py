@@ -92,47 +92,64 @@ def patch_psycopg2():
                 else:
                     args_modified = args
                 
-                # Create connection factory that suppresses notices
-                import psycopg2.extensions
-                
-                class SilentNoticeConnection(psycopg2.extensions.connection):
-                    """Connection that silently ignores all notices/warnings."""
-                    def __init__(self, *args, **kwargs):
-                        super().__init__(*args, **kwargs)
-                        # Set notice handler to ignore everything
-                        try:
-                            self.set_notice_handler(lambda notice: None)
-                        except:
-                            pass
-                
-                # Always use SilentNoticeConnection factory
-                kwargs_with_factory = kwargs.copy()
-                kwargs_with_factory['connection_factory'] = SilentNoticeConnection
-                
-                # Try connection with all our modifications
-                # We wrap in try-except to catch UnicodeDecodeError that occurs during handshake
+                # Since PostgreSQL is now configured correctly, we can connect directly
+                # without a custom connection factory. The options in DSN/kwargs handle encoding.
                 try:
                     if args_modified != args:
-                        conn_result = original_connect(*args_modified, **kwargs_with_factory)
+                        conn_result = original_connect(*args_modified, **kwargs)
                     else:
-                        conn_result = original_connect(*args, **kwargs_with_factory)
+                        conn_result = original_connect(*args, **kwargs)
                     
-                    # Connection succeeded - verify it works
+                    # Set notice handler to suppress any encoding issues in notices
                     try:
-                        # Quick test query to ensure connection is actually working
-                        test_cursor = conn_result.cursor()
-                        test_cursor.execute("SELECT 1")
-                        test_cursor.close()
+                        import psycopg2.extensions
+                        conn_result.set_notice_handler(lambda notice: None)
                     except:
-                        # If test fails, connection might not be usable
-                        conn_result.close()
-                        raise
+                        pass
                     
                     return conn_result
-                except UnicodeDecodeError as ude:
+                except (UnicodeDecodeError, UnicodeError) as ude:
+                    # If connection with factory fails due to encoding, try without factory
+                    # and set notice handler manually after connection
+                    logger.debug(f"Connection with factory failed due to encoding error, retrying without factory: {ude}")
+                    try:
+                        # Remove connection_factory and try again
+                        kwargs_no_factory = kwargs.copy()
+                        if 'connection_factory' in kwargs_no_factory:
+                            del kwargs_no_factory['connection_factory']
+                        
+                        if args_modified != args:
+                            conn_result = original_connect(*args_modified, **kwargs_no_factory)
+                        else:
+                            conn_result = original_connect(*args, **kwargs_no_factory)
+                        
+                        # Now set notice handler manually after connection is established
+                        try:
+                            conn_result.set_notice_handler(lambda notice: None)
+                        except:
+                            pass
+                        
+                        # Set encoding and suppress messages
+                        try:
+                            cursor = conn_result.cursor()
+                            cursor.execute("SET client_encoding TO 'UTF8'")
+                            cursor.execute("SET client_min_messages TO 'ERROR'")
+                            cursor.execute("SET lc_messages TO 'C'")
+                            cursor.close()
+                            conn_result.commit()
+                        except:
+                            pass
+                        
+                        return conn_result
+                    except Exception as retry_error:
+                        logger.debug(f"Retry without factory also failed: {retry_error}")
+                        # Fall through to next retry strategy
+                        ude = retry_error  # Ensure ude is defined for fallback handling
+                except Exception as other_error:
                     # This error happens during connection initialization
                     # It's usually caused by PostgreSQL messages with wrong encoding
                     # Try one more time with a more aggressive approach: parse DSN and use individual params
+                    ude = other_error  # Store error for fallback handling
                     try:
                         if isinstance(dsn, str) and 'postgresql://' in dsn.lower():
                             # Parse connection string manually
@@ -166,8 +183,7 @@ def patch_psycopg2():
                                     'password': password,
                                     'database': database,
                                     'client_encoding': 'UTF8',
-                                    'options': '-c client_min_messages=error',
-                                    'connection_factory': SilentNoticeConnection,
+                                    'options': '-c client_min_messages=error -c lc_messages=C',
                                 }
                                 # Remove None values
                                 conn_params = {k: v for k, v in conn_params.items() if v is not None}
@@ -186,9 +202,9 @@ def patch_psycopg2():
                         # Force environment and try once more
                         os.environ['PGCLIENTENCODING'] = 'UTF8'
                         if args_modified != args:
-                            return original_connect(*args_modified, **kwargs_with_factory)
+                            return original_connect(*args_modified, **kwargs)
                         else:
-                            return original_connect(*args, **kwargs_with_factory)
+                            return original_connect(*args, **kwargs)
                     except:
                         # Final fallback - log but don't spam errors
                         logger.debug(f"Final connection attempt failed, re-raising: {ude}")
@@ -214,5 +230,7 @@ def patch_psycopg2():
         return False
 
 # Auto-patch when module is imported, but only if psycopg2 hasn't been imported yet
-if 'psycopg2' not in sys.modules:
-    patch_psycopg2()
+# NOTE: Disabled temporarily since PostgreSQL is now configured correctly with lc_messages=C
+# and the patch was interfering with SQLAlchemy connection initialization
+# if 'psycopg2' not in sys.modules:
+#     patch_psycopg2()

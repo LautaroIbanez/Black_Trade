@@ -2163,3 +2163,326 @@ h11._util.LocalProtocolError: can't handle event type ConnectionClosed when role
 2025-11-04 11:36:31,931 - backend.observability.middleware - INFO - GET /recommendation - 500 - 692.78ms
 2025-11-04 11:36:31,937 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 695.69ms
 2025-11-04 11:36:50,367 - backend.api.routes.websocket - INFO - WebSocket disconnected. Total connections: 0
+2025-11-04 13:54:22,629 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-04 13:54:22,629 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 13:54:22,646 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 13:54:22,851 - backend.db.init_db - INFO - Initializing database...
+2025-11-04 13:54:22,851 - backend.db.init_db - INFO - Importing database models...
+2025-11-04 13:54:22,887 - backend.db.init_db - INFO - Models imported successfully
+2025-11-04 13:54:22,888 - backend.db.init_db - INFO - Creating database tables from models...
+2025-11-04 13:54:23,177 - backend.db.init_db - WARNING - Encoding error during table creation: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. Tables may already exist.
+2025-11-04 13:54:23,193 - backend.db.init_db - INFO - Running database migrations...
+2025-11-04 13:54:23,193 - backend.db.init_db - INFO - Running migration: 001_initial_schema
+2025-11-04 13:54:23,490 - backend.db.init_db - WARNING - Encoding error in migration 001_initial_schema: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:23,496 - backend.db.init_db - INFO - Running migration: 002_strategy_results
+2025-11-04 13:54:23,997 - backend.db.init_db - WARNING - Encoding error in migration 002_strategy_results: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:23,997 - backend.db.init_db - INFO - Running migration: 003_risk_metrics
+2025-11-04 13:54:24,306 - backend.db.init_db - WARNING - Encoding error in migration 003_risk_metrics: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:24,306 - backend.db.init_db - INFO - Running migration: 004_journal
+2025-11-04 13:54:24,681 - backend.db.init_db - WARNING - Encoding error in migration 004_journal: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:24,681 - backend.db.init_db - INFO - Running migration: 005_live_results
+2025-11-04 13:54:24,983 - backend.db.init_db - WARNING - Encoding error in migration 005_live_results: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:24,985 - backend.db.init_db - INFO - Running migration: 006_recommendations_log
+2025-11-04 13:54:25,404 - backend.db.init_db - WARNING - Encoding error in migration 006_recommendations_log: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:25,404 - backend.db.init_db - INFO - Running migration: 007_kyc_users
+2025-11-04 13:54:25,842 - backend.db.init_db - WARNING - Encoding error in migration 007_kyc_users: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:25,842 - backend.db.init_db - INFO - Running migration: 008_recommendations_outcomes
+2025-11-04 13:54:26,343 - backend.db.init_db - WARNING - Encoding error in migration 008_recommendations_outcomes: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:26,343 - backend.db.init_db - INFO - Running migration: 009_user_tokens
+2025-11-04 13:54:26,877 - backend.db.init_db - WARNING - Encoding error in migration 009_user_tokens: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte. This may be safe to ignore if tables already exist.
+2025-11-04 13:54:27,251 - backend.db.init_db - WARNING - Could not enable TimescaleDB: Encoding error enabling TimescaleDB: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:27,251 - backend.db.init_db - INFO - Database initialization completed successfully
+2025-11-04 13:54:27,251 - backend.app - INFO - Auth service initialized
+2025-11-04 13:54:27,315 - backend.scripts.init_risk_system - INFO - Using simulated adapter for risk management
+2025-11-04 13:54:27,316 - backend.scripts.init_risk_system - INFO - Risk management system initialized
+2025-11-04 13:54:27,317 - backend.scripts.init_risk_system - INFO - Limits: max_exposure=80.0%, max_drawdown=20.0%
+2025-11-04 13:54:27,319 - backend.app - INFO - Risk system initialized
+2025-11-04 13:54:27,557 - backend.tasks.scheduler - WARNING - APScheduler not installed. Install with: pip install apscheduler
+2025-11-04 13:54:27,573 - backend.app - INFO - Scheduler initialized (will start asynchronously)
+2025-11-04 13:54:27,573 - backend.scripts.init_execution_system - INFO - Using simulated adapter for execution
+2025-11-04 13:54:27,573 - backend.scripts.init_execution_system - INFO - Signal orchestrator initialized
+2025-11-04 13:54:27,573 - backend.scripts.init_execution_system - INFO - Execution engine initialized
+2025-11-04 13:54:27,589 - backend.scripts.init_execution_system - INFO - Execution coordinator initialized
+2025-11-04 13:54:27,590 - backend.scripts.init_execution_system - INFO - Execution system fully initialized
+2025-11-04 13:54:27,590 - backend.app - INFO - Execution system initialized
+2025-11-04 13:54:27,591 - backend.app - INFO - Services initialized successfully
+2025-11-04 13:54:27,592 - backend.tasks.scheduler - WARNING - Scheduler not available
+2025-11-04 13:54:52,675 - backend.api.routes.websocket - INFO - WebSocket connected. Total connections: 1
+2025-11-04 13:54:53,304 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 0.00ms
+2025-11-04 13:54:53,319 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 0.00ms
+2025-11-04 13:54:55,305 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:55,321 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 13:54:55,321 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 343.30ms
+2025-11-04 13:54:55,338 - backend.app - INFO - Checking data availability...
+2025-11-04 13:54:55,673 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:56,081 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:56,617 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:57,147 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:57,586 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:58,100 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:58,502 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:58,868 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:59,301 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:59,602 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:54:59,901 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:00,251 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:00,701 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:01,017 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:01,017 - backend.app - INFO - Data summary: incomplete
+2025-11-04 13:55:01,017 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 13:55:01,023 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 13:55:01,517 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:01,820 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:02,346 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:02,717 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:03,062 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:03,400 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:03,833 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:04,199 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 13:55:04,566 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:04,566 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 15m
+2025-11-04 13:55:04,566 - backend.app - WARNING - No data available for 15m
+2025-11-04 13:55:04,833 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:04,835 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 13:55:04,835 - backend.app - WARNING - No data available for 1h
+2025-11-04 13:55:05,250 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:05,250 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 13:55:05,250 - backend.app - WARNING - No data available for 2h
+2025-11-04 13:55:05,666 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:05,666 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 4h
+2025-11-04 13:55:05,666 - backend.app - WARNING - No data available for 4h
+2025-11-04 13:55:06,065 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:06,065 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 13:55:06,065 - backend.app - WARNING - No data available for 12h
+2025-11-04 13:55:06,448 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:06,448 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
+2025-11-04 13:55:06,448 - backend.app - WARNING - No data available for 1d
+2025-11-04 13:55:06,898 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:06,898 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 13:55:06,898 - backend.app - WARNING - No data available for 1w
+2025-11-04 13:55:06,915 - backend.app - INFO - Checking data availability...
+2025-11-04 13:55:07,398 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:07,681 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:08,015 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:08,382 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:08,647 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:08,914 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:09,242 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:09,713 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:10,163 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:10,596 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:11,130 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:11,446 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:11,829 - backend.repositories.ohlcv_repository - ERROR - Encoding error in count query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:12,412 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:12,412 - backend.app - INFO - Data summary: incomplete
+2025-11-04 13:55:12,412 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 13:55:12,412 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 13:55:12,712 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:13,012 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:13,279 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:13,814 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:14,300 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:14,654 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:15,091 - backend.repositories.ohlcv_repository - ERROR - Encoding error in get_latest query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:15,433 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 13:55:15,883 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:15,883 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 15m
+2025-11-04 13:55:15,883 - backend.app - WARNING - No data available for 15m
+2025-11-04 13:55:16,198 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:16,198 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 13:55:16,198 - backend.app - WARNING - No data available for 1h
+2025-11-04 13:55:16,499 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:16,512 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 13:55:16,515 - backend.app - WARNING - No data available for 2h
+2025-11-04 13:55:16,832 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:16,845 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 4h
+2025-11-04 13:55:16,845 - backend.app - WARNING - No data available for 4h
+2025-11-04 13:55:17,148 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:17,148 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 13:55:17,148 - backend.app - WARNING - No data available for 12h
+2025-11-04 13:55:17,587 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:17,589 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
+2025-11-04 13:55:17,589 - backend.app - WARNING - No data available for 1d
+2025-11-04 13:55:18,086 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:18,086 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 13:55:18,089 - backend.app - WARNING - No data available for 1w
+2025-11-04 13:55:18,681 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:18,681 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 13:55:18,681 - backend.observability.middleware - INFO - POST /refresh - 200 - 23359.12ms
+2025-11-04 13:55:18,686 - backend.observability.middleware - INFO - POST /refresh - 200 - 23364.80ms
+2025-11-04 13:55:18,972 - backend.repositories.ohlcv_repository - ERROR - Encoding error in query: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:18,972 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 13:55:18,993 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 901.86ms
+2025-11-04 13:55:18,999 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 318.30ms
+2025-11-04 13:55:19,406 - backend.app - ERROR - Error generating recommendation: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:19,410 - backend.observability.middleware - INFO - GET /recommendation - 500 - 411.34ms
+2025-11-04 13:55:19,857 - backend.app - ERROR - Error generating recommendation: 'utf-8' codec can't decode byte 0xf3 in position 85: invalid continuation byte
+2025-11-04 13:55:19,873 - backend.observability.middleware - INFO - GET /recommendation - 500 - 453.19ms
+2025-11-04 13:55:38,083 - backend.api.routes.websocket - INFO - WebSocket disconnected. Total connections: 0
+2025-11-04 14:42:37,811 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-04 14:42:37,813 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 14:42:37,813 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 14:42:37,926 - backend.db.init_db - INFO - Initializing database...
+2025-11-04 14:42:37,927 - backend.db.init_db - INFO - Importing database models...
+2025-11-04 14:42:37,947 - backend.db.init_db - INFO - Models imported successfully
+2025-11-04 14:42:37,948 - backend.db.init_db - INFO - Creating database tables from models...
+2025-11-04 14:42:38,120 - backend.db.init_db - INFO - Tables created successfully
+2025-11-04 14:42:38,120 - backend.db.init_db - INFO - Running database migrations...
+2025-11-04 14:42:38,120 - backend.db.init_db - INFO - Running migration: 001_initial_schema
+2025-11-04 14:42:38,207 - backend.db.init_db - INFO - Migration 001_initial_schema completed successfully
+2025-11-04 14:42:38,208 - backend.db.init_db - INFO - Running migration: 002_strategy_results
+2025-11-04 14:42:38,385 - backend.db.init_db - INFO - Migration 002_strategy_results completed successfully
+2025-11-04 14:42:38,385 - backend.db.init_db - INFO - Running migration: 003_risk_metrics
+2025-11-04 14:42:38,468 - backend.db.init_db - INFO - Migration 003_risk_metrics completed successfully
+2025-11-04 14:42:38,469 - backend.db.init_db - INFO - Running migration: 004_journal
+2025-11-04 14:42:38,551 - backend.db.init_db - ERROR - Error running migration 004_journal: (psycopg2.errors.SyntaxError) syntax error at or near "user"
+LINE 7:                 user VARCHAR(100) DEFAULT 'system',
+                        ^
+
+[SQL: 
+            CREATE TABLE IF NOT EXISTS journal_entries (
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                type VARCHAR(50),
+                order_id VARCHAR(100),
+                user VARCHAR(100) DEFAULT 'system',
+                details JSONB
+            )
+        ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-11-04 14:42:38,552 - backend.db.init_db - INFO - Running migration: 005_live_results
+2025-11-04 14:42:38,775 - backend.db.init_db - INFO - Migration 005_live_results completed successfully
+2025-11-04 14:42:38,776 - backend.db.init_db - INFO - Running migration: 006_recommendations_log
+2025-11-04 14:42:38,890 - backend.db.init_db - INFO - Migration 006_recommendations_log completed successfully
+2025-11-04 14:42:38,892 - backend.db.init_db - INFO - Running migration: 007_kyc_users
+2025-11-04 14:42:39,005 - backend.db.init_db - INFO - Migration 007_kyc_users completed successfully
+2025-11-04 14:42:39,005 - backend.db.init_db - INFO - Running migration: 008_recommendations_outcomes
+2025-11-04 14:42:39,213 - backend.db.init_db - INFO - Migration 008_recommendations_outcomes completed successfully
+2025-11-04 14:42:39,215 - backend.db.init_db - INFO - Running migration: 009_user_tokens
+2025-11-04 14:42:39,342 - backend.db.init_db - INFO - Migration 009_user_tokens completed successfully
+2025-11-04 14:42:39,443 - backend.db.init_db - WARNING - Could not enable TimescaleDB: TimescaleDB extension not found. Install TimescaleDB first.
+2025-11-04 14:42:39,443 - backend.db.init_db - INFO - Database initialization completed successfully
+2025-11-04 14:42:39,443 - backend.app - INFO - Auth service initialized
+2025-11-04 14:42:39,443 - backend.scripts.init_risk_system - INFO - Using simulated adapter for risk management
+2025-11-04 14:42:39,443 - backend.scripts.init_risk_system - INFO - Risk management system initialized
+2025-11-04 14:42:39,443 - backend.scripts.init_risk_system - INFO - Limits: max_exposure=80.0%, max_drawdown=20.0%
+2025-11-04 14:42:39,455 - backend.app - INFO - Risk system initialized
+2025-11-04 14:42:39,520 - backend.tasks.scheduler - WARNING - APScheduler not installed. Install with: pip install apscheduler
+2025-11-04 14:42:39,521 - backend.app - INFO - Scheduler initialized (will start asynchronously)
+2025-11-04 14:42:39,524 - backend.scripts.init_execution_system - INFO - Using simulated adapter for execution
+2025-11-04 14:42:39,525 - backend.scripts.init_execution_system - INFO - Signal orchestrator initialized
+2025-11-04 14:42:39,525 - backend.scripts.init_execution_system - INFO - Execution engine initialized
+2025-11-04 14:42:39,526 - backend.scripts.init_execution_system - INFO - Execution coordinator initialized
+2025-11-04 14:42:39,527 - backend.scripts.init_execution_system - INFO - Execution system fully initialized
+2025-11-04 14:42:39,528 - backend.app - INFO - Execution system initialized
+2025-11-04 14:42:39,529 - backend.app - INFO - Services initialized successfully
+2025-11-04 14:42:39,530 - backend.tasks.scheduler - WARNING - Scheduler not available
+2025-11-04 14:44:25,276 - backend.observability.telemetry - WARNING - OpenTelemetry not installed. Install with: pip install opentelemetry-api opentelemetry-sdk
+2025-11-04 14:44:25,285 - backend.services.market_data_service - INFO - MarketDataService initialized with SQL repository
+2025-11-04 14:44:25,286 - backend.app - INFO - Auth and KYC services initialized
+2025-11-04 14:44:25,377 - backend.db.init_db - INFO - Initializing database...
+2025-11-04 14:44:25,377 - backend.db.init_db - INFO - Importing database models...
+2025-11-04 14:44:25,377 - backend.db.init_db - INFO - Models imported successfully
+2025-11-04 14:44:25,377 - backend.db.init_db - INFO - Creating database tables from models...
+2025-11-04 14:44:25,490 - backend.db.init_db - INFO - Tables created successfully
+2025-11-04 14:44:25,490 - backend.db.init_db - INFO - Running database migrations...
+2025-11-04 14:44:25,490 - backend.db.init_db - INFO - Running migration: 001_initial_schema
+2025-11-04 14:44:25,570 - backend.db.init_db - INFO - Migration 001_initial_schema completed successfully
+2025-11-04 14:44:25,571 - backend.db.init_db - INFO - Running migration: 002_strategy_results
+2025-11-04 14:44:25,737 - backend.db.init_db - INFO - Migration 002_strategy_results completed successfully
+2025-11-04 14:44:25,737 - backend.db.init_db - INFO - Running migration: 003_risk_metrics
+2025-11-04 14:44:25,822 - backend.db.init_db - INFO - Migration 003_risk_metrics completed successfully
+2025-11-04 14:44:25,823 - backend.db.init_db - INFO - Running migration: 004_journal
+2025-11-04 14:44:25,931 - backend.db.init_db - INFO - Migration 004_journal completed successfully
+2025-11-04 14:44:25,931 - backend.db.init_db - INFO - Running migration: 005_live_results
+2025-11-04 14:44:26,025 - backend.db.init_db - INFO - Migration 005_live_results completed successfully
+2025-11-04 14:44:26,027 - backend.db.init_db - INFO - Running migration: 006_recommendations_log
+2025-11-04 14:44:26,125 - backend.db.init_db - INFO - Migration 006_recommendations_log completed successfully
+2025-11-04 14:44:26,126 - backend.db.init_db - INFO - Running migration: 007_kyc_users
+2025-11-04 14:44:26,220 - backend.db.init_db - INFO - Migration 007_kyc_users completed successfully
+2025-11-04 14:44:26,221 - backend.db.init_db - INFO - Running migration: 008_recommendations_outcomes
+2025-11-04 14:44:26,327 - backend.db.init_db - INFO - Migration 008_recommendations_outcomes completed successfully
+2025-11-04 14:44:26,327 - backend.db.init_db - INFO - Running migration: 009_user_tokens
+2025-11-04 14:44:26,442 - backend.db.init_db - INFO - Migration 009_user_tokens completed successfully
+2025-11-04 14:44:26,528 - backend.db.init_db - WARNING - Could not enable TimescaleDB: TimescaleDB extension not found. Install TimescaleDB first.
+2025-11-04 14:44:26,530 - backend.db.init_db - INFO - Database initialization completed successfully
+2025-11-04 14:44:26,532 - backend.app - INFO - Auth service initialized
+2025-11-04 14:44:26,538 - backend.scripts.init_risk_system - INFO - Using simulated adapter for risk management
+2025-11-04 14:44:26,538 - backend.scripts.init_risk_system - INFO - Risk management system initialized
+2025-11-04 14:44:26,539 - backend.scripts.init_risk_system - INFO - Limits: max_exposure=80.0%, max_drawdown=20.0%
+2025-11-04 14:44:26,539 - backend.app - INFO - Risk system initialized
+2025-11-04 14:44:26,581 - backend.tasks.scheduler - WARNING - APScheduler not installed. Install with: pip install apscheduler
+2025-11-04 14:44:26,582 - backend.app - INFO - Scheduler initialized (will start asynchronously)
+2025-11-04 14:44:26,583 - backend.scripts.init_execution_system - INFO - Using simulated adapter for execution
+2025-11-04 14:44:26,584 - backend.scripts.init_execution_system - INFO - Signal orchestrator initialized
+2025-11-04 14:44:26,585 - backend.scripts.init_execution_system - INFO - Execution engine initialized
+2025-11-04 14:44:26,586 - backend.scripts.init_execution_system - INFO - Execution coordinator initialized
+2025-11-04 14:44:26,586 - backend.scripts.init_execution_system - INFO - Execution system fully initialized
+2025-11-04 14:44:26,588 - backend.app - INFO - Execution system initialized
+2025-11-04 14:44:26,590 - backend.app - INFO - Services initialized successfully
+2025-11-04 14:44:26,591 - backend.tasks.scheduler - WARNING - Scheduler not available
+2025-11-04 14:45:28,568 - backend.api.routes.websocket - INFO - WebSocket connected. Total connections: 1
+2025-11-04 14:45:29,062 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 4.02ms
+2025-11-04 14:45:29,072 - backend.observability.middleware - INFO - GET /strategies/config - 200 - 4.03ms
+2025-11-04 14:45:30,663 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:30,670 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 188.62ms
+2025-11-04 14:45:30,676 - backend.app - INFO - Checking data availability...
+2025-11-04 14:45:32,501 - backend.app - INFO - Data summary: incomplete
+2025-11-04 14:45:32,502 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 14:45:32,504 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 14:45:35,111 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 14:45:35,202 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 15m
+2025-11-04 14:45:35,202 - backend.app - WARNING - No data available for 15m
+2025-11-04 14:45:35,277 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:35,277 - backend.app - WARNING - No data available for 1h
+2025-11-04 14:45:35,377 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 14:45:35,377 - backend.app - WARNING - No data available for 2h
+2025-11-04 14:45:35,560 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 4h
+2025-11-04 14:45:35,560 - backend.app - WARNING - No data available for 4h
+2025-11-04 14:45:35,644 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 14:45:35,644 - backend.app - WARNING - No data available for 12h
+2025-11-04 14:45:35,727 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
+2025-11-04 14:45:35,727 - backend.app - WARNING - No data available for 1d
+2025-11-04 14:45:35,810 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 14:45:35,810 - backend.app - WARNING - No data available for 1w
+2025-11-04 14:45:35,827 - backend.app - INFO - Checking data availability...
+2025-11-04 14:45:37,943 - backend.app - INFO - Data summary: incomplete
+2025-11-04 14:45:37,943 - backend.services.market_data_service - INFO - Refresh latest candles called for BTCUSDT ['15m', '1h', '2h', '4h', '12h', '1d', '1w']
+2025-11-04 14:45:37,943 - backend.services.market_data_service - WARNING - Refresh should be handled by ingestion pipeline. This is a no-op.
+2025-11-04 14:45:40,891 - backend.app - INFO - Running backtests with 20 enabled strategies
+2025-11-04 14:45:40,987 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 15m
+2025-11-04 14:45:40,989 - backend.app - WARNING - No data available for 15m
+2025-11-04 14:45:41,175 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:41,175 - backend.app - WARNING - No data available for 1h
+2025-11-04 14:45:41,275 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 14:45:41,275 - backend.app - WARNING - No data available for 2h
+2025-11-04 14:45:41,358 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 4h
+2025-11-04 14:45:41,358 - backend.app - WARNING - No data available for 4h
+2025-11-04 14:45:41,441 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 14:45:41,441 - backend.app - WARNING - No data available for 12h
+2025-11-04 14:45:41,541 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
+2025-11-04 14:45:41,541 - backend.app - WARNING - No data available for 1d
+2025-11-04 14:45:41,624 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 14:45:41,624 - backend.app - WARNING - No data available for 1w
+2025-11-04 14:45:41,624 - backend.observability.middleware - INFO - POST /refresh - 200 - 10952.46ms
+2025-11-04 14:45:41,724 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:41,724 - backend.observability.middleware - INFO - POST /refresh - 200 - 11048.83ms
+2025-11-04 14:45:41,724 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 5897.24ms
+2025-11-04 14:45:42,532 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 15m
+2025-11-04 14:45:42,617 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:42,707 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 14:45:42,797 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 4h
+2025-11-04 14:45:42,980 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 14:45:43,053 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
+2025-11-04 14:45:43,133 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w
+2025-11-04 14:45:43,337 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:43,345 - backend.observability.middleware - INFO - GET /recommendation - 404 - 1620.25ms
+2025-11-04 14:45:43,347 - backend.observability.middleware - INFO - GET /api/chart/BTCUSDT/1h - 404 - 214.38ms
+2025-11-04 14:45:44,984 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 15m
+2025-11-04 14:45:45,260 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1h
+2025-11-04 14:45:45,443 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 2h
+2025-11-04 14:45:45,608 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 4h
+2025-11-04 14:45:45,772 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 12h
+2025-11-04 14:45:45,915 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1d
+2025-11-04 14:45:46,058 - backend.services.market_data_service - WARNING - No data found for BTCUSDT 1w

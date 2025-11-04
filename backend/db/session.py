@@ -2,13 +2,29 @@
 import os
 import sys
 import locale
+from pathlib import Path
+
+# Load .env file if it exists (before reading DATABASE_URL)
+project_root = Path(__file__).parent.parent.parent
+env_file = project_root / '.env'
+if env_file.exists():
+    with open(env_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Only set if not already in environment (env vars take precedence)
+                if key.strip() not in os.environ:
+                    os.environ[key.strip()] = value.strip()
 
 # Import psycopg2 patch BEFORE importing sqlalchemy or psycopg2
-try:
-    from backend.db import psycopg2_patch
-    psycopg2_patch.patch_psycopg2()
-except ImportError:
-    pass  # Patch module not available
+# NOTE: Disabled since PostgreSQL is now configured correctly with lc_messages=C
+# The patch was interfering with SQLAlchemy connection initialization
+# try:
+#     from backend.db import psycopg2_patch
+#     psycopg2_patch.patch_psycopg2()
+# except ImportError:
+#     pass  # Patch module not available
 
 # Force UTF-8 encoding before importing anything that might use psycopg2
 if sys.platform == 'win32':
@@ -192,7 +208,8 @@ try:
             logger.error(f"Error in safe_connect: {e}")
             raise
     
-    # Note: We can't easily override the connection creator, so we'll use the event listener approach
+    # Create engine directly - options in DATABASE_URL and connect_args should handle encoding
+    # Since PostgreSQL is configured with lc_messages='C' at database level, this should work
     engine = create_engine(
         DATABASE_URL,
         poolclass=NullPool,  # Disable pooling for now, can enable later

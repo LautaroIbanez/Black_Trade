@@ -11,7 +11,7 @@ def upgrade():
                 timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 type VARCHAR(50),
                 order_id VARCHAR(100),
-                user VARCHAR(100) DEFAULT 'system',
+                "user" VARCHAR(100) DEFAULT 'system',
                 details JSONB
             )
         """))
