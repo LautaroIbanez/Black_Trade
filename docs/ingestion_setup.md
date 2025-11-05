@@ -292,3 +292,4 @@ python -c "from backend.repositories.ingestion_repository import IngestionReposi
 - `backend/tasks/data_ingestion_task.py`: Tarea de ingesta
 - `backend/repositories/ohlcv_repository.py`: Repositorio de datos OHLCV
 - `data/binance_client.py`: Cliente de Binance API
+

@@ -134,3 +134,4 @@ async def get_data_summary(
     except Exception as e:
         logger.error(f"Error getting data summary: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+

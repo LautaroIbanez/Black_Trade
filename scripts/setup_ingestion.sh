@@ -118,3 +118,4 @@ echo "3. Monitor ingestion status: GET /api/ingestion/status"
 echo "4. Verify data: GET /api/ingestion/verify"
 echo ""
 echo "For more information, see: docs/ingestion_setup.md"
+

@@ -207,3 +207,4 @@ def test_chart_endpoint_limit_parameter(mock_market_data_service, client):
     
     assert len(data["candles"]) == 10
     assert data["metadata"]["total_candles"] == 10
+
